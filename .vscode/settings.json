@@ -100,7 +100,10 @@
     "xlocmon": "cpp",
     "xloctime": "cpp",
     "span": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "future": "cpp",
+    "core": "cpp",
+    "ranges": "cpp"
   },
   "cmake.configureOnOpen": true
 }

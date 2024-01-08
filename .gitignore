@@ -1,6 +1,5 @@
-*.o
 *.exe
 FileOutput/*
-depend
-ConfigSandbox.txt
+Build/*
+ConfigWindow.txt
 ConfigProject.txt

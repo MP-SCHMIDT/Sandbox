@@ -1,4 +1,4 @@
-Standard: Cpp11
+Standard: Latest
 BasedOnStyle: Google
 IndentWidth: 2
 ColumnLimit: 0

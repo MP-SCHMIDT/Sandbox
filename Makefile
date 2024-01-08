@@ -1,42 +1,98 @@
-CC = g++ -std=c++23
-RM	= rm -f
+# CC = g++ -std=c++23
+# RM = rm -f
 
-INCLUDE_DIRS = -I"Libs\freeglut\include"
-LIB_DIRS = -L"Libs\freeglut\lib\x64"
+# INC_DIRS = -I"Libs" -I"Source/Algo" -I"Source/Projects" -I"Source/Global"
+# LIB_DIRS = -L"Libs/freeglut/lib/x64"
 
-FLAGS_BUILD = -m64
-FLAGS_OPTIMIZATION = -O3
+# FLAGS_ENV = -m64
+# FLAGS_OPTIM = -O3
+# FLAGS_OPENMP = -fopenmp
+# FLAGS_DEBUG = -g
+# FLAGS_WARNING = -Wall -Wextra
+
+# UNAME := $(shell uname)
+# ifeq ($(UNAME), Windows_NT)
+# FLAGS_GL = -lfreeglut -lopengl32 -lglu32
+# else ifeq ($(UNAME), MINGW32_NT-6.2)
+# FLAGS_GL = -lfreeglut -lopengl32 -lglu32
+# else
+# FLAGS_GL = -lGL -lglut -lGLU -lX11 -lm
+# endif
+
+# CFLAGS = $(FLAGS_ENV) $(FLAGS_GL) $(FLAGS_OPENMP) $(FLAGS_WARNING) $(FLAGS_DEBUG) $(FLAGS_OPTIM)
+# SOURCES = $(wildcard Source/*.cpp) $(wildcard Source/*/*.cpp) $(wildcard Source/*/*/*.cpp)
+# OBJECTS = $(SOURCES:.cpp=.o)
+# EXECS = main.exe
+
+
+# all : $(EXECS)
+
+# main.exe : $(OBJECTS)
+# 	$(CC) -o $@ $(OBJECTS) $(LIB_DIRS) $(CFLAGS)
+
+# .cpp.o :
+# 	$(CC) -c $< -o $*.o $(INC_DIRS) $(CFLAGS)
+
+# .PHONY : clean
+# clean :
+# 	$(RM) $(OBJECTS) $(EXECS) depend
+
+# depend :
+# 	$(CC) -I"Source/Algo" -I"Source/Projects" -I"Source/Global" $(SOURCES) -MM -MP > depend
+
+# include depend
+
+
+
+
+
+
+
+
+
+
+
+TARGET_EXEC = main.exe
+
+BUILD_DIR = ./Build
+SRC_DIRS = ./Source
+
+SRCS = $(wildcard Source/*.cpp) $(wildcard Source/*/*.cpp) $(wildcard Source/*/*/*.cpp)
+
+OBJS = $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS = $(SRCS:%=$(BUILD_DIR)/%.d)
+
+CXX = g++ -std=c++23
+
+FLAGS_ENV = -m64
+FLAGS_OPTIM = -O2 -march=native
 FLAGS_OPENMP = -fopenmp
-FLAGS_DEBUG = -g
+# FLAGS_DEBUG = -g
 FLAGS_WARNING = -Wall -Wextra
+FLAGS_DEPEND = -MMD -MP
+CXXFLAGS = $(FLAGS_DEPEND) $(FLAGS_ENV) $(FLAGS_OPENMP) $(FLAGS_WARNING) $(FLAGS_DEBUG) $(FLAGS_OPTIM)
 
 UNAME := $(shell uname)
 ifeq ($(UNAME), Windows_NT)
-FLAGS_GLUT = -lfreeglut -lopengl32 -lglu32
+FLAGS_GL = -lfreeglut -lopengl32 -lglu32
 else ifeq ($(UNAME), MINGW32_NT-6.2)
-FLAGS_GLUT = -lfreeglut -lopengl32 -lglu32
+FLAGS_GL = -lfreeglut -lopengl32 -lglu32
 else
-FLAGS_GLUT = -lGL -lglut -lGLU -lX11 -lm
+FLAGS_GL = -lGL -lglut -lGLU -lX11 -lm
 endif
 
-CFLAGS = ${FLAGS_BUILD} ${INCLUDE_DIRS} ${LIB_DIRS} ${FLAGS_GLUT} ${FLAGS_OPENMP} ${FLAGS_WARNING} ${FLAGS_DEBUG} ${FLAGS_OPTIMIZATION}
-SOURCES = $(wildcard *.cpp) $(wildcard Libs/tb/*.cpp) $(wildcard Util/*.cpp) $(wildcard Projects/*/*.cpp)
-OBJECTS = $(SOURCES:.cpp=.o)
-EXECS = main.exe
+LIB_FLAGS = -L"Libs/freeglut/lib/x64" $(FLAGS_GL)
+INC_FLAGS = -I"Libs" -I"Source" -I"Source/Algo" -I"Source/Projects"
 
+$(TARGET_EXEC): $(OBJS)
+	$(CXX) $(OBJS) -o $@ $(LIB_FLAGS) $(CXXFLAGS)
 
-all :: $(EXECS)
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(INC_FLAGS) $(CXXFLAGS) -c $< -o $@
 
-main.exe: $(OBJECTS)
-	$(CC) -o $@ $(OBJECTS) $(CFLAGS)
+.PHONY: clean
+clean:
+	rm -rf $(BUILD_DIR) $(TARGET_EXEC)
 
-.cpp.o :
-	$(CC) -c $< -o $*.o $(INCLUDES) $(CFLAGS)
-
-clean ::
-	$(RM) $(OBJECTS) $(EXECS) depend
-
-depend::
-	$(CC) -MM *.cpp > depend
-
-include depend
+-include $(DEPS)
