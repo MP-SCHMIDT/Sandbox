@@ -44,7 +44,7 @@ void AgentSwarmBoid::SetActiveProject() {
     D.UI.push_back(ParamUI("CoeffEat________", 0.10));
     D.UI.push_back(ParamUI("CoeffRun________", 0.15));
     D.UI.push_back(ParamUI("CoeffOri________", 0.02));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

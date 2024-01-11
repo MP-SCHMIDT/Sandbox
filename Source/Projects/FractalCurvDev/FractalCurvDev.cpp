@@ -39,7 +39,7 @@ void FractalCurvDev::SetActiveProject() {
     D.UI.push_back(ParamUI("StepZVal________", 0.2));
     D.UI.push_back(ParamUI("StepZExpo_______", 1.5));
     D.UI.push_back(ParamUI("SpreadCoeff_____", 1.0));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

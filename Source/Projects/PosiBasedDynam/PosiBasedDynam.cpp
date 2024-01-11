@@ -46,7 +46,7 @@ void PosiBasedDynam::SetActiveProject() {
     D.UI.push_back(ParamUI("ForceBuoy_______", 2.0));
     D.UI.push_back(ParamUI("HeatInput_______", 0.2));
     D.UI.push_back(ParamUI("HeatOutput______", 0.1));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

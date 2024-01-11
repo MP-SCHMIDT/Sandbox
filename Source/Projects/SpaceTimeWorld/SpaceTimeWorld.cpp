@@ -91,7 +91,7 @@ void SpaceTimeWorld::SetActiveProject() {
     D.UI.push_back(ParamUI("TimePersist_____", 0.8));
     D.UI.push_back(ParamUI("FactorCurv______", 1.0));
     D.UI.push_back(ParamUI("FactorDoppl_____", 1.0));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

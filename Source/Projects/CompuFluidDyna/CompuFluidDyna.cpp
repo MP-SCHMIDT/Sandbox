@@ -47,7 +47,7 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("SolvTolRel______", 1.e-3));  // Solver tolerance relative to initial guess
     D.UI.push_back(ParamUI("SolvTolAbs______", 0.0));    // Solver tolerance relative absolute value of residual magnitude
     D.UI.push_back(ParamUI("CoeffGravi______", 0.0));    // Magnitude of gravity in Z- direction
-    D.UI.push_back(ParamUI("CoeffAdvec______", 5.0));    // 0= no advection, 1= linear advection, >1 MacCormack correction iterations
+    D.UI.push_back(ParamUI("CoeffAdvec______", 5));      // 0= no advection, 1= linear advection, >1 MacCormack correction iterations
     D.UI.push_back(ParamUI("CoeffDiffuS_____", 1.e-4));  // Diffusion of smoke field, i.e. smoke spread/smear
     D.UI.push_back(ParamUI("CoeffDiffuV_____", 1.e-3));  // Diffusion of velocity field, i.e. viscosity
     D.UI.push_back(ParamUI("CoeffVorti______", 0.0));    // Vorticity confinement to avoid dissipation of energy in small scale vortices
@@ -73,7 +73,7 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("SlicePlotZ______", 0.5));    // Positions for the slices
     D.UI.push_back(ParamUI("VerboseSolv_____", -0.5));   // Verbose mode for linear solvers
     D.UI.push_back(ParamUI("VerboseTime_____", -0.5));   // Verbose mode for linear solvers
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));    // Verbose mode
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));      // Verbose mode
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

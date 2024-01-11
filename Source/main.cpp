@@ -1,4 +1,5 @@
 // Standard lib
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <limits>
@@ -29,6 +30,10 @@
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
+// #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  #include "StructGenOptim/StructGenOptim.hpp"
+#endif
 
 
 // Global variables used by the display
@@ -41,6 +46,7 @@ static bool isSmoothDraw;
 
 // Global constants used by the display
 constexpr int winFPS= 60;
+constexpr int paramPerPage= 40;
 constexpr int paramLabelNbChar= 16;
 constexpr int paramSpaceNbChar= 1;
 constexpr int paramValSignNbChar= 1;
@@ -74,6 +80,9 @@ SkeletonFolder mySkeletonFolder;
 SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+StructGenOptim myStructGenOptim;
+#endif
 
 enum ProjectID
 {
@@ -91,6 +100,9 @@ enum ProjectID
   SpaceTimeWorldID,
   StringArtOptimID,
   TerrainErosionID,
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  StructGenOptimID,
+#endif
   ZzzzzzzzzzzzzzID,
 };
 
@@ -113,6 +125,9 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj) mySpaceTimeWorld= SpaceTimeWorld();
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj) myStructGenOptim= StructGenOptim();
+#endif
 
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.SetActiveProject();
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
@@ -127,6 +142,9 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.SetActiveProject();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
+#endif
 }
 
 
@@ -144,6 +162,9 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Refresh();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Refresh();
+#endif
 }
 
 
@@ -161,6 +182,9 @@ void project_Animate() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Animate();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Animate();
+#endif
 }
 
 
@@ -178,6 +202,9 @@ void project_Draw() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Draw();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Draw();
+#endif
 }
 
 
@@ -195,6 +222,9 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.isRefreshed= false;
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.isRefreshed= false;
+#endif
   project_Refresh();
 }
 
@@ -365,7 +395,7 @@ void callback_display() {
 
   // Draw the parameter list
   glLineWidth(2.0f);
-  for (int k= D.idxParamPageUI; k < std::min((int)D.UI.size(), D.idxParamPageUI + 40); k++) {
+  for (int k= D.idxParamPageUI; k < std::min((int)D.UI.size(), D.idxParamPageUI + paramPerPage); k++) {
     if (k == D.idxParamUI)
       glColor3f(0.8f, 0.4f, 0.4f);
     else {
@@ -555,8 +585,11 @@ void callback_keyboard(unsigned char key, int x, int y) {
   }
   else if (key == ' ') D.playAnimation= !D.playAnimation;
   else if (key == '.') D.stepAnimation= !D.stepAnimation;
-  else if (key == '\b') D.UI[D.idxParamUI].Set(0.0);
-  else if (key == '\t') D.idxParamPageUI= (D.idxParamPageUI + 40 < (int)D.UI.size()) ? (D.idxParamPageUI + 40) : (0);
+  else if (key == '\b') {
+    if (!std::isnan(D.UI[D.idxParamUI].D()))
+      D.UI[D.idxParamUI].Set(0.0);
+  }
+  else if (key == '\t') D.idxParamPageUI= (D.idxParamPageUI + paramPerPage < (int)D.UI.size()) ? (D.idxParamPageUI + paramPerPage) : (0);
   else if (key == '1') D.displayMode1= !D.displayMode1;
   else if (key == '2') D.displayMode2= !D.displayMode2;
   else if (key == '3') D.displayMode3= !D.displayMode3;
@@ -591,6 +624,9 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(keyUpperCase);
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+    if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress(keyUpperCase);
+#endif
   }
 
   // Compute refresh
@@ -608,12 +644,14 @@ void callback_keyboard_special(int key, int x, int y) {
   if (D.UI.empty()) return;
 
   if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
-    if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 5 + int(D.UI.size())) % int(D.UI.size());
-    if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 5) % int(D.UI.size());
+    if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 10 + int(D.UI.size())) % int(D.UI.size());
+    if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 10) % int(D.UI.size());
+    D.idxParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
   }
   else {
     if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 1 + int(D.UI.size())) % int(D.UI.size());
     if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 1) % int(D.UI.size());
+    D.idxParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
   }
 
   if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
@@ -694,7 +732,7 @@ void callback_passive_mouse_motion(int x, int y) {
   const int prevParamIdx= D.idxParamUI;
   const int prevCursorIdx= D.idxCursorUI;
   if (x < (paramLabelNbChar + paramSpaceNbChar + paramValNbChar) * charWidth) {
-    if ((y - 3) > pixelMargin && (y - 3) < std::min(int(D.UI.size()), D.idxParamPageUI + 40) * (charHeight + pixelMargin)) {
+    if ((y - 3) > pixelMargin && (y - 3) < std::min(int(D.UI.size()), D.idxParamPageUI + paramPerPage) * (charHeight + pixelMargin)) {
       D.idxParamUI= D.idxParamPageUI + (y - 3) / (charHeight + pixelMargin);
       D.idxCursorUI= std::max((x - (paramLabelNbChar + paramSpaceNbChar) * charWidth) / charWidth, 0);
     }
@@ -786,6 +824,9 @@ void init_menu() {
   glutAddMenuEntry("SpaceTimeWorld", ProjectID::SpaceTimeWorldID);
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  glutAddMenuEntry("StructGenOptim", ProjectID::StructGenOptimID);
+#endif
   const int menuSave= glutCreateMenu(callback_menu);
   glutAddMenuEntry("Save settings", -20);
   glutAddMenuEntry("Save parameters", -21);

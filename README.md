@@ -2,16 +2,18 @@
 Sandbox environment with various research and experimentations projects implemented from scratch (physics simulations, fractals, swarm intelligence, precedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D display scene. The repo is standalone and should not require installing any external library.
 
 ![Screenshot](Docs/Anim_TopOptBracket.gif)
-![Screenshot](Docs/Anim_CFD.gif)\
+![Screenshot](Docs/Anim_CFD.gif)
+![Screenshot](Docs/Anim_MassSpringSystem.gif)
 ![Screenshot](Docs/Anim_FraclElevMapZoom.gif)
-![Screenshot](Docs/Anim_FractCurvDev.gif)\
+![Screenshot](Docs/Anim_FractCurvDev.gif)
+![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)\
 ![Screenshot](Docs/Anim_FieldOrientedLattice.gif)
-![Screenshot](Docs/Anim_ParticleLifeOrga.gif)\
-![Screenshot](Docs/Anim_ParticleCollisionConvectionSystem.gif)
-![Screenshot](Docs/Anim_AlbertSpaceTimeCurvature.gif)\
+![Screenshot](Docs/Anim_ParticleLifeOrga.gif)
+![Screenshot](Docs/Anim_StringArtOptim.gif)
 ![Screenshot](Docs/Anim_TerrainErosion.gif)
-![Screenshot](Docs/Anim_ReynoldsBoids.gif)\
-![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)
+![Screenshot](Docs/Anim_ParticleCollisionConvectionSystem.gif)
+![Screenshot](Docs/Anim_AlbertSpaceTimeCurvature.gif)
+![Screenshot](Docs/Anim_ReynoldsBoids.gif)
 
 ## Code structure
 

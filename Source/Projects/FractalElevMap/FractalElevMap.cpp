@@ -32,16 +32,16 @@ FractalElevMap::FractalElevMap() {
 void FractalElevMap::SetActiveProject() {
   if (!isActivProj) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("ResolutionX_____", 1000.0));
-    D.UI.push_back(ParamUI("ResolutionY_____", 1000.0));
-    D.UI.push_back(ParamUI("ZoomLevel_______", 0.5));
-    D.UI.push_back(ParamUI("NumItera________", 50.0));
-    D.UI.push_back(ParamUI("ShiftX__________", 0.365242330));
-    D.UI.push_back(ParamUI("ShiftY__________", 0.534752180));
-    D.UI.push_back(ParamUI("CoeffA__________", -0.8350));
-    D.UI.push_back(ParamUI("CoeffB__________", -0.2241));
-    D.UI.push_back(ParamUI("HeightLvls______", 32.0));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("ResolutionX_____", 1000.0));       // Resolution of 2.5D height map
+    D.UI.push_back(ParamUI("ResolutionY_____", 1000.0));       // Resolution of 2.5D height map
+    D.UI.push_back(ParamUI("ZoomLevel_______", 0.5));          // Zoom factor
+    D.UI.push_back(ParamUI("NumItera________", 50.0));         // Number of iterations of complex square + complex add
+    D.UI.push_back(ParamUI("ShiftX__________", 0.365242330));  // Hand picked param for cool fractal zoom
+    D.UI.push_back(ParamUI("ShiftY__________", 0.534752180));  // Hand picked param for cool fractal zoom
+    D.UI.push_back(ParamUI("CoeffA__________", -0.8350));      // Hand picked param for cool fractal zoom
+    D.UI.push_back(ParamUI("CoeffB__________", -0.2241));      // Hand picked param for cool fractal zoom
+    D.UI.push_back(ParamUI("HeightLvls______", 32.0));         // Divergence threshold of complex iterations
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

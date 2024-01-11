@@ -30,7 +30,7 @@ void SkeletonFolder::SetActiveProject() {
     D.UI.clear();
     D.UI.push_back(ParamUI("AllocTrigger____", 0.0));
     D.UI.push_back(ParamUI("RefreshTrigger__", 0.0));
-    D.UI.push_back(ParamUI("VerboseLevel____", 1.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 1));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

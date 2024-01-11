@@ -33,30 +33,30 @@ class ParticLifeOrga
     RuleMaxAmpli____,
     RuleMinReach____,
     RuleMaxReach____,
+    RuleAdhReach____,
+    ModeAdhesion____,
     ForceColli______,
     ForcePartic_____,
-    ForceAdhesion___,
     ForceBoundary___,
     ForceDamping____,
     ForceGravity____,
-    ForceAdhMode____,
-    ForceAdhCoeff___,
+    ForceAdhesion___,
     ColorMode_______,
     VerboseLevel____,
   };
 
   // Rules
-  std::vector<double> ParticleTypeMass;
-  std::vector<double> ParticleTypeRadius;
-  std::vector<std::vector<double>> ParticleTypeAmpli;
-  std::vector<std::vector<double>> ParticleTypeReach;
+  std::vector<double> TypeMass;
+  std::vector<double> TypeRadius;
+  std::vector<std::vector<double>> TypeAmpli;
+  std::vector<std::vector<double>> TypeReach;
 
   // Particles
-  std::vector<int> ParticleType;
-  std::vector<Vec::Vec3<double>> ParticlePos;
-  std::vector<Vec::Vec3<double>> ParticleVel;
-  std::vector<Vec::Vec3<double>> ParticleAcc;
-  std::vector<Vec::Vec3<double>> ParticleFor;
+  std::vector<int> Type;
+  std::vector<Vec::Vec3<double>> Pos;
+  std::vector<Vec::Vec3<double>> Vel;
+  std::vector<Vec::Vec3<double>> Acc;
+  std::vector<Vec::Vec3<double>> For;
 
   void GenerateParticleRules();
   void GenerateParticleCloud();

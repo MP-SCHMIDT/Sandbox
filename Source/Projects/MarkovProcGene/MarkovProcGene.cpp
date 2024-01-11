@@ -44,7 +44,7 @@ void MarkovProcGene::SetActiveProject() {
     D.UI.push_back(ParamUI("RuleSizeZ_______", 4));
     D.UI.push_back(ParamUI("NbSubsti________", 1));
     D.UI.push_back(ParamUI("ShadeCoeff______", 1));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

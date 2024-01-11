@@ -51,7 +51,7 @@ void MassSpringSyst::SetActiveProject() {
     D.UI.push_back(ParamUI("CoeffDamp_______", 0.2));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("ColorMode_______", 1.0));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {

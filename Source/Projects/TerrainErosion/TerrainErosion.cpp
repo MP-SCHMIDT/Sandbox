@@ -45,7 +45,7 @@ void TerrainErosion::SetActiveProject() {
     D.UI.push_back(ParamUI("ErosionCoeff____", 0.05));
     D.UI.push_back(ParamUI("SmoothResist____", 0.99));
     D.UI.push_back(ParamUI("CliffThresh_____", 0.80));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {
