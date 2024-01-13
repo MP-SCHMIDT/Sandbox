@@ -12,23 +12,147 @@
 #include "Math/Vec.hpp"
 
 
-void FileOutput::SaveVectorBinaryFile(
+bool FileOutput::SaveBoxTXTFile(
+    std::string const iFullpath,
+    int const iNbX,
+    int const iNbY,
+    int const iNbZ,
+    std::array<double, 3> const& iBBoxMin,
+    std::array<double, 3> const& iBBoxMax,
+    bool const iVerbose) {
+  if (iVerbose) printf("Saving TXT box file [%s]\n", iFullpath.c_str());
+
+  FILE* outputFile= nullptr;
+  outputFile= fopen(iFullpath.c_str(), "w");
+  if (outputFile == nullptr) {
+    printf("[ERROR] Unable to create the file\n");
+    return false;
+  }
+
+  double voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag;
+  Field::GetVoxelSizes(iNbX, iNbY, iNbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag);
+
+  fprintf(outputFile, "%f %f %f\n", iBBoxMin[0], iBBoxMin[1], iBBoxMin[2]);
+  fprintf(outputFile, "%f %f %f\n", iBBoxMax[0], iBBoxMax[1], iBBoxMax[2]);
+  fprintf(outputFile, "%d %d %d\n", iNbX, iNbY, iNbZ);
+  fprintf(outputFile, "%f %f %f\n", voxSizeX, voxSizeY, voxSizeZ);
+
+  fclose(outputFile);
+
+  if (iVerbose) printf("File saved: %f x %f x %f -> %f x %f x %f \n", iBBoxMin[0], iBBoxMin[1], iBBoxMin[2], iBBoxMax[0], iBBoxMax[1], iBBoxMax[2]);
+  return true;
+}
+
+
+bool FileOutput::SaveScalarFieldFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<double>>> const& iDoubleField,
+    std::vector<std::vector<std::vector<int>>> const& iIntField,
+    std::vector<std::vector<std::vector<bool>>> const& iBoolField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Saving TXT scalar field file [%s]\n", iFullpath.c_str());
+
+  int type= 0, nbX= 0, nbY= 0, nbZ= 0;
+  if (!iDoubleField.empty() && !iDoubleField[0].empty() && !iDoubleField[0][0].empty()) {
+    type= 1;
+    nbX= (int)iDoubleField.size();
+    nbY= (int)iDoubleField[0].size();
+    nbZ= (int)iDoubleField[0][0].size();
+  }
+  else if (!iIntField.empty() && !iIntField[0].empty() && !iIntField[0][0].empty()) {
+    type= 2;
+    nbX= (int)iIntField.size();
+    nbY= (int)iIntField[0].size();
+    nbZ= (int)iIntField[0][0].size();
+  }
+  else if (!iBoolField.empty() && !iBoolField[0].empty() && !iBoolField[0][0].empty()) {
+    type= 3;
+    nbX= (int)iBoolField.size();
+    nbY= (int)iBoolField[0].size();
+    nbZ= (int)iBoolField[0][0].size();
+  }
+
+  if (type == 0) {
+    printf("[ERROR] Invalid field dimensions\n");
+    return false;
+  }
+
+  FILE* outputFile= nullptr;
+  outputFile= fopen(iFullpath.c_str(), "w");
+  if (outputFile == nullptr) {
+    printf("[ERROR] Unable to create the file\n");
+    return false;
+  }
+
+  fprintf(outputFile, "%d %d %d\n", nbX, nbY, nbZ);
+  for (int x= 0; x < nbX; x++) {
+    for (int y= 0; y < nbY; y++) {
+      for (int z= 0; z < nbZ; z++) {
+        if (type == 1) {
+          if (iDoubleField[x][y][z] == 0.0)
+            fprintf(outputFile, "0\n");
+          else if (iDoubleField[x][y][z] == 1.0)
+            fprintf(outputFile, "1\n");
+          else
+            fprintf(outputFile, "%.3e\n", iDoubleField[x][y][z]);
+        }
+        if (type == 2) fprintf(outputFile, "%d\n", iIntField[x][y][z]);
+        if (type == 3) fprintf(outputFile, "%d\n", (iBoolField[x][y][z]) ? 1 : 0);
+      }
+    }
+  }
+  fclose(outputFile);
+
+  if (iVerbose) printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
+  return true;
+}
+
+
+bool FileOutput::SaveScalarListTXTFile(
+    std::string const iFullpath,
+    std::vector<double> const& iVector,
+    bool const iVerbose) {
+  if (iVerbose) printf("Saving vector of scalars TXT file [%s]\n", iFullpath.c_str());
+
+  if (iVector.empty()) {
+    printf("[ERROR] Invalid vector dimensions\n");
+    return false;
+  }
+
+  FILE* outputFile= nullptr;
+  outputFile= fopen(iFullpath.c_str(), "w");
+  if (outputFile == nullptr) {
+    printf("[ERROR] Unable to create the file\n");
+    return false;
+  }
+
+  for (int k= 0; k < int(iVector.size()); k++) {
+    fprintf(outputFile, "%f\n", iVector[k]);
+  }
+
+  fclose(outputFile);
+
+  if (iVerbose) printf("File saved: %d values\n", int(iVector.size()));
+  return true;
+}
+
+
+bool FileOutput::SaveScalarListBinaryFile(
     std::string const iFullpath,
     std::vector<double> const& iField,
     bool const iVerbose) {
   if (iField.empty()) {
     printf("[ERROR] Invalid field dimensions\n");
-    throw 0;
+    return false;
   }
 
-  if (iVerbose)
-    printf("Saving RAW scalar field binary file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving RAW scalar field binary file [%s]\n", iFullpath.c_str());
 
   std::ofstream outputFile;
   outputFile.open(iFullpath, std::ios::binary);
   if (!outputFile.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   for (int k= 0; k < (int)iField.size(); k++) {
@@ -37,82 +161,156 @@ void FileOutput::SaveVectorBinaryFile(
 
   outputFile.close();
 
-  if (iVerbose)
-    printf("File saved: %d values\n", (int)iField.size());
+  if (iVerbose) printf("File saved: %d values\n", (int)iField.size());
+  return true;
 }
 
 
-void FileOutput::SaveScalarFieldBinaryFile(
+bool FileOutput::SaveSparseMatrixMarketFile(
     std::string const iFullpath,
-    std::vector<std::vector<std::vector<double>>> const& field,
+    int const iNbRows,
+    int const iNbCols,
+    std::vector<int> const& iRow,
+    std::vector<int> const& iCol,
+    std::vector<double> const& iVal,
     bool const iVerbose) {
-  if (field.empty() || field[0].empty() || field[0][0].empty()) {
-    printf("[ERROR] Invalid field dimensions\n");
-    throw 0;
+  if (iVerbose) printf("Saving Sparse MatrixMarket file [%s]\n", iFullpath.c_str());
+
+  if (iRow.size() != iCol.size() || iRow.size() != iVal.size()) {
+    printf("[ERROR] Invalid matrix dimensions\n");
+    return false;
   }
 
-  if (iVerbose)
-    printf("Saving RAW scalar field binary file [%s]\n", iFullpath.c_str());
-
-  std::ofstream outputFile;
-  outputFile.open(iFullpath, std::ios::binary);
-  if (!outputFile.is_open()) {
+  FILE* outputFile= nullptr;
+  outputFile= fopen(iFullpath.c_str(), "w");
+  if (outputFile == nullptr) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
-  for (int z= 0; z < (int)field[0][0].size(); z++) {
-    for (int y= 0; y < (int)field[0].size(); y++) {
-      for (int x= 0; x < (int)field.size(); x++) {
-        outputFile.write((char*)&field[x][y][z], sizeof(double));
+  fprintf(outputFile, "%%%%MatrixMarket matrix coordinate real general\n");
+  fprintf(outputFile, "%d %d %d\n", iNbRows, iNbCols, (int)iVal.size());
+
+  for (int k= 0; k < (int)iVal.size(); k++) {
+    fprintf(outputFile, "%d %d %e\n", iRow[k] + 1, iCol[k] + 1, iVal[k]);
+  }
+
+  fclose(outputFile);
+
+  if (iVerbose) printf("File saved: Matrix %d x %d with %d non zeros\n", iNbRows, iNbCols, (int)iVal.size());
+  return true;
+}
+
+
+bool FileOutput::SaveVectorFieldFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iDoubleField,
+    std::vector<std::vector<std::vector<std::array<int, 3>>>> const& iIntField,
+    std::vector<std::vector<std::vector<std::array<bool, 3>>>> const& iBoolField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Saving TXT vector field file [%s]\n", iFullpath.c_str());
+
+  int type= 0, nbX= 0, nbY= 0, nbZ= 0;
+  if (!iDoubleField.empty() && !iDoubleField[0].empty() && !iDoubleField[0][0].empty()) {
+    type= 1;
+    nbX= (int)iDoubleField.size();
+    nbY= (int)iDoubleField[0].size();
+    nbZ= (int)iDoubleField[0][0].size();
+  }
+  else if (!iIntField.empty() && !iIntField[0].empty() && !iIntField[0][0].empty()) {
+    type= 2;
+    nbX= (int)iIntField.size();
+    nbY= (int)iIntField[0].size();
+    nbZ= (int)iIntField[0][0].size();
+  }
+  else if (!iBoolField.empty() && !iBoolField[0].empty() && !iBoolField[0][0].empty()) {
+    type= 3;
+    nbX= (int)iBoolField.size();
+    nbY= (int)iBoolField[0].size();
+    nbZ= (int)iBoolField[0][0].size();
+  }
+
+  if (type == 0) {
+    printf("[ERROR] Invalid field dimensions\n");
+    return false;
+  }
+
+  FILE* outputFile= nullptr;
+  outputFile= fopen(iFullpath.c_str(), "w");
+  if (outputFile == nullptr) {
+    printf("[ERROR] Unable to create the file\n");
+    return false;
+  }
+
+  fprintf(outputFile, "%d %d %d\n", nbX, nbY, nbZ);
+  for (int x= 0; x < nbX; x++) {
+    for (int y= 0; y < nbY; y++) {
+      for (int z= 0; z < nbZ; z++) {
+        if (type == 1) {
+          if (iDoubleField[x][y][z][0] != 0.0 || iDoubleField[x][y][z][1] != 0.0 || iDoubleField[x][y][z][2] != 0.0)
+            fprintf(outputFile, "%.3e %.3e %.3e\n", iDoubleField[x][y][z][0], iDoubleField[x][y][z][1], iDoubleField[x][y][z][2]);
+          else
+            fprintf(outputFile, "0 0 0\n");
+        }
+        if (type == 2) fprintf(outputFile, "%d %d %d\n", iIntField[x][y][z][0], iIntField[x][y][z][1], iIntField[x][y][z][2]);
+        if (type == 3) fprintf(outputFile, "%d %d %d\n", (iBoolField[x][y][z][0]) ? 1 : 0, (iBoolField[x][y][z][1]) ? 1 : 0, (iBoolField[x][y][z][2]) ? 1 : 0);
       }
     }
   }
+  fclose(outputFile);
 
-  outputFile.close();
-
-  if (iVerbose)
-    printf("File saved: %d x %d x %d voxels\n", (int)field.size(), (int)field[0].size(), (int)field[0][0].size());
+  if (iVerbose) printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
+  return true;
 }
 
 
-void FileOutput::SaveVectorFieldBinaryFile(
+bool FileOutput::SaveTensorFieldFile(
     std::string const iFullpath,
-    std::vector<std::vector<std::vector<std::array<double, 3>>>> const& field,
+    std::vector<std::vector<std::vector<std::array<double, 9>>>> const& iDoubleField,
     bool const iVerbose) {
-  if (field.empty() || field[0].empty() || field[0][0].empty()) {
+  if (iVerbose) printf("Saving TXT tensor field file [%s]\n", iFullpath.c_str());
+
+  int nbX, nbY, nbZ;
+  Field::GetFieldDimensions(iDoubleField, nbX, nbY, nbZ);
+
+  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) {
     printf("[ERROR] Invalid field dimensions\n");
-    throw 0;
+    return false;
   }
 
-  if (iVerbose)
-    printf("Saving RAW scalar field binary file [%s]\n", iFullpath.c_str());
-
-  std::ofstream outputFile;
-  outputFile.open(iFullpath, std::ios::binary);
-  if (!outputFile.is_open()) {
+  FILE* outputFile= nullptr;
+  outputFile= fopen(iFullpath.c_str(), "w");
+  if (outputFile == nullptr) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
-  for (int z= 0; z < (int)field[0][0].size(); z++) {
-    for (int y= 0; y < (int)field[0].size(); y++) {
-      for (int x= 0; x < (int)field.size(); x++) {
-        outputFile.write((char*)&field[x][y][z][0], sizeof(double));
-        outputFile.write((char*)&field[x][y][z][1], sizeof(double));
-        outputFile.write((char*)&field[x][y][z][2], sizeof(double));
+  fprintf(outputFile, "%d %d %d\n", nbX, nbY, nbZ);
+  for (int x= 0; x < nbX; x++) {
+    for (int y= 0; y < nbY; y++) {
+      for (int z= 0; z < nbZ; z++) {
+        for (int k= 0; k < 9; k++) {
+          if (iDoubleField[x][y][z][k] == 0.0)
+            fprintf(outputFile, "0");
+          else if (iDoubleField[x][y][z][k] == 1.0)
+            fprintf(outputFile, "1");
+          else
+            fprintf(outputFile, "%.3e", iDoubleField[x][y][z][k]);
+          if (k < 8)
+            fprintf(outputFile, " ");
+        }
+        fprintf(outputFile, "\n");
       }
     }
   }
+  fclose(outputFile);
 
-  outputFile.close();
-
-  if (iVerbose)
-    printf("File saved: %d x %d x %d voxels\n", (int)field.size(), (int)field[0].size(), (int)field[0][0].size());
+  if (iVerbose) printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
+  return true;
 }
 
 
-void FileOutput::SaveScalarFieldRawVTIFile(
+bool FileOutput::SaveScalarFieldRawVTIFile(
     std::string const iFullpath,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
@@ -123,13 +321,13 @@ void FileOutput::SaveScalarFieldRawVTIFile(
   outputFile.open(iFullpath, std::ios::binary);
   if (!outputFile.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   // Get the voxels dimensions
   int nbX, nbY, nbZ;
   Field::GetFieldDimensions(iField, nbX, nbY, nbZ);
-  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return;
+  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
   double voxSizeX, voxSizeY, voxSizeZ, voxDiag, startX, startY, startZ;
   Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
   Field::GetVoxelStart(iBBoxMin, voxSizeX, voxSizeY, voxSizeZ, true, startX, startY, startZ);
@@ -177,12 +375,12 @@ void FileOutput::SaveScalarFieldRawVTIFile(
   outputFile.flush();
   outputFile.close();
 
-  if (iVerbose)
-    printf("Raw VTI scalar field [%s] saved: %d x %d x %d voxels\n", iFullpath.c_str(), nbX, nbY, nbZ);
+  if (iVerbose) printf("Raw VTI scalar field [%s] saved: %d x %d x %d voxels\n", iFullpath.c_str(), nbX, nbY, nbZ);
+  return true;
 }
 
 
-void FileOutput::SaveVectorFieldRawVTIFile(
+bool FileOutput::SaveVectorFieldRawVTIFile(
     std::string const iFullpath,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
@@ -193,7 +391,7 @@ void FileOutput::SaveVectorFieldRawVTIFile(
   outputFile.open(iFullpath, std::ios::binary);
   if (!outputFile.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   // Get the voxels dimensions
@@ -252,405 +450,25 @@ void FileOutput::SaveVectorFieldRawVTIFile(
   outputFile.flush();
   outputFile.close();
 
-  if (iVerbose)
-    printf("Raw VTI vector field [%s] saved: %d x %d x %d voxels\n", iFullpath.c_str(), nbX, nbY, nbZ);
+  if (iVerbose) printf("Raw VTI vector field [%s] saved: %d x %d x %d voxels\n", iFullpath.c_str(), nbX, nbY, nbZ);
+  return true;
 }
 
 
-void FileOutput::SaveBoxTXTFile(
-    std::string const iFullpath,
-    int const iNbX,
-    int const iNbY,
-    int const iNbZ,
-    std::array<double, 3> const& iBBoxMin,
-    std::array<double, 3> const& iBBoxMax,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving TXT box file [%s]\n", iFullpath.c_str());
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  double voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag;
-  Field::GetVoxelSizes(iNbX, iNbY, iNbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag);
-
-  fprintf(outputFile, "%f %f %f\n", iBBoxMin[0], iBBoxMin[1], iBBoxMin[2]);
-  fprintf(outputFile, "%f %f %f\n", iBBoxMax[0], iBBoxMax[1], iBBoxMax[2]);
-  fprintf(outputFile, "%d %d %d\n", iNbX, iNbY, iNbZ);
-  fprintf(outputFile, "%f %f %f\n", voxSizeX, voxSizeY, voxSizeZ);
-
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %f x %f x %f -> %f x %f x %f \n", iBBoxMin[0], iBBoxMin[1], iBBoxMin[2], iBBoxMax[0], iBBoxMax[1], iBBoxMax[2]);
-}
-
-
-void FileOutput::SaveScalarFieldFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<double>>> const& iDoubleField,
-    std::vector<std::vector<std::vector<int>>> const& iIntField,
-    std::vector<std::vector<std::vector<bool>>> const& iBoolField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving TXT scalar field file [%s]\n", iFullpath.c_str());
-
-  int type= 0, nbX= 0, nbY= 0, nbZ= 0;
-  if (!iDoubleField.empty() && !iDoubleField[0].empty() && !iDoubleField[0][0].empty()) {
-    type= 1;
-    nbX= (int)iDoubleField.size();
-    nbY= (int)iDoubleField[0].size();
-    nbZ= (int)iDoubleField[0][0].size();
-  }
-  else if (!iIntField.empty() && !iIntField[0].empty() && !iIntField[0][0].empty()) {
-    type= 2;
-    nbX= (int)iIntField.size();
-    nbY= (int)iIntField[0].size();
-    nbZ= (int)iIntField[0][0].size();
-  }
-  else if (!iBoolField.empty() && !iBoolField[0].empty() && !iBoolField[0][0].empty()) {
-    type= 3;
-    nbX= (int)iBoolField.size();
-    nbY= (int)iBoolField[0].size();
-    nbZ= (int)iBoolField[0][0].size();
-  }
-
-  if (type == 0) {
-    printf("[ERROR] Invalid field dimensions\n");
-    throw 0;
-  }
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  fprintf(outputFile, "%d %d %d\n", nbX, nbY, nbZ);
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
-        if (type == 1) {
-          if (iDoubleField[x][y][z] == 0.0)
-            fprintf(outputFile, "0\n");
-          else if (iDoubleField[x][y][z] == 1.0)
-            fprintf(outputFile, "1\n");
-          else
-            fprintf(outputFile, "%.3e\n", iDoubleField[x][y][z]);
-        }
-        if (type == 2) fprintf(outputFile, "%d\n", iIntField[x][y][z]);
-        if (type == 3) fprintf(outputFile, "%d\n", (iBoolField[x][y][z]) ? 1 : 0);
-      }
-    }
-  }
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
-}
-
-
-void FileOutput::SaveScalarVectorTXTFile(
-    std::string const iFullpath,
-    std::vector<double> const& iVector,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving vector of scalars TXT file [%s]\n", iFullpath.c_str());
-
-  if (iVector.empty()) {
-    printf("[ERROR] Invalid vector dimensions\n");
-    throw 0;
-  }
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  for (int k= 0; k < int(iVector.size()); k++) {
-    fprintf(outputFile, "%f\n", iVector[k]);
-  }
-
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %d values\n", int(iVector.size()));
-}
-
-
-void FileOutput::SaveSparseMatrixMarketFile(
-    std::string const iFullpath,
-    int const iNbRows,
-    int const iNbCols,
-    std::vector<int> const& iRow,
-    std::vector<int> const& iCol,
-    std::vector<double> const& iVal,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving Sparse MatrixMarket file [%s]\n", iFullpath.c_str());
-
-  if (iRow.size() != iCol.size() || iRow.size() != iVal.size()) {
-    printf("[ERROR] Invalid matrix dimensions\n");
-    throw 0;
-  }
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  fprintf(outputFile, "%%%%MatrixMarket matrix coordinate real general\n");
-  fprintf(outputFile, "%d %d %d\n", iNbRows, iNbCols, (int)iVal.size());
-
-  for (int k= 0; k < (int)iVal.size(); k++) {
-    fprintf(outputFile, "%d %d %e\n", iRow[k] + 1, iCol[k] + 1, iVal[k]);
-  }
-
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: Matrix %d x %d with %d non zeros\n", iNbRows, iNbCols, (int)iVal.size());
-}
-
-
-void FileOutput::SaveVectorFieldFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iDoubleField,
-    std::vector<std::vector<std::vector<std::array<int, 3>>>> const& iIntField,
-    std::vector<std::vector<std::vector<std::array<bool, 3>>>> const& iBoolField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving TXT vector field file [%s]\n", iFullpath.c_str());
-
-  int type= 0, nbX= 0, nbY= 0, nbZ= 0;
-  if (!iDoubleField.empty() && !iDoubleField[0].empty() && !iDoubleField[0][0].empty()) {
-    type= 1;
-    nbX= (int)iDoubleField.size();
-    nbY= (int)iDoubleField[0].size();
-    nbZ= (int)iDoubleField[0][0].size();
-  }
-  else if (!iIntField.empty() && !iIntField[0].empty() && !iIntField[0][0].empty()) {
-    type= 2;
-    nbX= (int)iIntField.size();
-    nbY= (int)iIntField[0].size();
-    nbZ= (int)iIntField[0][0].size();
-  }
-  else if (!iBoolField.empty() && !iBoolField[0].empty() && !iBoolField[0][0].empty()) {
-    type= 3;
-    nbX= (int)iBoolField.size();
-    nbY= (int)iBoolField[0].size();
-    nbZ= (int)iBoolField[0][0].size();
-  }
-
-  if (type == 0) {
-    printf("[ERROR] Invalid field dimensions\n");
-    throw 0;
-  }
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  fprintf(outputFile, "%d %d %d\n", nbX, nbY, nbZ);
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
-        if (type == 1) {
-          if (iDoubleField[x][y][z][0] != 0.0 || iDoubleField[x][y][z][1] != 0.0 || iDoubleField[x][y][z][2] != 0.0)
-            fprintf(outputFile, "%.3e %.3e %.3e\n", iDoubleField[x][y][z][0], iDoubleField[x][y][z][1], iDoubleField[x][y][z][2]);
-          else
-            fprintf(outputFile, "0 0 0\n");
-        }
-        if (type == 2) fprintf(outputFile, "%d %d %d\n", iIntField[x][y][z][0], iIntField[x][y][z][1], iIntField[x][y][z][2]);
-        if (type == 3) fprintf(outputFile, "%d %d %d\n", (iBoolField[x][y][z][0]) ? 1 : 0, (iBoolField[x][y][z][1]) ? 1 : 0, (iBoolField[x][y][z][2]) ? 1 : 0);
-      }
-    }
-  }
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
-}
-
-
-void FileOutput::SaveVectorFieldCSVFile(
-    std::string const iFullpath,
-    std::array<double, 3> const& iBBoxMin,
-    std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iVectorField,
-    bool const iVerbose) {
-  int nbX= int(iVectorField.size());
-  int nbY= (nbX > 0) ? int(iVectorField[0].size()) : 0;
-  int nbZ= (nbY > 0) ? int(iVectorField[0][0].size()) : 0;
-
-  if (iVerbose)
-    printf("Saving CSV vector field file [%s]\n", iFullpath.c_str());
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  fprintf(outputFile, "Vector field dimensions\n");
-  fprintf(outputFile, "nbX, nbY, nbZ\n");
-  fprintf(outputFile, "%d, %d, %d\n", nbX, nbY, nbZ);
-  fprintf(outputFile, "\n");
-  fprintf(outputFile, "Bounding box min and max\n");
-  fprintf(outputFile, "coordX, coordY, coordZ\n");
-  fprintf(outputFile, "%f, %f, %f\n", iBBoxMin[0], iBBoxMin[1], iBBoxMin[2]);
-  fprintf(outputFile, "%f, %f, %f\n", iBBoxMax[0], iBBoxMax[1], iBBoxMax[2]);
-  fprintf(outputFile, "\n");
-  fprintf(outputFile, "Triplet of values describing each vector in the field stored in X-major Z-minor order\n");
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
-        fprintf(outputFile, "%.4e, %.4e, %.4e\n", iVectorField[x][y][z][0], iVectorField[x][y][z][1], iVectorField[x][y][z][2]);
-      }
-    }
-  }
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
-}
-
-
-void FileOutput::SaveTensorFieldFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<std::array<double, 9>>>> const& iDoubleField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving TXT tensor field file [%s]\n", iFullpath.c_str());
-
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iDoubleField, nbX, nbY, nbZ);
-
-  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) {
-    printf("[ERROR] Invalid field dimensions\n");
-    throw 0;
-  }
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  fprintf(outputFile, "%d %d %d\n", nbX, nbY, nbZ);
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
-        for (int k= 0; k < 9; k++) {
-          if (iDoubleField[x][y][z][k] == 0.0)
-            fprintf(outputFile, "0");
-          else if (iDoubleField[x][y][z][k] == 1.0)
-            fprintf(outputFile, "1");
-          else
-            fprintf(outputFile, "%.3e", iDoubleField[x][y][z][k]);
-          if (k < 8)
-            fprintf(outputFile, " ");
-        }
-        fprintf(outputFile, "\n");
-      }
-    }
-  }
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
-}
-
-
-void FileOutput::SavePointCloudFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<double>>> const& field,
-    double const cutoff,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving TXT field file [%s]\n", iFullpath.c_str());
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  int nbPoints= 0;
-  for (int x= 0; x < (int)field.size(); x++) {
-    for (int y= 0; y < (int)field[0].size(); y++) {
-      for (int z= 0; z < (int)field[0][0].size(); z++) {
-        double r= 0.5, g= 0.5, b= 0.5;
-        double density= field[x][y][z];
-        if (density < cutoff) continue;
-        fprintf(outputFile, "v %lf %lf %lf %lf %lf %lf\n", (double)x / (field.size() - 1), (double)y / (field[0].size() - 1), (double)z / (field[0][0].size() - 1), r, g, b);
-        nbPoints++;
-      }
-    }
-  }
-
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %d points\n", nbPoints);
-}
-
-
-void FileOutput::SaveCATMathPointCloudFile(
-    std::string const iFullpath,
-    std::vector<std::array<double, 3>> const& iVertices,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving TXT CATMathPointCloud file [%s]\n", iFullpath.c_str());
-
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n");
-    throw 0;
-  }
-
-  for (unsigned int k= 0; k < iVertices.size(); k++) {
-    fprintf(outputFile, "CATMathPoint P%d = CATMathPoint(%lf %lf %lf);\n", (int)k, iVertices[k][0], iVertices[k][1], iVertices[k][2]);
-  }
-
-  fclose(outputFile);
-
-  if (iVerbose)
-    printf("File saved: %zd vertices\n", iVertices.size());
-}
-
-
-void FileOutput::SaveMeshOBJFile(
+bool FileOutput::SaveMeshOBJFile(
     std::string const iFullpath,
     std::vector<std::array<double, 3>> const& iVertices,
     std::vector<std::array<double, 3>> const& iVerticesColors,
     std::vector<std::array<int, 3>> const& iTriangles,
     std::vector<std::array<int, 4>> const& iQuads,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving OBJ mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving OBJ mesh file [%s]\n", iFullpath.c_str());
 
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
   if (outputFile == nullptr) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   for (unsigned int k= 0; k < iVertices.size(); k++) {
@@ -668,12 +486,12 @@ void FileOutput::SaveMeshOBJFile(
 
   fclose(outputFile);
 
-  if (iVerbose)
-    printf("File saved: %zd vertices, %zd triangles, %zd quads\n", iVertices.size(), iTriangles.size(), iQuads.size());
+  if (iVerbose) printf("File saved: %zd vertices, %zd triangles, %zd quads\n", iVertices.size(), iTriangles.size(), iQuads.size());
+  return true;
 }
 
 
-void FileOutput::SaveGraphINPFile(
+bool FileOutput::SaveGraphINPFile(
     std::string const iFullpath,
     std::vector<std::array<double, 3>> const& iNodes,
     std::vector<std::array<int, 2>> const& iBars,
@@ -689,15 +507,14 @@ void FileOutput::SaveGraphINPFile(
     bool const iWriteTris,
     bool const iWriteTets,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving INP graph file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving INP graph file [%s]\n", iFullpath.c_str());
 
   std::ofstream ofs;
   ofs.imbue(std::locale::classic());
   ofs.open(iFullpath);
   if (!ofs.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   // Write the material
@@ -785,12 +602,12 @@ void FileOutput::SaveGraphINPFile(
   ofs << "*END STEP" << std::endl;
   ofs.close();
 
-  if (iVerbose)
-    printf("File saved\n");
+  if (iVerbose) printf("File saved\n");
+  return true;
 }
 
 
-void FileOutput::SaveHexaMeshINPFile(
+bool FileOutput::SaveHexaMeshINPFile(
     std::string const iFullpath,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
@@ -802,7 +619,7 @@ void FileOutput::SaveHexaMeshINPFile(
   // Get field dimensions
   int nbX, nbY, nbZ;
   Field::GetFieldDimensions(iDensityField, nbX, nbY, nbZ);
-  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return;
+  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
   Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
   Field::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
@@ -814,7 +631,7 @@ void FileOutput::SaveHexaMeshINPFile(
   ofs.open(iFullpath);
   if (!ofs.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
 
@@ -1010,12 +827,12 @@ void FileOutput::SaveHexaMeshINPFile(
 
   ofs.close();
 
-  if (iVerbose)
-    printf("Saved INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saved INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  return true;
 }
 
 
-void FileOutput::SaveHexaMeshINPFile_ElemValues(
+bool FileOutput::SaveHexaMeshElemValuesINPFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<double>>> const& iElemValueField,
     std::vector<std::vector<std::vector<int>>> const& iDesignSpaceField,
@@ -1023,7 +840,7 @@ void FileOutput::SaveHexaMeshINPFile_ElemValues(
   // Get field dimensions
   int nbX, nbY, nbZ;
   Field::GetFieldDimensions(iElemValueField, nbX, nbY, nbZ);
-  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return;
+  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
 
 
   // Create file in write/overwrite mode
@@ -1032,7 +849,7 @@ void FileOutput::SaveHexaMeshINPFile_ElemValues(
   ofs.open(iFullpath);
   if (!ofs.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
 
@@ -1051,12 +868,12 @@ void FileOutput::SaveHexaMeshINPFile_ElemValues(
 
   ofs.close();
 
-  if (iVerbose)
-    printf("Saved INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saved INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  return true;
 }
 
 
-void FileOutput::SaveHexaMeshWithElsetINPFile(
+bool FileOutput::SaveHexaMeshWithElsetINPFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<double>>> const& iDensityField,
     std::vector<std::vector<std::vector<int>>> const& iDesignSpaceField,
@@ -1066,15 +883,14 @@ void FileOutput::SaveHexaMeshWithElsetINPFile(
     double const iPoissonRatio,
     double const iDensityThreshold,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving INP Hexa mesh file [%s]\n", iFullpath.c_str());
 
   std::ofstream ofs;
   ofs.imbue(std::locale::classic());
   ofs.open(iFullpath);
   if (!ofs.is_open()) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   int nbX= int(iDensityField.size());
@@ -1198,12 +1014,12 @@ void FileOutput::SaveHexaMeshWithElsetINPFile(
 
   ofs.close();
 
-  if (iVerbose)
-    printf("File saved\n");
+  if (iVerbose) printf("File saved\n");
+  return true;
 }
 
 
-void FileOutput::SaveOrthotropicHexaMeshINPFile(
+bool FileOutput::SaveOrthotropicHexaMeshINPFile(
     std::string const iFullpath,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
@@ -1224,19 +1040,18 @@ void FileOutput::SaveOrthotropicHexaMeshINPFile(
     bool const iVerbose) {
   int nbX, nbY, nbZ;
   Field::GetFieldDimensions(iDensityField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
+  if (nbX == 0 || nbY == 0 || nbZ == 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
   Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
   Field::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
 
-  if (iVerbose)
-    printf("Saving INP Orthotropic Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving INP Orthotropic Hexa mesh file [%s]\n", iFullpath.c_str());
 
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
   if (outputFile == nullptr) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   // Write the material
@@ -1341,12 +1156,12 @@ void FileOutput::SaveOrthotropicHexaMeshINPFile(
 
   fclose(outputFile);
 
-  if (iVerbose)
-    printf("File saved\n");
+  if (iVerbose) printf("File saved\n");
+  return true;
 }
 
 
-void FileOutput::SaveGraphO3PFile(
+bool FileOutput::SaveGraphO3PFile(
     std::string const iFullpath,
     std::vector<std::array<double, 3>> const& iNodes,
     std::vector<std::array<int, 2>> const& iBars,
@@ -1357,13 +1172,12 @@ void FileOutput::SaveGraphO3PFile(
     bool const iWriteTris,
     bool const iWriteTets,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Saving O3P graph file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving O3P graph file [%s]\n", iFullpath.c_str());
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
   if (outputFile == nullptr) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   for (unsigned int k= 0; k < iNodes.size(); k++)
@@ -1382,12 +1196,12 @@ void FileOutput::SaveGraphO3PFile(
       fprintf(outputFile, "v %d %d %d %d\n", iTets[k][0], iTets[k][1], iTets[k][2], iTets[k][3]);
 
   fclose(outputFile);
-  if (iVerbose)
-    printf("File saved: %zd nodes, %zd bars\n", iNodes.size(), iBars.size());
+  if (iVerbose) printf("File saved: %zd nodes, %zd bars\n", iNodes.size(), iBars.size());
+  return true;
 }
 
 
-void FileOutput::SaveGraphTXTFile(
+bool FileOutput::SaveGraphTXTFile(
     std::string const iFullpath,
     std::vector<std::array<double, 3>> const& iNodes,
     std::vector<std::array<double, 3>> const& iLoads,
@@ -1398,13 +1212,12 @@ void FileOutput::SaveGraphTXTFile(
   if (iNodes.size() != iLoads.size()) throw;
   if (iNodes.size() != iClamps.size()) throw;
 
-  if (iVerbose)
-    printf("Saving TXT graph file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving TXT graph file [%s]\n", iFullpath.c_str());
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
   if (outputFile == nullptr) {
     printf("[ERROR] Unable to create the file\n");
-    throw 0;
+    return false;
   }
 
   fprintf(outputFile, "%d %d\n", (int)iNodes.size(), (int)iBars.size());
@@ -1419,6 +1232,6 @@ void FileOutput::SaveGraphTXTFile(
     fprintf(outputFile, "b %d %d %f\n", iBars[k][0], iBars[k][1], iBarRadii[k]);
 
   fclose(outputFile);
-  if (iVerbose)
-    printf("File saved: %zd nodes, %zd bars\n", iNodes.size(), iBars.size());
+  if (iVerbose) printf("File saved: %zd nodes, %zd bars\n", iNodes.size(), iBars.size());
+  return true;
 }

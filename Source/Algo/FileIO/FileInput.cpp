@@ -8,98 +8,19 @@
 #include <vector>
 
 
-void FileInput::LoadScalarFieldBinaryFile(
-    std::string const iFullpath,
-    int const iNbX,
-    int const iNbY, int const iNbZ,
-    std::vector<std::vector<std::vector<double>>>& oField,
-    bool const iVerbose) {
-  if (iNbX < 1 || iNbY < 1 || iNbZ < 1) {
-    printf("[ERROR] Invalid field dimensions\n\n");
-    throw 0;
-  }
-
-  if (iVerbose)
-    printf("Loading RAW scalar field file [%s]\n", iFullpath.c_str());
-
-  std::ifstream inputFile;
-  inputFile.open(iFullpath, std::ios::binary);
-  if (!inputFile.is_open()) {
-    printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
-  }
-
-  oField= std::vector<std::vector<std::vector<double>>>(iNbX, std::vector<std::vector<double>>(iNbY, std::vector<double>(iNbZ)));
-
-  for (int z= 0; z < iNbZ; z++) {
-    for (int y= 0; y < iNbY; y++) {
-      for (int x= 0; x < iNbX; x++) {
-        inputFile.read((char*)&oField[x][y][z], sizeof(double));
-      }
-    }
-  }
-
-  inputFile.close();
-
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d voxels\n", (int)oField.size(), (int)oField[0].size(), (int)oField[0][0].size());
-}
-
-
-void FileInput::LoadVectorFieldBinaryFile(
-    std::string const iFullpath,
-    int const iNbX,
-    int const iNbY, int const iNbZ,
-    std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
-    bool const iVerbose) {
-  if (iNbX < 1 || iNbY < 1 || iNbZ < 1) {
-    printf("[ERROR] Invalid field dimensions\n\n");
-    throw 0;
-  }
-
-  if (iVerbose)
-    printf("Loading RAW scalar field file [%s]\n", iFullpath.c_str());
-
-  std::ifstream inputFile;
-  inputFile.open(iFullpath, std::ios::binary);
-  if (!inputFile.is_open()) {
-    printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
-  }
-
-  oField= std::vector<std::vector<std::vector<std::array<double, 3>>>>(iNbX, std::vector<std::vector<std::array<double, 3>>>(iNbY, std::vector<std::array<double, 3>>(iNbZ)));
-
-  for (int z= 0; z < iNbZ; z++) {
-    for (int y= 0; y < iNbY; y++) {
-      for (int x= 0; x < iNbX; x++) {
-        inputFile.read((char*)&oField[x][y][z][0], sizeof(double));
-        inputFile.read((char*)&oField[x][y][z][1], sizeof(double));
-        inputFile.read((char*)&oField[x][y][z][2], sizeof(double));
-      }
-    }
-  }
-
-  inputFile.close();
-
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d voxels\n", (int)oField.size(), (int)oField[0].size(), (int)oField[0][0].size());
-}
-
-
-void FileInput::LoadBoxTXTFile(
+bool FileInput::LoadBoxTXTFile(
     std::string const iFullpath,
     std::array<double, 3>& oBBoxMin,
     std::array<double, 3>& oBBoxMax,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading TXT box file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT box file [%s]\n", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
     printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
+    return false;
   }
 
   char buffer[1000];
@@ -111,7 +32,7 @@ void FileInput::LoadBoxTXTFile(
   }
   else {
     printf("[ERROR] Invalid box coordinates\n");
-    throw 0;
+    return false;
   }
 
   if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
@@ -119,12 +40,12 @@ void FileInput::LoadBoxTXTFile(
   }
   else {
     printf("[ERROR] Invalid box coordinates\n");
-    throw 0;
+    return false;
   }
 
   if (xMin >= xMax || yMin >= yMax || zMin >= zMax) {
     printf("[ERROR] Invalid box coordinates\n");
-    throw 0;
+    return false;
   }
 
   oBBoxMin= {xMin, yMin, zMin};
@@ -133,24 +54,59 @@ void FileInput::LoadBoxTXTFile(
   // Close the file
   fclose(inputFile);
 
-  if (iVerbose)
-    printf("File loaded: %f x %f x %f -> %f x %f x %f \n", xMin, yMin, zMin, xMax, yMax, zMax);
+  if (iVerbose) printf("File loaded: %f x %f x %f -> %f x %f x %f \n", xMin, yMin, zMin, xMax, yMax, zMax);
+  return true;
 }
 
 
-void FileInput::LoadScalarFieldTXTFile(
+bool FileInput::LoadScalarListTXTFile(
     std::string const iFullpath,
-    std::vector<std::vector<std::vector<double>>>& oField,
+    std::vector<double>& oVector,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading TXT scalar field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading vector of scalars TXT file [%s]\n", iFullpath.c_str());
+
+  // Open the file
+  FILE* inputFile= nullptr;
+  inputFile= fopen(iFullpath.c_str(), "r");
+  if (inputFile == nullptr) {
+    printf("[ERROR] Unable to open the file\n");
+    return false;
+  }
+
+  // Clear the list
+  oVector.clear();
+
+  // Load the values
+  char buffer[100];
+  bool reachedEOF= false;
+  while (!reachedEOF) {
+    double val= 0.0;
+    if (fgets(buffer, sizeof buffer, inputFile) == NULL || sscanf(buffer, "%lf", &val) != 1)
+      reachedEOF= true;
+    else
+      oVector.push_back(val);
+  }
+
+  // Close the file
+  fclose(inputFile);
+
+  if (iVerbose) printf("Vector of scalars loaded: %d\n", int(oVector.size()));
+  return true;
+}
+
+
+bool FileInput::LoadScalarFieldTXTFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<int>>>& oField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading TXT scalar field file [%s]\n", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
     printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
+    return false;
   }
 
   // Get the field dimensions
@@ -161,7 +117,55 @@ void FileInput::LoadScalarFieldTXTFile(
   }
   if (X <= 0 || Y <= 0 || Z <= 0) {
     printf("[ERROR] Unable to read the field dimensions\n");
-    throw 0;
+    return false;
+  }
+
+  // Allocate the field
+  oField= std::vector<std::vector<std::vector<int>>>(X, std::vector<std::vector<int>>(Y, std::vector<int>(Z, 0)));
+
+  // Load the field values
+  for (int x= 0; x < X; x++) {
+    for (int y= 0; y < Y; y++) {
+      for (int z= 0; z < Z; z++) {
+        int val= 0;
+        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
+          sscanf(buffer, "%d", &val);
+        oField[x][y][z]= val;
+      }
+    }
+  }
+
+  // Close the file
+  fclose(inputFile);
+
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", X, Y, Z);
+  return true;
+}
+
+
+bool FileInput::LoadScalarFieldTXTFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<double>>>& oField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading TXT scalar field file [%s]\n", iFullpath.c_str());
+
+  // Open the file
+  FILE* inputFile= nullptr;
+  inputFile= fopen(iFullpath.c_str(), "r");
+  if (inputFile == nullptr) {
+    printf("[ERROR] Unable to open the file\n\n");
+    return false;
+  }
+
+  // Get the field dimensions
+  char buffer[1000];
+  int X= 0, Y= 0, Z= 0;
+  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
+    sscanf(buffer, "%d %d %d", &X, &Y, &Z);
+  }
+  if (X <= 0 || Y <= 0 || Z <= 0) {
+    printf("[ERROR] Unable to read the field dimensions\n");
+    return false;
   }
 
   // Allocate the field
@@ -175,7 +179,6 @@ void FileInput::LoadScalarFieldTXTFile(
         if (fgets(buffer, sizeof buffer, inputFile) != NULL)
           sscanf(buffer, "%lf", &density);
         oField[x][y][z]= density;
-        // oField[x][y][z]= std::max(std::min(density, 1.0), 0.0);
       }
     }
   }
@@ -183,27 +186,170 @@ void FileInput::LoadScalarFieldTXTFile(
   // Close the file
   fclose(inputFile);
 
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", X, Y, Z);
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", X, Y, Z);
+  return true;
 }
 
 
-void FileInput::LoadScalarFieldRawVTIFile(
+bool FileInput::LoadVectorFieldTXTFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<std::array<bool, 3>>>>& oField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading TXT vector field file [%s]\n", iFullpath.c_str());
+
+  // Open the file
+  FILE* inputFile= nullptr;
+  inputFile= fopen(iFullpath.c_str(), "r");
+  if (inputFile == nullptr) {
+    printf("[ERROR] Unable to open the file\n\n");
+    return false;
+  }
+
+  // Get the field dimensions
+  char buffer[1000];
+  int X= 0, Y= 0, Z= 0;
+  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
+    sscanf(buffer, "%d %d %d", &X, &Y, &Z);
+  }
+  if (X <= 0 || Y <= 0 || Z <= 0) {
+    printf("[ERROR] Unable to read the field dimensions\n");
+    return false;
+  }
+
+  // Allocate the field
+  oField= std::vector<std::vector<std::vector<std::array<bool, 3>>>>(X, std::vector<std::vector<std::array<bool, 3>>>(Y, std::vector<std::array<bool, 3>>(Z, {false, false, false})));
+
+  // Load the field values
+  for (int x= 0; x < X; x++) {
+    for (int y= 0; y < Y; y++) {
+      for (int z= 0; z < Z; z++) {
+        std::array<int, 3> val;
+        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
+          sscanf(buffer, "%d %d %d", &val[0], &val[1], &val[2]);
+        oField[x][y][z]= {val[0] != 0, val[1] != 0, val[2] != 0};
+      }
+    }
+  }
+
+  // Close the file
+  fclose(inputFile);
+
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", X, Y, Z);
+  return true;
+}
+
+
+bool FileInput::LoadVectorFieldTXTFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading TXT vector field file [%s]\n", iFullpath.c_str());
+
+  // Open the file
+  FILE* inputFile= nullptr;
+  inputFile= fopen(iFullpath.c_str(), "r");
+  if (inputFile == nullptr) {
+    printf("[ERROR] Unable to open the file\n\n");
+    return false;
+  }
+
+  // Get the field dimensions
+  char buffer[1000];
+  int X= 0, Y= 0, Z= 0;
+  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
+    sscanf(buffer, "%d %d %d", &X, &Y, &Z);
+  }
+  if (X <= 0 || Y <= 0 || Z <= 0) {
+    printf("[ERROR] Unable to read the field dimensions\n");
+    return false;
+  }
+
+  // Allocate the field
+  oField= std::vector<std::vector<std::vector<std::array<double, 3>>>>(X, std::vector<std::vector<std::array<double, 3>>>(Y, std::vector<std::array<double, 3>>(Z, {0.0, 0.0, 0.0})));
+
+  // Load the field values
+  for (int x= 0; x < X; x++) {
+    for (int y= 0; y < Y; y++) {
+      for (int z= 0; z < Z; z++) {
+        std::array<double, 3> val;
+        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
+          sscanf(buffer, "%lf %lf %lf", &val[0], &val[1], &val[2]);
+        oField[x][y][z]= val;
+      }
+    }
+  }
+
+  // Close the file
+  fclose(inputFile);
+
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", X, Y, Z);
+  return true;
+}
+
+
+bool FileInput::LoadTensorFieldTXTFile(
+    std::string const iFullpath,
+    std::vector<std::vector<std::vector<std::array<double, 9>>>>& oField,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading TXT tensor field file [%s]\n", iFullpath.c_str());
+
+  // Open the file
+  FILE* inputFile= nullptr;
+  inputFile= fopen(iFullpath.c_str(), "r");
+  if (inputFile == nullptr) {
+    printf("[ERROR] Unable to open the file\n\n");
+    return false;
+  }
+
+  // Get the field dimensions
+  char buffer[1000];
+  int nbX= 0, nbY= 0, nbZ= 0;
+  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
+    sscanf(buffer, "%d %d %d", &nbX, &nbY, &nbZ);
+  }
+  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) {
+    printf("[ERROR] Unable to read the field dimensions\n");
+    return false;
+  }
+
+  // Allocate the field
+  oField= std::vector<std::vector<std::vector<std::array<double, 9>>>>(nbX, std::vector<std::vector<std::array<double, 9>>>(nbY, std::vector<std::array<double, 9>>(nbZ, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0})));
+
+  // Load the field values
+  for (int x= 0; x < nbX; x++) {
+    for (int y= 0; y < nbY; y++) {
+      for (int z= 0; z < nbZ; z++) {
+        std::array<double, 9> val;
+        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
+          sscanf(buffer, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                 &val[0], &val[1], &val[2], &val[3], &val[4], &val[5], &val[6], &val[7], &val[8]);
+        oField[x][y][z]= val;
+      }
+    }
+  }
+
+  // Close the file
+  fclose(inputFile);
+
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
+  return true;
+}
+
+
+bool FileInput::LoadScalarFieldRawVTIFile(
     std::string const iFullpath,
     std::array<double, 3>& oBBoxMin,
     std::array<double, 3>& oBBoxMax,
     std::vector<std::vector<std::vector<double>>>& oField,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Reading file [%s] ", iFullpath.c_str());
+  if (iVerbose) printf("Reading file [%s] ", iFullpath.c_str());
 
   // Open the file
   std::ifstream inputFile;
   inputFile.open(iFullpath, std::ios::binary);
   if (!inputFile.is_open()) {
-    if (iVerbose)
-      printf("[ERROR] Unable to open the file\n");
-    throw 0;
+    if (iVerbose) printf("[ERROR] Unable to open the file\n");
+    return false;
   }
 
   // Read the header to get dimensions and stop at the beginning of the raw data
@@ -255,29 +401,27 @@ void FileInput::LoadScalarFieldRawVTIFile(
     }
   }
 
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
 
   inputFile.close();
+  return true;
 }
 
 
-void FileInput::LoadVectorFieldRawVTIFile(
+bool FileInput::LoadVectorFieldRawVTIFile(
     std::string const iFullpath,
     std::array<double, 3>& oBBoxMin,
     std::array<double, 3>& oBBoxMax,
     std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Reading file [%s] ", iFullpath.c_str());
+  if (iVerbose) printf("Reading file [%s] ", iFullpath.c_str());
 
   // Open the file
   std::ifstream inputFile;
   inputFile.open(iFullpath, std::ios::binary);
   if (!inputFile.is_open()) {
-    if (iVerbose)
-      printf("[ERROR] Unable to open the file\n");
-    throw 0;
+    if (iVerbose) printf("[ERROR] Unable to open the file\n");
+    return false;
   }
 
   // Read the header to get dimensions and stop at the beginning of the raw data
@@ -331,63 +475,14 @@ void FileInput::LoadVectorFieldRawVTIFile(
     }
   }
 
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
 
   inputFile.close();
+  return true;
 }
 
 
-void FileInput::LoadScalarFieldTXTFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<int>>>& oField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading TXT scalar field file [%s]\n", iFullpath.c_str());
-
-  // Open the file
-  FILE* inputFile= nullptr;
-  inputFile= fopen(iFullpath.c_str(), "r");
-  if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
-  }
-
-  // Get the field dimensions
-  char buffer[1000];
-  int X= 0, Y= 0, Z= 0;
-  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
-    sscanf(buffer, "%d %d %d", &X, &Y, &Z);
-  }
-  if (X <= 0 || Y <= 0 || Z <= 0) {
-    printf("[ERROR] Unable to read the field dimensions\n");
-    throw 0;
-  }
-
-  // Allocate the field
-  oField= std::vector<std::vector<std::vector<int>>>(X, std::vector<std::vector<int>>(Y, std::vector<int>(Z, 0)));
-
-  // Load the field values
-  for (int x= 0; x < X; x++) {
-    for (int y= 0; y < Y; y++) {
-      for (int z= 0; z < Z; z++) {
-        int val= 0;
-        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
-          sscanf(buffer, "%d", &val);
-        oField[x][y][z]= val;
-      }
-    }
-  }
-
-  // Close the file
-  fclose(inputFile);
-
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", X, Y, Z);
-}
-
-
-void FileInput::LoadImageBMPFile(
+bool FileInput::LoadImageBMPFile(
     std::string const iFullpath,
     std::vector<std::vector<std::array<float, 4>>>& oImageRGBA,
     bool const iVerbose) {
@@ -395,7 +490,7 @@ void FileInput::LoadImageBMPFile(
   FILE* inputFile= fopen(iFullpath.c_str(), "rb");
   if (!inputFile) {
     printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
+    return false;
   }
 
   // Read header
@@ -432,171 +527,23 @@ void FileInput::LoadImageBMPFile(
   delete[] data;
 
   fclose(inputFile);
+  return true;
 }
 
 
-void FileInput::LoadVectorFieldTXTFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<std::array<bool, 3>>>>& oField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading TXT vector field file [%s]\n", iFullpath.c_str());
-
-  // Open the file
-  FILE* inputFile= nullptr;
-  inputFile= fopen(iFullpath.c_str(), "r");
-  if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
-  }
-
-  // Get the field dimensions
-  char buffer[1000];
-  int X= 0, Y= 0, Z= 0;
-  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
-    sscanf(buffer, "%d %d %d", &X, &Y, &Z);
-  }
-  if (X <= 0 || Y <= 0 || Z <= 0) {
-    printf("[ERROR] Unable to read the field dimensions\n");
-    throw 0;
-  }
-
-  // Allocate the field
-  oField= std::vector<std::vector<std::vector<std::array<bool, 3>>>>(X, std::vector<std::vector<std::array<bool, 3>>>(Y, std::vector<std::array<bool, 3>>(Z, {false, false, false})));
-
-  // Load the field values
-  for (int x= 0; x < X; x++) {
-    for (int y= 0; y < Y; y++) {
-      for (int z= 0; z < Z; z++) {
-        std::array<int, 3> val;
-        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
-          sscanf(buffer, "%d %d %d", &val[0], &val[1], &val[2]);
-        oField[x][y][z]= {val[0] != 0, val[1] != 0, val[2] != 0};
-      }
-    }
-  }
-
-  // Close the file
-  fclose(inputFile);
-
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", X, Y, Z);
-}
-
-
-void FileInput::LoadVectorFieldTXTFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading TXT vector field file [%s]\n", iFullpath.c_str());
-
-  // Open the file
-  FILE* inputFile= nullptr;
-  inputFile= fopen(iFullpath.c_str(), "r");
-  if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
-  }
-
-  // Get the field dimensions
-  char buffer[1000];
-  int X= 0, Y= 0, Z= 0;
-  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
-    sscanf(buffer, "%d %d %d", &X, &Y, &Z);
-  }
-  if (X <= 0 || Y <= 0 || Z <= 0) {
-    printf("[ERROR] Unable to read the field dimensions\n");
-    throw 0;
-  }
-
-  // Allocate the field
-  oField= std::vector<std::vector<std::vector<std::array<double, 3>>>>(X, std::vector<std::vector<std::array<double, 3>>>(Y, std::vector<std::array<double, 3>>(Z, {0.0, 0.0, 0.0})));
-
-  // Load the field values
-  for (int x= 0; x < X; x++) {
-    for (int y= 0; y < Y; y++) {
-      for (int z= 0; z < Z; z++) {
-        std::array<double, 3> val;
-        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
-          sscanf(buffer, "%lf %lf %lf", &val[0], &val[1], &val[2]);
-        oField[x][y][z]= val;
-      }
-    }
-  }
-
-  // Close the file
-  fclose(inputFile);
-
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", X, Y, Z);
-}
-
-
-void FileInput::LoadTensorFieldTXTFile(
-    std::string const iFullpath,
-    std::vector<std::vector<std::vector<std::array<double, 9>>>>& oField,
-    bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading TXT tensor field file [%s]\n", iFullpath.c_str());
-
-  // Open the file
-  FILE* inputFile= nullptr;
-  inputFile= fopen(iFullpath.c_str(), "r");
-  if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
-  }
-
-  // Get the field dimensions
-  char buffer[1000];
-  int nbX= 0, nbY= 0, nbZ= 0;
-  if (fgets(buffer, sizeof buffer, inputFile) != NULL) {
-    sscanf(buffer, "%d %d %d", &nbX, &nbY, &nbZ);
-  }
-  if (nbX <= 0 || nbY <= 0 || nbZ <= 0) {
-    printf("[ERROR] Unable to read the field dimensions\n");
-    throw 0;
-  }
-
-  // Allocate the field
-  oField= std::vector<std::vector<std::vector<std::array<double, 9>>>>(nbX, std::vector<std::vector<std::array<double, 9>>>(nbY, std::vector<std::array<double, 9>>(nbZ, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0})));
-
-  // Load the field values
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
-        std::array<double, 9> val;
-        if (fgets(buffer, sizeof buffer, inputFile) != NULL)
-          sscanf(buffer, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                 &val[0], &val[1], &val[2], &val[3], &val[4], &val[5], &val[6], &val[7], &val[8]);
-        oField[x][y][z]= val;
-      }
-    }
-  }
-
-  // Close the file
-  fclose(inputFile);
-
-  if (iVerbose)
-    printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
-}
-
-
-void FileInput::LoadMeshOBJFile(
+bool FileInput::LoadMeshOBJFile(
     std::string const iFullpath,
     std::vector<std::array<double, 3>>& oPoints,
     std::vector<std::array<double, 3>>& oColors,
     std::vector<std::array<int, 3>>& oTriangles,
     bool const iVerbose) {
-  if (iVerbose)
-    printf("Loading OBJ mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading OBJ mesh file [%s]\n", iFullpath.c_str());
 
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
     printf("[ERROR] Unable to open the file\n\n");
-    throw 0;
+    return false;
   }
 
   oPoints.clear();
@@ -635,6 +582,6 @@ void FileInput::LoadMeshOBJFile(
 
   fclose(inputFile);
 
-  if (iVerbose)
-    printf("File loaded: %d points, %d triangles\n", int(oPoints.size()), int(oTriangles.size()));
+  if (iVerbose) printf("File loaded: %d points, %d triangles\n", int(oPoints.size()), int(oTriangles.size()));
+  return true;
 }

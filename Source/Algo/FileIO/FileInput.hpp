@@ -9,80 +9,62 @@
 class FileInput
 {
   public:
-  static void LoadScalarFieldBinaryFile(
-      std::string const iFullpath,
-      int const iNbX,
-      int const iNbY,
-      int const iNbZ,
-      std::vector<std::vector<std::vector<double>>>& oField,
-      bool const iVerbose);
-
-  static void LoadVectorFieldBinaryFile(
-      std::string const iFullpath,
-      int const iNbX,
-      int const iNbY,
-      int const iNbZ,
-      std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
-      bool const iVerbose);
-
-  static void LoadBoxTXTFile(
+  static bool LoadBoxTXTFile(
       std::string const iFullpath,
       std::array<double, 3>& oBBoxMin,
       std::array<double, 3>& oBBoxMax,
       bool const iVerbose);
 
-  static void LoadScalarFieldTXTFile(
+  static bool LoadScalarListTXTFile(
       std::string const iFullpath,
-      std::vector<std::vector<std::vector<double>>>& oField,
+      std::vector<double>& oVector,
       bool const iVerbose);
 
-  static void LoadScalarFieldAsciiVTIFile(
-      std::string const iFullpath,
-      std::array<double, 3>& oBBoxMin,
-      std::array<double, 3>& oBBoxMax,
-      std::vector<std::vector<std::vector<double>>>& oField,
-      bool const iVerbose);
-
-  static void LoadScalarFieldRawVTIFile(
-      std::string const iFullpath,
-      std::array<double, 3>& oBBoxMin,
-      std::array<double, 3>& oBBoxMax,
-      std::vector<std::vector<std::vector<double>>>& oField,
-      bool const iVerbose);
-
-  static void LoadVectorFieldRawVTIFile(
-      std::string const iFullpath,
-      std::array<double, 3>& oBBoxMin,
-      std::array<double, 3>& oBBoxMax,
-      std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
-      bool const iVerbose);
-
-  static void LoadScalarFieldTXTFile(
+  static bool LoadScalarFieldTXTFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<int>>>& oField,
       bool const iVerbose);
 
-  static void LoadImageBMPFile(
+  static bool LoadScalarFieldTXTFile(
       std::string const iFullpath,
-      std::vector<std::vector<std::array<float, 4>>>& oImageRGBA,
+      std::vector<std::vector<std::vector<double>>>& oField,
       bool const iVerbose);
 
-  static void LoadVectorFieldTXTFile(
+  static bool LoadVectorFieldTXTFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<std::array<bool, 3>>>>& oField,
       bool const iVerbose);
 
-  static void LoadVectorFieldTXTFile(
+  static bool LoadVectorFieldTXTFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
       bool const iVerbose);
 
-  static void LoadTensorFieldTXTFile(
+  static bool LoadTensorFieldTXTFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<std::array<double, 9>>>>& oField,
       bool const iVerbose);
 
-  static void LoadMeshOBJFile(
+  static bool LoadScalarFieldRawVTIFile(
+      std::string const iFullpath,
+      std::array<double, 3>& oBBoxMin,
+      std::array<double, 3>& oBBoxMax,
+      std::vector<std::vector<std::vector<double>>>& oField,
+      bool const iVerbose);
+
+  static bool LoadVectorFieldRawVTIFile(
+      std::string const iFullpath,
+      std::array<double, 3>& oBBoxMin,
+      std::array<double, 3>& oBBoxMax,
+      std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
+      bool const iVerbose);
+
+  static bool LoadImageBMPFile(
+      std::string const iFullpath,
+      std::vector<std::vector<std::array<float, 4>>>& oImageRGBA,
+      bool const iVerbose);
+
+  static bool LoadMeshOBJFile(
       std::string const iFullpath,
       std::vector<std::array<double, 3>>& oPoints,
       std::vector<std::array<double, 3>>& oColors,

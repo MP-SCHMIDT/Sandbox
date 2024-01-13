@@ -2,43 +2,14 @@
 
 // Standard lib
 #include <array>
-#include <vector>
 #include <string>
+#include <vector>
 
 
 class FileOutput
 {
   public:
-  static void SaveVectorBinaryFile(
-      std::string const iFullpath,
-      std::vector<double> const& iField,
-      bool const iVerbose);
-
-  static void SaveScalarFieldBinaryFile(
-      std::string const iFullpath,
-      std::vector<std::vector<std::vector<double>>> const& field,
-      bool const iVerbose);
-
-  static void SaveVectorFieldBinaryFile(
-      std::string const iFullpath,
-      std::vector<std::vector<std::vector<std::array<double, 3>>>> const& field,
-      bool const iVerbose);
-
-  static void SaveScalarFieldRawVTIFile(
-      std::string const iFullpath,
-      std::array<double, 3> const& iBBoxMin,
-      std::array<double, 3> const& iBBoxMax,
-      std::vector<std::vector<std::vector<double>>> const& iField,
-      bool const iVerbose);
-
-  static void SaveVectorFieldRawVTIFile(
-      std::string const iFullpath,
-      std::array<double, 3> const& iBBoxMin,
-      std::array<double, 3> const& iBBoxMax,
-      std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iField,
-      bool const iVerbose);
-
-  static void SaveBoxTXTFile(
+  static bool SaveBoxTXTFile(
       std::string const iFullpath,
       int const iNbX,
       int const iNbY,
@@ -47,38 +18,50 @@ class FileOutput
       std::array<double, 3> const& iBBoxMax,
       bool const iVerbose);
 
-  static void SaveScalarVectorTXTFile(
+  static bool SaveScalarFieldRawVTIFile(
+      std::string const iFullpath,
+      std::array<double, 3> const& iBBoxMin,
+      std::array<double, 3> const& iBBoxMax,
+      std::vector<std::vector<std::vector<double>>> const& iField,
+      bool const iVerbose);
+
+  static bool SaveVectorFieldRawVTIFile(
+      std::string const iFullpath,
+      std::array<double, 3> const& iBBoxMin,
+      std::array<double, 3> const& iBBoxMax,
+      std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iField,
+      bool const iVerbose);
+
+  static bool SaveScalarListTXTFile(
       std::string const iFullpath,
       std::vector<double> const& iVector,
       bool const iVerbose);
 
-  static void SaveScalarFieldFile(
+  static bool SaveScalarListBinaryFile(
+      std::string const iFullpath,
+      std::vector<double> const& iField,
+      bool const iVerbose);
+
+  static bool SaveScalarFieldFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<double>>> const& iDoubleField,
       std::vector<std::vector<std::vector<int>>> const& iIntField,
       std::vector<std::vector<std::vector<bool>>> const& iBoolField,
       bool const iVerbose);
 
-  static void SaveVectorFieldFile(
+  static bool SaveVectorFieldFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iDoubleField,
       std::vector<std::vector<std::vector<std::array<int, 3>>>> const& iIntField,
       std::vector<std::vector<std::vector<std::array<bool, 3>>>> const& iBoolField,
       bool const iVerbose);
 
-  static void SaveVectorFieldCSVFile(
-      std::string const iFullpath,
-      std::array<double, 3> const& iBBoxMin,
-      std::array<double, 3> const& iBBoxMax,
-      std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iVectorField,
-      bool const iVerbose);
-
-  static void SaveTensorFieldFile(
+  static bool SaveTensorFieldFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<std::array<double, 9>>>> const& iDoubleField,
       bool const iVerbose);
 
-  static void SaveSparseMatrixMarketFile(
+  static bool SaveSparseMatrixMarketFile(
       std::string const iFullpath,
       int const iNbRows,
       int const iNbCols,
@@ -87,18 +70,7 @@ class FileOutput
       std::vector<double> const& iVal,
       bool const iVerbose);
 
-  static void SavePointCloudFile(
-      std::string const iFullpath,
-      std::vector<std::vector<std::vector<double>>> const& field,
-      double const cutoff,
-      bool const iVerbose);
-
-  static void SaveCATMathPointCloudFile(
-      std::string const iFullpath,
-      std::vector<std::array<double, 3>> const& iVertices,
-      bool const iVerbose);
-
-  static void SaveMeshOBJFile(
+  static bool SaveMeshOBJFile(
       std::string const iFullpath,
       std::vector<std::array<double, 3>> const& iVertices,
       std::vector<std::array<double, 3>> const& iVerticesColors,
@@ -106,7 +78,7 @@ class FileOutput
       std::vector<std::array<int, 4>> const& iQuads,
       bool const iVerbose);
 
-  static void SaveGraphINPFile(
+  static bool SaveGraphINPFile(
       std::string const iFullpath,
       std::vector<std::array<double, 3>> const& iNodes,
       std::vector<std::array<int, 2>> const& iBars,
@@ -123,7 +95,7 @@ class FileOutput
       bool const iWriteTets,
       bool const iVerbose);
 
-  static void SaveHexaMeshINPFile(
+  static bool SaveHexaMeshINPFile(
       std::string const iFullpath,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
@@ -133,13 +105,13 @@ class FileOutput
       double const iDensityThreshold,
       bool const iVerbose);
 
-  static void SaveHexaMeshINPFile_ElemValues(
+  static bool SaveHexaMeshElemValuesINPFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<double>>> const& iElemValueField,
       std::vector<std::vector<std::vector<int>>> const& iDesignSpaceField,
       bool const iVerbose);
 
-  static void SaveHexaMeshWithElsetINPFile(
+  static bool SaveHexaMeshWithElsetINPFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<double>>> const& iDensityField,
       std::vector<std::vector<std::vector<int>>> const& iDesignSpaceField,
@@ -150,7 +122,7 @@ class FileOutput
       double const iDensityThreshold,
       bool const iVerbose);
 
-  static void SaveOrthotropicHexaMeshINPFile(
+  static bool SaveOrthotropicHexaMeshINPFile(
       std::string const iFullpath,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
@@ -170,7 +142,7 @@ class FileOutput
       double const iDensityThreshold,
       bool const iVerbose);
 
-  static void SaveGraphO3PFile(
+  static bool SaveGraphO3PFile(
       std::string const iFullpath,
       std::vector<std::array<double, 3>> const& iNodes,
       std::vector<std::array<int, 2>> const& iBars,
@@ -182,7 +154,7 @@ class FileOutput
       bool const iWriteTets,
       bool const iVerbose);
 
-  static void SaveGraphTXTFile(
+  static bool SaveGraphTXTFile(
       std::string const iFullpath,
       std::vector<std::array<double, 3>> const& iNodes,
       std::vector<std::array<double, 3>> const& iLoads,
