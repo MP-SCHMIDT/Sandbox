@@ -6,6 +6,7 @@
 #include <vector>
 
 // Algo headers
+#include "Geom/BoxGrid.hpp"
 #include "Math/Field.hpp"
 
 
@@ -348,10 +349,10 @@ void MarchingCubes::ComputeMarchingCubes(
 
   // Get input field dimensions
   int nbX, nbY, nbZ;
-  double stepX, stepY, stepZ, voxDiag, shiftX, shiftY, shiftZ;
   Field::GetFieldDimensions(iField, nbX, nbY, nbZ);
-  Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
-  Field::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, shiftX, shiftY, shiftZ);
+  double stepX, stepY, stepZ, voxDiag, shiftX, shiftY, shiftZ;
+  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
+  BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, shiftX, shiftY, shiftZ);
   double epsilon= voxDiag * 1.e-6;
 
   // Process each cell in the field

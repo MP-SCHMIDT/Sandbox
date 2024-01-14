@@ -9,6 +9,7 @@
 #include <vector>
 
 // Algo headers
+#include "Geom/BoxGrid.hpp"
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 
@@ -31,7 +32,7 @@ bool FileOutput::SaveBoxTXTFile(
   }
 
   double voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag;
-  Field::GetVoxelSizes(iNbX, iNbY, iNbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag);
+  BoxGrid::GetVoxelSizes(iNbX, iNbY, iNbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxSizeDiag);
 
   fprintf(outputFile, "%f %f %f\n", iBBoxMin[0], iBBoxMin[1], iBBoxMin[2]);
   fprintf(outputFile, "%f %f %f\n", iBBoxMax[0], iBBoxMax[1], iBBoxMax[2]);
@@ -330,8 +331,8 @@ bool FileOutput::SaveScalarFieldRawVTIFile(
   Field::GetFieldDimensions(iField, nbX, nbY, nbZ);
   if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
   double voxSizeX, voxSizeY, voxSizeZ, voxDiag, startX, startY, startZ;
-  Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
-  Field::GetVoxelStart(iBBoxMin, voxSizeX, voxSizeY, voxSizeZ, true, startX, startY, startZ);
+  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
+  BoxGrid::GetVoxelStart(iBBoxMin, voxSizeX, voxSizeY, voxSizeZ, true, startX, startY, startZ);
 
   // Add the header
   outputFile << "<VTKFile type=\"ImageData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << std::endl;
@@ -399,7 +400,7 @@ bool FileOutput::SaveVectorFieldRawVTIFile(
   int nbX, nbY, nbZ;
   Field::GetFieldDimensions(iField, nbX, nbY, nbZ);
   double voxSizeX, voxSizeY, voxSizeZ, voxDiag;
-  Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
+  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
 
   // Add the header
   outputFile << "<VTKFile type=\"ImageData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt32\">" << std::endl;
@@ -622,8 +623,8 @@ bool FileOutput::SaveHexaMeshINPFile(
   Field::GetFieldDimensions(iDensityField, nbX, nbY, nbZ);
   if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
-  Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
-  Field::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
+  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
+  BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
 
 
   // Create file in write/overwrite mode
@@ -1043,8 +1044,8 @@ bool FileOutput::SaveOrthotropicHexaMeshINPFile(
   Field::GetFieldDimensions(iDensityField, nbX, nbY, nbZ);
   if (nbX == 0 || nbY == 0 || nbZ == 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
-  Field::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
-  Field::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
+  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
+  BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
 
   if (iVerbose) printf("Saving INP Orthotropic Hexa mesh file [%s]\n", iFullpath.c_str());
 
