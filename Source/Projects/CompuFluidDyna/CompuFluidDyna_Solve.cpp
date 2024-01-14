@@ -322,8 +322,8 @@ void CompuFluidDyna::InitializeScenario() {
               (nZ > 1 && (z == 0 || z == nZ - 1))) {
             Solid[x][y][z]= true;
           }
-          else if ((posVox - posWall).coeffMul(Vec::Vec3<float>(0.0f, 1.0f, 0.0f)).norm() <= radWall &&
-                   (posVox - posWall).coeffMul(Vec::Vec3<float>(1.0f, 0.0f, 1.0f)).norm() > radHole) {
+          else if ((posVox - posWall).cwiseMul(Vec::Vec3<float>(0.0f, 1.0f, 0.0f)).norm() <= radWall &&
+                   (posVox - posWall).cwiseMul(Vec::Vec3<float>(1.0f, 0.0f, 1.0f)).norm() > radHole) {
             Solid[x][y][z]= true;
           }
           else if (y == 0) {
@@ -407,7 +407,7 @@ void CompuFluidDyna::InitializeScenario() {
             Solid[x][y][z]= true;
           }
           else if (posVox[1] < posBend[1]) {
-            if ((posVox - posBend - Vec::Vec3<float>(0.0f, 0.0f, radBend + radPipe)).coeffMul(Vec::Vec3<float>(1.0f, 0.0f, 1.0f)).norm() > radPipe) {
+            if ((posVox - posBend - Vec::Vec3<float>(0.0f, 0.0f, radBend + radPipe)).cwiseMul(Vec::Vec3<float>(1.0f, 0.0f, 1.0f)).norm() > radPipe) {
               Solid[x][y][z]= true;
             }
             else if (y == 0) {
@@ -422,7 +422,7 @@ void CompuFluidDyna::InitializeScenario() {
             }
           }
           else if (posVox[2] < posBend[2]) {
-            if ((posVox - posBend - Vec::Vec3<float>(0.0f, radBend + radPipe, 0.0f)).coeffMul(Vec::Vec3<float>(1.0f, 1.0f, 0.0f)).norm() > radPipe) {
+            if ((posVox - posBend - Vec::Vec3<float>(0.0f, radBend + radPipe, 0.0f)).cwiseMul(Vec::Vec3<float>(1.0f, 1.0f, 0.0f)).norm() > radPipe) {
               Solid[x][y][z]= true;
             }
             else if (z == 0) {
@@ -430,7 +430,7 @@ void CompuFluidDyna::InitializeScenario() {
               PresForced[x][y][z]= 0.0;
             }
           }
-          else if ((posBend + ((posVox - posBend).coeffMul(Vec::Vec3<float>(0.0f, 1.0f, 1.0f)).normalized() * (radBend + radPipe)) - posVox).norm() > radPipe) {
+          else if ((posBend + ((posVox - posBend).cwiseMul(Vec::Vec3<float>(0.0f, 1.0f, 1.0f)).normalized() * (radBend + radPipe)) - posVox).norm() > radPipe) {
             Solid[x][y][z]= true;
           }
         }

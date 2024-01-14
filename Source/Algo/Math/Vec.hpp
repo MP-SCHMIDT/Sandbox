@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard lib
+#include <array>
 #include <cmath>
 #include <concepts>
 
@@ -16,6 +17,10 @@ public:
       this->x[0]= a;
       this->x[1]= b;
     }
+    Vec2(const std::array<element_type, 2>& v) {
+      this->x[0]= v[0];
+      this->x[1]= v[1];
+    }
     Vec2(const Vec2& v) { *this= v; }
 
     // Methods
@@ -24,8 +29,10 @@ public:
       x[1]= b;
     }
     inline element_type dot(const Vec2& v) const { return x[0] * v.x[0] + x[1] * v.x[1]; }
-    inline Vec2 coeffMul(const Vec2& v) const { return Vec2(x[0] * v.x[0], x[1] * v.x[1]); }
-    inline Vec2 coeffDiv(const Vec2& v) const { return Vec2(x[0] / v.x[0], x[1] / v.x[1]); }
+    inline Vec2 cwiseMul(const Vec2& v) const { return Vec2(x[0] * v.x[0], x[1] * v.x[1]); }
+    inline Vec2 cwiseDiv(const Vec2& v) const { return Vec2(x[0] / v.x[0], x[1] / v.x[1]); }
+    inline Vec2 cwiseMax(const Vec2& v) const { return Vec2(std::max(x[0], v.x[0]), std::max(x[1], v.x[1])); }
+    inline Vec2 cwiseMin(const Vec2& v) const { return Vec2(std::min(x[0], v.x[0]), std::min(x[1], v.x[1])); }
     inline element_type normSquared() const { return x[0] * x[0] + x[1] * x[1]; }
     inline element_type norm() const { return std::sqrt(normSquared()); }
     inline Vec2& normalize(element_type len= 1.0) {
@@ -42,8 +49,8 @@ public:
     inline element_type sum() {
       return x[0] + x[1];
     }
-    inline element_type max() const { return std::max(x[0], x[1]); }
-    inline element_type min() const { return std::min(x[0], x[1]); }
+    inline element_type maxCoeff() const { return std::max(x[0], x[1]); }
+    inline element_type minCoeff() const { return std::min(x[0], x[1]); }
 
     // Operators
     inline element_type operator[](int idx) const { return x[idx]; }
@@ -98,6 +105,11 @@ public:
       this->x[1]= b;
       this->x[2]= c;
     }
+    Vec3(const std::array<element_type, 3>& v) {
+      this->x[0]= v[0];
+      this->x[1]= v[1];
+      this->x[2]= v[2];
+    }
     Vec3(const Vec3& v) { *this= v; }
 
     // Methods
@@ -113,8 +125,10 @@ public:
           x[2] * v.x[0] - x[0] * v.x[2],
           x[0] * v.x[1] - x[1] * v.x[0]);
     }
-    inline Vec3 coeffMul(const Vec3& v) const { return Vec3(x[0] * v.x[0], x[1] * v.x[1], x[2] * v.x[2]); }
-    inline Vec3 coeffDiv(const Vec3& v) const { return Vec3(x[0] / v.x[0], x[1] / v.x[1], x[2] / v.x[2]); }
+    inline Vec3 cwiseMul(const Vec3& v) const { return Vec3(x[0] * v.x[0], x[1] * v.x[1], x[2] * v.x[2]); }
+    inline Vec3 cwiseDiv(const Vec3& v) const { return Vec3(x[0] / v.x[0], x[1] / v.x[1], x[2] / v.x[2]); }
+    inline Vec3 cwiseMax(const Vec3& v) const { return Vec3(std::max(x[0], v.x[0]), std::max(x[1], v.x[1]), std::max(x[2], v.x[2])); }
+    inline Vec3 cwiseMin(const Vec3& v) const { return Vec3(std::min(x[0], v.x[0]), std::min(x[1], v.x[1]), std::min(x[2], v.x[2])); }
     inline element_type normSquared() const { return x[0] * x[0] + x[1] * x[1] + x[2] * x[2]; }
     inline element_type norm() const { return std::sqrt(normSquared()); }
     inline Vec3& normalize(element_type len= 1.0) {
@@ -131,8 +145,8 @@ public:
     inline element_type sum() {
       return x[0] + x[1] + x[2];
     }
-    inline element_type max() const { return std::max(std::max(x[0], x[1]), x[2]); }
-    inline element_type min() const { return std::min(std::min(x[0], x[1]), x[2]); }
+    inline element_type maxCoeff() const { return std::max(std::max(x[0], x[1]), x[2]); }
+    inline element_type minCoeff() const { return std::min(std::min(x[0], x[1]), x[2]); }
 
     // Operators
     inline element_type operator[](int idx) const { return x[idx]; }
@@ -193,6 +207,12 @@ public:
       this->x[2]= c;
       this->x[3]= d;
     }
+    Vec4(const std::array<element_type, 4>& v) {
+      this->x[0]= v[0];
+      this->x[1]= v[1];
+      this->x[2]= v[2];
+      this->x[3]= v[3];
+    }
     Vec4(const Vec4& v) { *this= v; }
 
     // Methods
@@ -203,8 +223,10 @@ public:
       x[3]= d;
     }
     inline element_type dot(const Vec4& v) const { return x[0] * v.x[0] + x[1] * v.x[1] + x[2] * v.x[2] + x[3] * v.x[3]; }
-    inline Vec4 coeffMul(const Vec4& v) const { return Vec4(x[0] * v.x[0], x[1] * v.x[1], x[2] * v.x[2], x[3] * v.x[3]); }
-    inline Vec4 coeffDiv(const Vec4& v) const { return Vec4(x[0] / v.x[0], x[1] / v.x[1], x[2] / v.x[2], x[3] / v.x[3]); }
+    inline Vec4 cwiseMul(const Vec4& v) const { return Vec4(x[0] * v.x[0], x[1] * v.x[1], x[2] * v.x[2], x[3] * v.x[3]); }
+    inline Vec4 cwiseDiv(const Vec4& v) const { return Vec4(x[0] / v.x[0], x[1] / v.x[1], x[2] / v.x[2], x[3] / v.x[3]); }
+    inline Vec4 cwiseMax(const Vec4& v) const { return Vec4(std::max(x[0], v.x[0]), std::max(x[1], v.x[1]), std::max(x[2], v.x[2]), std::max(x[3], v.x[3])); }
+    inline Vec4 cwiseMin(const Vec4& v) const { return Vec4(std::min(x[0], v.x[0]), std::min(x[1], v.x[1]), std::min(x[2], v.x[2]), std::min(x[3], v.x[3])); }
     inline element_type normSquared() const { return x[0] * x[0] + x[1] * x[1] + x[2] * x[2] + x[3] * x[3]; }
     inline element_type norm() const { return std::sqrt(normSquared()); }
     inline Vec4& normalize(element_type len= 1.0) {
@@ -221,8 +243,8 @@ public:
     inline element_type sum() {
       return x[0] + x[1] + x[2] + x[3];
     }
-    inline element_type max() const { return std::max(std::max(std::max(x[0], x[1]), x[2]), x[3]); }
-    inline element_type min() const { return std::min(std::min(std::min(x[0], x[1]), x[2]), x[3]); }
+    inline element_type maxCoeff() const { return std::max(std::max(std::max(x[0], x[1]), x[2]), x[3]); }
+    inline element_type minCoeff() const { return std::min(std::min(std::min(x[0], x[1]), x[2]), x[3]); }
 
     // Operators
     inline element_type operator[](int idx) const { return x[idx]; }
