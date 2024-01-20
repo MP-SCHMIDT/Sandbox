@@ -131,9 +131,12 @@ class CompuFluidDyna
   std::vector<std::vector<std::vector<float>>> AdvY;
   std::vector<std::vector<std::vector<float>>> AdvZ;
 
-  // CFD solver functions
-  void SetUpUIData();
+  // Initialization and display functions
   void InitializeScenario();
+  void UpdateUIData();
+
+  // Solver functions
+  void RunSimulationStep();
   void ApplyBC(const int iFieldID, std::vector<std::vector<std::vector<float>>>& ioField);
   void ImplicitFieldAdd(const std::vector<std::vector<std::vector<float>>>& iFieldA,
                         const std::vector<std::vector<std::vector<float>>>& iFieldB,

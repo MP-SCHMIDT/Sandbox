@@ -1,5 +1,5 @@
 # Sandbox
-Sandbox environment with various research and experimentation projects implemented from scratch (physics simulations, fractals, swarm intelligence, precedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D scene display. The repo is standalone and should not require installing any external library.
+Sandbox environment with various personal experimentation and research projects implemented from scratch (physics simulations, fractals, swarm intelligence, precedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D scene display. The repo is standalone and should not require installing any external library.
 
 ![Screenshot](Docs/Anim_TopOptBracket.gif)
 ![Screenshot](Docs/Anim_CFD.gif)
@@ -36,7 +36,7 @@ Sandbox environment with various research and experimentation projects implement
 **Source/Algo/** contains algorithms for various tasks organized in sub folders
 
 ## Minimal build env on windows
-If g++ not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0posix-17.0.5-11.0.1-ucrt-r3/winlibs-x86_64-posix-seh-gcc-13.2.0-mingw-w64ucrt-11.0.1-r3.7z) and extract at root of C: drive or another appropriate location.
+If C++ compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0posix-17.0.5-11.0.1-ucrt-r3/winlibs-x86_64-posix-seh-gcc-13.2.0-mingw-w64ucrt-11.0.1-r3.7z) and extract at root of C: drive or another appropriate location.
 Doc available at  https://winlibs.com/
 
 If bash commands are not already present, install MinGW (https://sourceforge.net/projects/mingw/) at root of C: drive or another appropriate location. Only check "msys-base" package in MinGW Installation Manager to just get bash commands in bin folder.
@@ -47,7 +47,7 @@ Add both paths to env var (here shown in the case of C: drive root)
 
 ## Build, run and use
 - `make clean` to delete built objects (optional, if rebuild needed)
-- `make` to build (or `make -j N` for multithreaded build with `N` threads)
+- `make -j N` to build with `N` threads. The `FLAGS_GL` var may need to be changed to build on some OSs (only tested on a few Windows and MacOS machines) 
 - `./main.exe` to run the executable
 - use `right click` to open contextual menu, select project, change generic options or save configurations
 - use menu>save>... to save UI window and current project parameters as config txt files loaded on next startup

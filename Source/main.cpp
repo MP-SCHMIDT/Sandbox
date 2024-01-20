@@ -32,7 +32,8 @@
 #include "TerrainErosion/TerrainErosion.hpp"
 // #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
-  #include "StructGenOptim/StructGenOptim.hpp"
+#include "NonLinMMABench/NonLinMMABench.hpp"
+#include "StructGenOptim/StructGenOptim.hpp"
 #endif
 
 
@@ -81,6 +82,7 @@ SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+NonLinMMABench myNonLinMMABench;
 StructGenOptim myStructGenOptim;
 #endif
 
@@ -101,6 +103,7 @@ enum ProjectID
   StringArtOptimID,
   TerrainErosionID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  NonLinMMABenchID,
   StructGenOptimID,
 #endif
   ZzzzzzzzzzzzzzID,
@@ -126,6 +129,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj) myNonLinMMABench= NonLinMMABench();
   if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj) myStructGenOptim= StructGenOptim();
 #endif
 
@@ -143,6 +147,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
 #endif
 }
@@ -163,6 +168,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Refresh();
 #endif
 }
@@ -183,6 +189,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Animate();
 #endif
 }
@@ -203,6 +210,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Draw();
 #endif
 }
@@ -223,6 +231,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.isRefreshed= false;
 #endif
   project_Refresh();
@@ -577,8 +586,6 @@ void callback_keyboard(unsigned char key, int x, int y) {
   (void)x;  // Disable warning unused variable
   (void)y;  // Disable warning unused variable
 
-  // TODO add keypress to recenter trackball to current bbox and adjust near/far clipping planes
-
   if (key == 27) {
     glutDestroyWindow(windowID);
     exit(EXIT_SUCCESS);
@@ -625,6 +632,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(keyUpperCase);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+    if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress(keyUpperCase);
 #endif
   }
@@ -825,6 +833,7 @@ void init_menu() {
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);
   glutAddMenuEntry("StructGenOptim", ProjectID::StructGenOptimID);
 #endif
   const int menuSave= glutCreateMenu(callback_menu);
