@@ -126,11 +126,11 @@ public:
           x[0] * v.x[1] - x[1] * v.x[0]);
     }
     inline void computeBasis(Vec3& oDir2, Vec3& oDir3) {
-      oDir2= this.cross(Vec3<double>(1.0, 0.0, 1.0));
-      if (oDir2.norm() < 1.e-6 * this.norm())
-        oDir2= this.cross(Vec3<double>(0.0, 1.0, 0.0));
+      oDir2= this->cross(Vec3<element_type>(1.0, 0.0, 1.0));
+      if (oDir2.norm() < 1.e-6 * this->norm())
+        oDir2= this->cross(Vec3<element_type>(0.0, 1.0, 0.0));
       oDir2.normalize();
-      oDir3= this.cross(oDir2);
+      oDir3= this->cross(oDir2);
       oDir3.normalize();
     }
     inline Vec3 cwiseMul(const Vec3& v) const { return Vec3(x[0] * v.x[0], x[1] * v.x[1], x[2] * v.x[2]); }
