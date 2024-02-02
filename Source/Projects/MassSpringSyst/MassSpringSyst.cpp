@@ -178,14 +178,13 @@ void MassSpringSyst::Animate() {
   StepForwardInTime();
 
   // Add to plot data
-  D.plotLegend.resize(3);
-  D.plotData.resize(3);
-  D.plotLegend[0]= "PosLastX";
-  D.plotLegend[1]= "PosLastY";
-  D.plotLegend[2]= "PosLastZ";
-  D.plotData[0].push_back(Pos[Pos.size() - 1][0]);
-  D.plotData[1].push_back(Pos[Pos.size() - 1][1]);
-  D.plotData[2].push_back(Pos[Pos.size() - 1][2]);
+  D.Plot.resize(3);
+  D.Plot[0].name= "PosLastX";
+  D.Plot[1].name= "PosLastY";
+  D.Plot[2].name= "PosLastZ";
+  D.Plot[0].val.push_back(Pos[Pos.size() - 1][0]);
+  D.Plot[1].val.push_back(Pos[Pos.size() - 1][1]);
+  D.Plot[2].val.push_back(Pos[Pos.size() - 1][2]);
 }
 
 

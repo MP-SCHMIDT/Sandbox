@@ -7,9 +7,11 @@ class ImageExtruMesh
   // List of UI parameters for this project
   enum ParamType
   {
-    InputFile_______,
-    DomainW_________,
-    DomainH_________,
+    ResolutionX_____,
+    ResolutionY_____,
+    SizeX___________,
+    SizeY___________,
+    SizeZ___________,
     SmoothIter______,
     Isovalue________,
     VerboseLevel____,

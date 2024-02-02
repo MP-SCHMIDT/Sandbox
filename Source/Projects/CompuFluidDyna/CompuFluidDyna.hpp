@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard lib
+#include <array>
 #include <vector>
 
 
@@ -75,8 +76,7 @@ class CompuFluidDyna
     SlicePlotX______,
     SlicePlotY______,
     SlicePlotZ______,
-    VerboseSolv_____,
-    VerboseTime_____,
+    PlotSolve_______,
     VerboseLevel____,
   };
 
@@ -110,6 +110,7 @@ class CompuFluidDyna
   std::vector<std::vector<std::vector<float>>> VelZForced;
   std::vector<std::vector<std::vector<float>>> PresForced;
   std::vector<std::vector<std::vector<float>>> SmokForced;
+  std::vector<std::vector<std::array<int, 3>>> VoxIdx;
 
   // Fields for scenario run
   std::vector<std::vector<std::vector<float>>> Dum0;

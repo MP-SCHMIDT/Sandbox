@@ -1,0 +1,278 @@
+#include "AlgoTestEnviro.hpp"
+
+
+// Standard lib
+#include <array>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <limits>
+#include <vector>
+
+// GLUT lib
+#include "freeglut/include/GL/freeglut.h"
+
+// Algo headers
+#include "Draw/Colormap.hpp"
+#include "Geom/BoxGrid.hpp"
+#include "Geom/MarchingCubes.hpp"
+#include "Geom/PrimitiveCSG.hpp"
+#include "Geom/Sketch.hpp"
+#include "Math/Field.hpp"
+#include "Math/Vec.hpp"
+
+// Global headers
+#include "Data.hpp"
+
+
+// Link to shared sandbox data
+extern Data D;
+
+
+// Constructor
+AlgoTestEnviro::AlgoTestEnviro() {
+  isActivProj= false;
+  isAllocated= false;
+  isRefreshed= false;
+}
+
+
+// Initialize Project UI parameters
+void AlgoTestEnviro::SetActiveProject() {
+  if (!isActivProj) {
+    D.UI.clear();
+    D.UI.push_back(ParamUI("TestParam00_____", 0.9));
+    D.UI.push_back(ParamUI("TestParam01_____", 0.1));
+    D.UI.push_back(ParamUI("TestParam02_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam03_____", 64.0));
+    D.UI.push_back(ParamUI("TestParam04_____", 64.0));
+    D.UI.push_back(ParamUI("TestParam05_____", 64.0));
+    D.UI.push_back(ParamUI("TestParam06_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam07_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam08_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam09_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam10_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam11_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam12_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam13_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam14_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam15_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam16_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam17_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam18_____", 0.0));
+    D.UI.push_back(ParamUI("TestParam19_____", 0.0));
+    D.UI.push_back(ParamUI("Isocut__________", 0.0));
+    D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 1));
+  }
+
+  if (D.UI.size() != VerboseLevel____ + 1) {
+    printf("[ERROR] Invalid parameter count in UI\n");
+  }
+
+  D.boxMin= {0.0, 0.0, 0.0};
+  D.boxMax= {1.0, 1.0, 1.0};
+
+  isActivProj= true;
+  isAllocated= false;
+  isRefreshed= false;
+}
+
+
+// Check if parameter changes should trigger an allocation
+bool AlgoTestEnviro::CheckAlloc() {
+  return isAllocated;
+}
+
+
+// Check if parameter changes should trigger a refresh
+bool AlgoTestEnviro::CheckRefresh() {
+  return isRefreshed;
+}
+
+
+// Allocate the project data
+void AlgoTestEnviro::Allocate() {
+  if (!isActivProj) return;
+  if (CheckAlloc()) return;
+  isRefreshed= false;
+  isAllocated= true;
+
+  if (D.UI[VerboseLevel____].I() >= 5) printf("Allocate()\n");
+}
+
+
+// Refresh the project
+void AlgoTestEnviro::Refresh() {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  if (CheckRefresh()) return;
+  isRefreshed= true;
+
+  if (D.UI[VerboseLevel____].I() >= 5) printf("Refresh()\n");
+}
+
+
+// Handle keypress
+void AlgoTestEnviro::KeyPress(const unsigned char key) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)key;  // Disable warning unused variable
+
+  if (D.UI[VerboseLevel____].I() >= 5) printf("KeyPress()\n");
+
+  // Testing basis computation
+  if (key == 'T') {
+    Vec::Vec3<float> U(D.UI[TestParam00_____].D(), D.UI[TestParam01_____].D(), D.UI[TestParam02_____].D());
+    Vec::Vec3<float> V, W;
+    U.normalize();
+    U.computeBasis(V, W);
+    printf("U= %f %f %f\n", U[0], U[1], U[2]);
+    printf("V= %f %f %f\n", V[0], V[1], V[2]);
+    printf("Z= %f %f %f\n", W[0], W[1], W[2]);
+
+    Verts.clear();
+    Bars.clear();
+    Tris.clear();
+
+    Verts.push_back(std::array<double, 3>{0.0, 0.0, 0.0});
+    Verts.push_back(std::array<double, 3>{U[0], U[1], U[2]});
+    Verts.push_back(std::array<double, 3>{V[0], V[1], V[2]});
+    Verts.push_back(std::array<double, 3>{W[0], W[1], W[2]});
+
+    Bars.push_back(std::array<int, 2>{0, 1});
+    Bars.push_back(std::array<int, 2>{0, 2});
+    Bars.push_back(std::array<int, 2>{0, 3});
+
+    Tris.push_back(std::array<int, 3>{0, 1, 2});
+    Tris.push_back(std::array<int, 3>{0, 2, 3});
+    Tris.push_back(std::array<int, 3>{0, 3, 1});
+  }
+
+  // Testing CSG field
+  if (key == 'F') {
+    ScalarField= Field::AllocField3D(D.UI[TestParam03_____].I(), D.UI[TestParam04_____].I(), D.UI[TestParam05_____].I(), std::numeric_limits<double>::max());
+    std::array<double, 3> P0({0.1, 0.2, 0.3});
+    std::array<double, 3> P1({0.8, 0.6, 0.7});
+    PrimitiveCSG::ConeRound(P0, P1, 0.1, 0.2, PrimitiveCSG::BooleanMode::Union, D.boxMin, D.boxMax, ScalarField);
+  }
+
+  // Testing sketch smoothing
+  if (key == 'S') {
+    std::vector<Vec::Vec3<double>> polylineRef;
+    std::vector<Vec::Vec3<double>> polylineNew;
+    polylineRef.push_back(Vec::Vec3<double>(0.0, 0.0, 0.0));
+    polylineRef.push_back(Vec::Vec3<double>(0.5, 0.5, 0.5));
+    polylineRef.push_back(Vec::Vec3<double>(1.0, -0.5, -0.5));
+    polylineNew= polylineRef;
+    Sketch::PolylineSubdivideAndSmooth(false, 3, 2, polylineNew);
+
+    Verts.clear();
+    Bars.clear();
+    Tris.clear();
+    for (int k= 0; k < (int)polylineNew.size(); k++) {
+      Verts.push_back(std::array<double, 3>{polylineNew[k][0], polylineNew[k][1], polylineNew[k][2]});
+      Bars.push_back(std::array<int, 2>{k, (k + 1) % (int)polylineNew.size()});
+    }
+  }
+
+
+  if (key == 'M') {
+    Verts.clear();
+    Bars.clear();
+    Tris.clear();
+    MarchingCubes::ComputeMarchingCubes(0.0, D.boxMin, D.boxMax, ScalarField, Verts, Tris);
+  }
+}
+
+
+// Animate the project
+void AlgoTestEnviro::Animate() {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  if (!CheckRefresh()) Refresh();
+  if (D.UI[VerboseLevel____].I() >= 5) printf("Animate()\n");
+}
+
+
+// Draw the project
+void AlgoTestEnviro::Draw() {
+  if (!isActivProj) return;
+  if (!isAllocated) return;
+  if (!isRefreshed) return;
+  if (D.UI[VerboseLevel____].I() >= 5) printf("Draw()\n");
+
+  // Draw vertices
+  if (D.displayMode1) {
+    glPointSize(5.0f);
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_POINTS);
+    for (int k= 0; k < (int)Verts.size(); k++) {
+      glVertex3f(Verts[k][0], Verts[k][1], Verts[k][2]);
+    }
+    glEnd();
+    glPointSize(1.0f);
+  }
+
+  // Draw bars
+  if (D.displayMode2) {
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    for (int k= 0; k < (int)Bars.size(); k++) {
+      glVertex3f(Verts[Bars[k][0]][0], Verts[Bars[k][0]][1], Verts[Bars[k][0]][2]);
+      glVertex3f(Verts[Bars[k][1]][0], Verts[Bars[k][1]][1], Verts[Bars[k][1]][2]);
+    }
+    glEnd();
+    glLineWidth(1.0f);
+  }
+
+  // Draw triangles
+  if (D.displayMode3) {
+    glEnable(GL_LIGHTING);
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_TRIANGLES);
+    for (int k= 0; k < (int)Tris.size(); k++) {
+      Vec::Vec3 v0(Verts[Tris[k][0]][0], Verts[Tris[k][0]][1], Verts[Tris[k][0]][2]);
+      Vec::Vec3 v1(Verts[Tris[k][1]][0], Verts[Tris[k][1]][1], Verts[Tris[k][1]][2]);
+      Vec::Vec3 v2(Verts[Tris[k][2]][0], Verts[Tris[k][2]][1], Verts[Tris[k][2]][2]);
+      Vec::Vec3 n0= (v1 - v0).cross(v2 - v0).normalized();
+      Vec::Vec3 n1= n0;
+      Vec::Vec3 n2= n0;
+      glNormal3f(n0[0], n0[1], n0[2]);
+      glVertex3f(v0[0], v0[1], v0[2]);
+      glNormal3f(n1[0], n1[1], n1[2]);
+      glVertex3f(v1[0], v1[1], v1[2]);
+      glNormal3f(n2[0], n2[1], n2[2]);
+      glVertex3f(v2[0], v2[1], v2[2]);
+    }
+    glEnd();
+    glDisable(GL_LIGHTING);
+  }
+
+  // Draw scalar field
+  if (D.displayMode4) {
+    int nbX, nbY, nbZ;
+    Field::GetFieldDimensions(ScalarField, nbX, nbY, nbZ);
+    if (nbX > 0 && nbY > 0 && nbZ > 0) {
+      double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
+      BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);
+      BoxGrid::GetVoxelStart(D.boxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
+      glPointSize(5.0f);
+      glBegin(GL_POINTS);
+      for (int x= 0; x < nbX; x++) {
+        for (int y= 0; y < nbY; y++) {
+          for (int z= 0; z < nbZ; z++) {
+            if (ScalarField[x][y][z] < D.UI[Isocut__________].D()) continue;
+            float r= 0.0f, g= 0.0f, b= 0.0f;
+            Colormap::RatioToJetBrightSmooth(0.5 * (ScalarField[x][y][z] + 0.5) * D.UI[ColorFactor_____].D(), r, g, b);
+            glColor3f(r, g, b);
+            glVertex3f(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
+          }
+        }
+      }
+      glEnd();
+      glPointSize(1.0f);
+    }
+  }
+}

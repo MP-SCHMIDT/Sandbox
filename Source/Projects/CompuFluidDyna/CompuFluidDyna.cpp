@@ -68,14 +68,13 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("ScaleFactor_____", 1.0));    // Scale factor for drawn geometry
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));    // Color factor for drawn geometry
     D.UI.push_back(ParamUI("ColorThresh_____", 0.0));    // Color cutoff drawn geometry
-    D.UI.push_back(ParamUI("ColorMode_______", 1));      // Selector for the scalar field to be drawn
+    D.UI.push_back(ParamUI("ColorMode_______", 2));      // Selector for the scalar field to be drawn
     D.UI.push_back(ParamUI("SliceDim________", 0));      // Enable model slicing along a dimension
     D.UI.push_back(ParamUI("SlicePlotX______", 0.5));    // Positions for the slices
     D.UI.push_back(ParamUI("SlicePlotY______", 0.5));    // Positions for the slices
     D.UI.push_back(ParamUI("SlicePlotZ______", 0.5));    // Positions for the slices
-    D.UI.push_back(ParamUI("VerboseSolv_____", -0.5));   // Verbose mode for linear solvers
-    D.UI.push_back(ParamUI("VerboseTime_____", -0.5));   // Verbose mode for linear solvers
-    D.UI.push_back(ParamUI("VerboseLevel____", 0));      // Verbose mode
+    D.UI.push_back(ParamUI("PlotSolve_______", 1));      // Verbose mode for linear solvers
+    D.UI.push_back(ParamUI("VerboseLevel____", 1));      // Verbose mode
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {
@@ -228,11 +227,11 @@ void CompuFluidDyna::Animate() {
   RunSimulationStep();
 
   // Update the plots
-  if (D.UI[VerboseTime_____].B()) Timer::PushTimer();
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
   CompuFluidDyna::UpdateUIData();
-  if (D.UI[VerboseTime_____].B()) printf("%f T UpdateUIData\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("UIData %f ", Timer::PopTimer());
 
-  if (D.UI[VerboseTime_____].B()) printf("\n");
+  if (D.UI[VerboseLevel____].I() >= 1) printf("\n");
 }
 
 
@@ -447,43 +446,41 @@ void CompuFluidDyna::UpdateUIData() {
   // Draw the scatter data
   const int yCursor= std::min(std::max((int)std::round((float)(nY - 1) * D.UI[SlicePlotY______].F()), 0), nY - 1);
   const int zCursor= std::min(std::max((int)std::round((float)(nZ - 1) * D.UI[SlicePlotZ______].F()), 0), nZ - 1);
-  D.scatLegend.resize(4);
-  D.scatLegend[0]= "Horiz VZ";
-  D.scatLegend[1]= "Verti VY";
-  D.scatLegend[2]= "Horiz P";
-  D.scatLegend[3]= "Verti P";
-  D.scatData.resize(4);
-  for (int k= 0; k < (int)D.scatData.size(); k++)
-    D.scatData[k].clear();
+  D.Scatter.resize(4);
+  D.Scatter[0].name= "Horiz VZ";
+  D.Scatter[1].name= "Verti VY";
+  D.Scatter[2].name= "Horiz P";
+  D.Scatter[3].name= "Verti P";
+  for (int k= 0; k < (int)D.Scatter.size(); k++)
+    D.Scatter[k].val.clear();
   if (nZ > 1) {
     for (int y= 0; y < nY; y++) {
-      D.scatData[0].push_back(std::array<double, 2>({(double)y / (double)(nY - 1), VelZ[nX / 2][y][zCursor]}));
-      D.scatData[2].push_back(std::array<double, 2>({(double)y / (double)(nY - 1), Pres[nX / 2][y][zCursor]}));
+      D.Scatter[0].val.push_back(std::array<double, 2>({(double)y / (double)(nY - 1), VelZ[nX / 2][y][zCursor]}));
+      D.Scatter[2].val.push_back(std::array<double, 2>({(double)y / (double)(nY - 1), Pres[nX / 2][y][zCursor]}));
     }
   }
   if (nY > 1) {
     for (int z= 0; z < nZ; z++) {
-      D.scatData[1].push_back(std::array<double, 2>({VelY[nX / 2][yCursor][z], (double)z / (double)(nZ - 1)}));
-      D.scatData[3].push_back(std::array<double, 2>({Pres[nX / 2][yCursor][z], (double)z / (double)(nZ - 1)}));
+      D.Scatter[1].val.push_back(std::array<double, 2>({VelY[nX / 2][yCursor][z], (double)z / (double)(nZ - 1)}));
+      D.Scatter[3].val.push_back(std::array<double, 2>({Pres[nX / 2][yCursor][z], (double)z / (double)(nZ - 1)}));
     }
   }
 
   // Add hard coded experimental values for lid driven cavity flow benchmark
   if (D.UI[Scenario________].I() == 3) {
     // Clear unnecessary scatter data
-    D.scatData[2].clear();
-    D.scatData[3].clear();
+    D.Scatter[2].val.clear();
+    D.Scatter[3].val.clear();
     // Allocate required scatter data
-    D.scatLegend.resize(8);
-    D.scatLegend[4]= "Ghia Re1k";
-    D.scatLegend[5]= "Ghia Re1k";
-    D.scatLegend[6]= "Ertu Re1k";
-    D.scatLegend[7]= "Ertu Re1k";
-    D.scatData.resize(8);
-    D.scatData[4].clear();
-    D.scatData[5].clear();
-    D.scatData[6].clear();
-    D.scatData[7].clear();
+    D.Scatter.resize(8);
+    D.Scatter[4].name= "Ghia Re1k";
+    D.Scatter[5].name= "Ghia Re1k";
+    D.Scatter[6].name= "Ertu Re1k";
+    D.Scatter[7].name= "Ertu Re1k";
+    D.Scatter[4].val.clear();
+    D.Scatter[5].val.clear();
+    D.Scatter[6].val.clear();
+    D.Scatter[7].val.clear();
     // TODO add vorticity data from https://www.acenumerics.com/the-benchmarks.html
     // Data from Ghia 1982 http://www.msaidi.ir/upload/Ghia1982.pdf
     const std::vector<double> GhiaData0X({0.0000, +0.0625, +0.0703, +0.0781, +0.0938, +0.1563, +0.2266, +0.2344, +0.5000, +0.8047, +0.8594, +0.9063, +0.9453, +0.9531, +0.9609, +0.9688, +1.0000});  // coord on horiz slice
@@ -527,27 +524,27 @@ void CompuFluidDyna::UpdateUIData() {
     // const std::vector<double> ErtuData1X({0.0000, -0.3562, -0.4463, -0.4121, -0.3925, -0.3758, -0.3585, -0.3412, -0.3239, -0.3066, -0.2892, -0.0232, +0.3992, +0.4132, +0.4277, +0.4425, +0.4580, +0.4742, +0.4897, +0.4983, +0.4895, +0.5003, +1.0000});  // Re 21000 horiz vel on verti slice
     // Add hard coded experimental values in the scatter plot
     for (int k= 0; k < (int)GhiaData0X.size(); k++) {
-      D.scatData[4].push_back(std::array<double, 2>({GhiaData0X[k], GhiaData0Y[k]}));
-      D.scatData[5].push_back(std::array<double, 2>({GhiaData1X[k], GhiaData1Y[k]}));
+      D.Scatter[4].val.push_back(std::array<double, 2>({GhiaData0X[k], GhiaData0Y[k]}));
+      D.Scatter[5].val.push_back(std::array<double, 2>({GhiaData1X[k], GhiaData1Y[k]}));
     }
     for (int k= 0; k < (int)ErtuData0X.size(); k++) {
-      D.scatData[6].push_back(std::array<double, 2>({ErtuData0X[k], ErtuData0Y[k]}));
-      D.scatData[7].push_back(std::array<double, 2>({ErtuData1X[k], ErtuData1Y[k]}));
+      D.Scatter[6].val.push_back(std::array<double, 2>({ErtuData0X[k], ErtuData0Y[k]}));
+      D.Scatter[7].val.push_back(std::array<double, 2>({ErtuData1X[k], ErtuData1Y[k]}));
     }
   }
 
   // Add hard coded analytical values for Poiseuille flow benchmark
   if (D.UI[Scenario________].I() == 6) {
     // Clear unnecessary scatter data
-    D.scatData[0].clear();
-    D.scatData[3].clear();
+    D.Scatter[0].val.clear();
+    D.Scatter[3].val.clear();
     // Allocate required scatter data
-    D.scatLegend.resize(6);
-    D.scatLegend[4]= "Analy VY";
-    D.scatLegend[5]= "Analy P";
-    D.scatData.resize(6);
-    D.scatData[4].clear();
-    D.scatData[5].clear();
+    D.Scatter.resize(6);
+    D.Scatter[4].name= "Analy VY";
+    D.Scatter[5].name= "Analy P";
+    D.Scatter.resize(6);
+    D.Scatter[4].val.clear();
+    D.Scatter[5].val.clear();
     // Add analytical values in the scatter plot
     const float press0= D.UI[BCPres__________].F();
     const float press1= -D.UI[BCPres__________].F();
@@ -559,38 +556,35 @@ void CompuFluidDyna::UpdateUIData() {
         const float posZ= (float)z * voxSize;
         const float pressDiff= (press1 - press0) / width;
         const float analyVelY= -pressDiff * (1.0f / (2.0f * kinVisco)) * posZ * (height - posZ);
-        D.scatData[4].push_back(std::array<double, 2>({analyVelY, (double)z / (double)(nZ - 1)}));
+        D.Scatter[4].val.push_back(std::array<double, 2>({analyVelY, (double)z / (double)(nZ - 1)}));
       }
     }
     if (nZ > 1) {
       for (int y= 0; y < nY; y++) {
         const float analyP= press0 + (press1 - press0) * (float)y / (float)(nY - 1);
-        D.scatData[5].push_back(std::array<double, 2>({(double)y / (double)(nY - 1), analyP}));
+        D.Scatter[5].val.push_back(std::array<double, 2>({(double)y / (double)(nY - 1), analyP}));
       }
     }
   }
 
-  if (!D.UI[VerboseSolv_____].B()) {
+  if (!D.UI[PlotSolve_______].B()) {
     // Draw the plot data
-    D.plotData.resize(5);
-    D.plotLegend.resize(5);
-    D.plotLegend[0]= "VelMag";
-    D.plotLegend[1]= "Smok";
-    D.plotLegend[2]= "Pres";
-    D.plotLegend[3]= "DiveAbs";
-    D.plotLegend[4]= "Vorti";
-    if (D.plotData[0].size() < 1000) {
-      for (int k= 0; k < (int)D.plotLegend.size(); k++)
-        D.plotData[k].push_back(0.0f);
-      for (int x= 0; x < nX; x++) {
-        for (int y= 0; y < nY; y++) {
-          for (int z= 0; z < nZ; z++) {
-            D.plotData[0][D.plotData[0].size() - 1]+= std::sqrt(VelX[x][y][z] * VelX[x][y][z] + VelY[x][y][z] * VelY[x][y][z] + VelZ[x][y][z] * VelZ[x][y][z]);
-            D.plotData[1][D.plotData[1].size() - 1]+= Smok[x][y][z];
-            D.plotData[2][D.plotData[2].size() - 1]+= Pres[x][y][z];
-            D.plotData[3][D.plotData[3].size() - 1]+= std::abs(Dive[x][y][z]);
-            D.plotData[4][D.plotData[4].size() - 1]+= Vort[x][y][z];
-          }
+    D.Plot.resize(5);
+    D.Plot[0].name= "VelMag";
+    D.Plot[1].name= "Smok";
+    D.Plot[2].name= "Pres";
+    D.Plot[3].name= "DiveAbs";
+    D.Plot[4].name= "Vorti";
+    for (int k= 0; k < (int)D.Plot.size(); k++)
+      D.Plot[k].val.push_back(0.0f);
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          D.Plot[0].val[D.Plot[0].val.size() - 1]+= std::sqrt(VelX[x][y][z] * VelX[x][y][z] + VelY[x][y][z] * VelY[x][y][z] + VelZ[x][y][z] * VelZ[x][y][z]);
+          D.Plot[1].val[D.Plot[1].val.size() - 1]+= Smok[x][y][z];
+          D.Plot[2].val[D.Plot[2].val.size() - 1]+= Pres[x][y][z];
+          D.Plot[3].val[D.Plot[3].val.size() - 1]+= std::abs(Dive[x][y][z]);
+          D.Plot[4].val[D.Plot[4].val.size() - 1]+= Vort[x][y][z];
         }
       }
     }
@@ -832,28 +826,29 @@ void CompuFluidDyna::InitializeScenario() {
             if ((posVox - posBend - Vec::Vec3<float>(0.0f, 0.0f, radBend + radPipe)).cwiseMul(Vec::Vec3<float>(1.0f, 0.0f, 1.0f)).norm() > radPipe) {
               Solid[x][y][z]= true;
             }
-            else if (y == 0) {
-              VelBC[x][y][z]= true;
-              VelXForced[x][y][z]= D.UI[BCVelX__________].F();
-              VelYForced[x][y][z]= D.UI[BCVelY__________].F();
-              VelZForced[x][y][z]= D.UI[BCVelZ__________].F();
-              // PreBC[x][y][z]= true;
-              // PresForced[x][y][z]= D.UI[BCPres__________].F();
-              SmoBC[x][y][z]= true;
-              SmokForced[x][y][z]= D.UI[BCSmok__________].F();
-            }
           }
           else if (posVox[2] < posBend[2]) {
             if ((posVox - posBend - Vec::Vec3<float>(0.0f, radBend + radPipe, 0.0f)).cwiseMul(Vec::Vec3<float>(1.0f, 1.0f, 0.0f)).norm() > radPipe) {
               Solid[x][y][z]= true;
             }
-            else if (z == 0) {
-              PreBC[x][y][z]= true;
-              PresForced[x][y][z]= 0.0;
-            }
           }
           else if ((posBend + ((posVox - posBend).cwiseMul(Vec::Vec3<float>(0.0f, 1.0f, 1.0f)).normalized() * (radBend + radPipe)) - posVox).norm() > radPipe) {
             Solid[x][y][z]= true;
+          }
+
+          if (!Solid[x][y][z] && y == 0) {
+            // VelBC[x][y][z]= true;
+            // VelXForced[x][y][z]= D.UI[BCVelX__________].F();
+            // VelYForced[x][y][z]= D.UI[BCVelY__________].F();
+            // VelZForced[x][y][z]= D.UI[BCVelZ__________].F();
+            PreBC[x][y][z]= true;
+            PresForced[x][y][z]= D.UI[BCPres__________].F();
+            SmoBC[x][y][z]= true;
+            SmokForced[x][y][z]= D.UI[BCSmok__________].F();
+          }
+          if (!Solid[x][y][z] && z == 0) {
+            PreBC[x][y][z]= true;
+            PresForced[x][y][z]= -D.UI[BCPres__________].F();
           }
         }
       }

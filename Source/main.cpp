@@ -18,6 +18,7 @@
 
 // Project classes
 #include "AgentSwarmBoid/AgentSwarmBoid.hpp"
+#include "AlgoTestEnviro/AlgoTestEnviro.hpp"
 #include "CompuFluidDyna/CompuFluidDyna.hpp"
 #include "FractalCurvDev/FractalCurvDev.hpp"
 #include "FractalElevMap/FractalElevMap.hpp"
@@ -30,7 +31,7 @@
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
-// #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
+#define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "NonLinMMABench/NonLinMMABench.hpp"
 #include "StructGenOptim/StructGenOptim.hpp"
@@ -69,6 +70,7 @@ Camera *cam;
 // Global variables used by the projects
 Data D;
 AgentSwarmBoid myAgentSwarmBoid;
+AlgoTestEnviro myAlgoTestEnviro;
 CompuFluidDyna myCompuFluidDyna;
 FractalCurvDev myFractalCurvDev;
 FractalElevMap myFractalElevMap;
@@ -90,6 +92,7 @@ enum ProjectID
 {
   AaaaaaaaaaaaaaID,
   AgentSwarmBoidID,
+  AlgoTestEnviroID,
   CompuFluidDynaID,
   FractalCurvDevID,
   FractalElevMapID,
@@ -110,12 +113,11 @@ enum ProjectID
 };
 
 void project_ForceHardInit() {
-  D.plotLegend.clear();
-  D.scatLegend.clear();
-  D.plotData.clear();
-  D.scatData.clear();
+  D.Plot.clear();
+  D.Scatter.clear();
 
   if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj) myAgentSwarmBoid= AgentSwarmBoid();
+  if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
   if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj) myCompuFluidDyna= CompuFluidDyna();
   if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
   if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj) myFractalElevMap= FractalElevMap();
@@ -134,6 +136,7 @@ void project_ForceHardInit() {
 #endif
 
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.SetActiveProject();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.SetActiveProject();
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.SetActiveProject();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.SetActiveProject();
@@ -155,6 +158,7 @@ void project_ForceHardInit() {
 
 void project_Refresh() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Refresh();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Refresh();
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Refresh();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Refresh();
@@ -176,6 +180,7 @@ void project_Refresh() {
 
 void project_Animate() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Animate();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Animate();
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Animate();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Animate();
@@ -197,6 +202,7 @@ void project_Animate() {
 
 void project_Draw() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Draw();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Draw();
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Draw();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Draw();
@@ -218,6 +224,7 @@ void project_Draw() {
 
 void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.isRefreshed= false;
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.isRefreshed= false;
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.isRefreshed= false;
@@ -423,88 +430,102 @@ void callback_display() {
   glLineWidth(1.0f);
 
   // Draw the 2D plot
-  if (!D.plotData.empty()) {
-    glLineWidth(2.0f);
-    glPointSize(3.0f);
-    for (int k0= 0; k0 < int(D.plotData.size()); k0++) {
-      if (D.plotData[k0].empty()) continue;
+  if (!D.Plot.empty()) {
+    double valMin, valMax;
+    for (int k0= 0; k0 < (int)D.Plot.size(); k0++) {
+      if (D.Plot[k0].val.empty()) continue;
 
       // Set the color
       float r, g, b;
-      Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.plotData.size() - 1, 1), r, g, b);
+      Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Plot.size() - 1, 1), r, g, b);
       glColor3f(r, g, b);
 
       // Find the min max range for vertical scaling
-      double valMin= std::numeric_limits<double>::max();
-      double valMax= std::numeric_limits<double>::lowest();
-      for (int k1= 0; k1 < int(D.plotData[k0].size()); k1++) {
-        if (valMin > D.plotData[k0][k1]) valMin= D.plotData[k0][k1];
-        if (valMax < D.plotData[k0][k1]) valMax= D.plotData[k0][k1];
+      if (k0 == 0 || !D.Plot[k0].isSameRange) {
+        valMin= std::numeric_limits<double>::max();
+        valMax= std::numeric_limits<double>::lowest();
+      }
+      for (double valCur : D.Plot[k0].val) {
+        if (valMin > valCur) valMin= valCur;
+        if (valMax < valCur) valMax= valCur;
       }
 
       // Draw the text for legend and min max values
+      glLineWidth(2.0f);
       char str[50];
-      if (k0 < (int)D.plotLegend.size())
-        strcpy(str, D.plotLegend[k0].c_str());
-      else
-        strcpy(str, "<name>");
+      strcpy(str, D.Plot[k0].name.c_str());
       draw_text(winW - plotAreaW - 3 * textBoxW, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+      if (D.Plot[k0].isLog) {
+        strcpy(str, std::string("log").c_str());
+        draw_text(winW - plotAreaW - 3 * textBoxW - textBoxW / 2, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+      }
       sprintf(str, "%+.2e", valMax);
       draw_text(winW - textBoxW - plotAreaW + k0 * textBoxW, winH - textBoxH - pixelMargin, str);
       sprintf(str, "%+.2e", valMin);
       draw_text(winW - textBoxW - plotAreaW + k0 * textBoxW, winH - plotAreaH - 2 * textBoxH - 2 * pixelMargin, str);
-      sprintf(str, "%+.2e", D.plotData[k0][0]);
+      sprintf(str, "%+.2e", D.Plot[k0].val[0]);
       draw_text(winW - plotAreaW - 2 * textBoxW, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
-      sprintf(str, "%+.2e", D.plotData[k0][D.plotData[k0].size() - 1]);
+      sprintf(str, "%+.2e", D.Plot[k0].val[D.Plot[k0].val.size() - 1]);
       draw_text(winW - textBoxW, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+      glLineWidth(1.0f);
 
-      // Draw the plot curves and markers
-      if (int(D.plotData[k0].size()) >= 2) {
-        for (int mode= 0; mode < 2; mode++) {
-          if (mode == 0) glBegin(GL_LINE_STRIP);
-          if (mode == 1) glBegin(GL_POINTS);
-          for (int k1= 0; k1 < int(D.plotData[k0].size()); k1++) {
-            double valScaled;
-            if (valMax - valMin == 0.0) valScaled= 0.0;
-            else if (!D.plotLogScale) valScaled= (D.plotData[k0][k1] - valMin) / (valMax - valMin);
-            else if (D.plotData[k0][k1] <= 0.0) valScaled= 0.0;
-            else if (valMin <= 0.0) valScaled= 1.0;
-            else valScaled= (std::log10(D.plotData[k0][k1]) - std::log10(valMin)) / (std::log10(valMax) - std::log10(valMin));
-            glVertex3i(winW - plotAreaW - textBoxW + plotAreaW * k1 / std::max((int)D.plotData[k0].size() - 1, 1), winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
-          }
+      // Draw the zero axes
+      if (valMax > valMin && !D.Plot[k0].isLog) {
+        double valScaled= -valMin / (valMax - valMin);
+        if (valScaled >= 0.0 && valScaled <= 1.0) {
+          glBegin(GL_LINES);
+          glVertex3i(winW - plotAreaW - textBoxW, winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
+          glVertex3i(winW - plotAreaW - textBoxW + plotAreaW, winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
           glEnd();
         }
       }
+
+      // Draw the plot curves and markers
+      glLineWidth(2.0f);
+      glPointSize(3.0f);
+      for (int mode= 0; mode < 2; mode++) {
+        if (mode == 0) glBegin(GL_LINE_STRIP);
+        if (mode == 1) glBegin(GL_POINTS);
+        for (int k1= 0; k1 < (int)D.Plot[k0].val.size(); k1++) {
+          double valScaled;
+          if (valMax - valMin == 0.0) valScaled= 0.0;
+          else if (!D.Plot[k0].isLog) valScaled= (D.Plot[k0].val[k1] - valMin) / (valMax - valMin);
+          else if (D.Plot[k0].val[k1] <= 0.0) valScaled= 0.0;
+          else if (valMin < 0.0) valScaled= 1.0;
+          else valScaled= (std::log10(D.Plot[k0].val[k1]) - std::log10(valMin)) / (std::log10(valMax) - std::log10(valMin));
+          glVertex3i(winW - plotAreaW - textBoxW + plotAreaW * k1 / std::max((int)D.Plot[k0].val.size() - 1, 1), winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
+        }
+        glEnd();
+      }
+      glLineWidth(1.0f);
+      glPointSize(1.0f);
     }
-    glLineWidth(1.0f);
-    glPointSize(1.0f);
   }
 
   // Draw the 2D scatter
-  if (!D.scatData.empty()) {
-    glLineWidth(2.0f);
-    glBegin(GL_LINE_STRIP);
-    glColor3f(0.7f, 0.7f, 0.7f);
-    glVertex3i(textBoxW, scatAreaH + 3 * textBoxH, 0);
-    glVertex3i(textBoxW, 3 * textBoxH, 0);
-    glVertex3i(textBoxW + scatAreaW, 3 * textBoxH, 0);
-    glEnd();
-
+  if (!D.Scatter.empty()) {
     // Find the min max range for scaling
     double valMinX= std::numeric_limits<double>::max();
     double valMinY= std::numeric_limits<double>::max();
     double valMaxX= std::numeric_limits<double>::lowest();
     double valMaxY= std::numeric_limits<double>::lowest();
-    for (int k0= 0; k0 < int(D.scatData.size()); k0++) {
-      for (int k1= 0; k1 < int(D.scatData[k0].size()); k1++) {
-        if (valMinX > D.scatData[k0][k1][0]) valMinX= D.scatData[k0][k1][0];
-        if (valMinY > D.scatData[k0][k1][1]) valMinY= D.scatData[k0][k1][1];
-        if (valMaxX < D.scatData[k0][k1][0]) valMaxX= D.scatData[k0][k1][0];
-        if (valMaxY < D.scatData[k0][k1][1]) valMaxY= D.scatData[k0][k1][1];
+    for (int k0= 0; k0 < int(D.Scatter.size()); k0++) {
+      for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
+        if (valMinX > D.Scatter[k0].val[k1][0]) valMinX= D.Scatter[k0].val[k1][0];
+        if (valMinY > D.Scatter[k0].val[k1][1]) valMinY= D.Scatter[k0].val[k1][1];
+        if (valMaxX < D.Scatter[k0].val[k1][0]) valMaxX= D.Scatter[k0].val[k1][0];
+        if (valMaxY < D.Scatter[k0].val[k1][1]) valMaxY= D.Scatter[k0].val[k1][1];
       }
     }
 
-    // Draw min max values
+    // Draw the axes and min max values
+    glLineWidth(2.0f);
+    glColor3f(0.7f, 0.7f, 0.7f);
+    glBegin(GL_LINE_STRIP);
+    glVertex3i(textBoxW, scatAreaH + 3 * textBoxH, 0);
+    glVertex3i(textBoxW, 3 * textBoxH, 0);
+    glVertex3i(textBoxW + scatAreaW, 3 * textBoxH, 0);
+    glEnd();
     char str[50];
     sprintf(str, "%+.2e", valMinX);
     draw_text(textBoxW, 2 * textBoxH, str);
@@ -514,34 +535,32 @@ void callback_display() {
     draw_text(0, 3 * textBoxH, str);
     sprintf(str, "%+.2e", valMaxY);
     draw_text(0, 3 * textBoxH + scatAreaH - textBoxH, str);
+    glLineWidth(1.0f);
 
+    // Draw the scatter legend and points
+    glLineWidth(2.0f);
     glPointSize(3.0f);
-    for (int k0= 0; k0 < int(D.scatData.size()); k0++) {
-      if (D.scatData[k0].empty()) continue;
-
+    for (int k0= 0; k0 < (int)D.Scatter.size(); k0++) {
       // Set the color
       float r, g, b;
-      Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.scatData.size() - 1, 1), r, g, b);
+      Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Scatter.size() - 1, 1), r, g, b);
       glColor3f(r, g, b);
 
       // Draw the text for legend
-      if (D.scatLegend.size() == D.scatData.size())
-        strcpy(str, D.scatLegend[k0].c_str());
-      else
-        strcpy(str, "<name>");
+      strcpy(str, D.Scatter[k0].name.c_str());
       draw_text(0, scatAreaH - k0 * textBoxH, str);
 
-      // Draw the polyline
+      // Draw the points
       glBegin(GL_POINTS);
-      for (int k1= 0; k1 < int(D.scatData[k0].size()); k1++) {
-        const double relPosX= (D.scatData[k0][k1][0] - valMinX) / (valMaxX - valMinX);
-        const double relPosY= (D.scatData[k0][k1][1] - valMinY) / (valMaxY - valMinY);
+      for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
+        const double relPosX= (D.Scatter[k0].val[k1][0] - valMinX) / (valMaxX - valMinX);
+        const double relPosY= (D.Scatter[k0].val[k1][1] - valMinY) / (valMaxY - valMinY);
         glVertex3i(textBoxW + (int)std::round((double)scatAreaW * relPosX), 3 * textBoxH + (int)std::round((double)scatAreaH * relPosY), 0);
       }
       glEnd();
     }
-    glPointSize(1.0f);
     glLineWidth(1.0f);
+    glPointSize(1.0f);
   }
 
   // Draw the frame time
@@ -607,18 +626,16 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if (key == '8') D.displayMode8= !D.displayMode8;
   else if (key == '9') D.displayMode9= !D.displayMode9;
   else if (key == '0') D.showAxis= !D.showAxis;
-  else if (key == '-') D.plotLogScale= !D.plotLogScale;
   else if (key == '=') {
-    D.plotLegend.clear();
-    D.scatLegend.clear();
-    D.plotData.clear();
-    D.scatData.clear();
+    D.Plot.clear();
+    D.Scatter.clear();
   }
   else if (key == ',') project_ForceHardInit();
   else if (key == '/') project_QueueSoftRefresh();
   else if ((key >= 'A' && key <= 'Z') || (key >= 'a' && key <= 'z')) {
     const unsigned char keyUpperCase= (key >= 'a' && key <= 'z') ? (key - ('a' - 'A')) : (key);
     if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress(keyUpperCase);
+    if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(keyUpperCase);
@@ -820,6 +837,7 @@ void init_menu() {
   glutAddMenuEntry("Smooth draw", -11);
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
+  glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
   glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
   glutAddMenuEntry("FractalCurvDev", ProjectID::FractalCurvDevID);
   glutAddMenuEntry("FractalElevMap", ProjectID::FractalElevMapID);

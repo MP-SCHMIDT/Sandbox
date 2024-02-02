@@ -104,8 +104,8 @@ void StringArtOptim::Refresh() {
   isRefreshed= true;
 
   // Reset plot
-  D.plotData.clear();
-  D.plotLegend.clear();
+  D.Plot.clear();
+  D.Scatter.clear();
 
   // Initialize images
   ImRef= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
@@ -223,23 +223,20 @@ void StringArtOptim::Animate() {
     }
 
     // Add to plot data
-    D.plotLegend.resize(2);
-    D.plotData.resize(2);
-    D.plotData[1].resize(Pegs.size());
-    D.plotLegend[0]= "MatchErr";
-    D.plotLegend[1]= "PegCounts";
-    D.plotData[0].push_back(Err);
-    for (int idxPeg= 0; idxPeg < (int)Pegs.size(); idxPeg++) {
-      D.plotData[1][idxPeg]= PegsCount[idxPeg];
-    }
+    D.Plot.resize(2);
+    D.Plot[0].name= "MatchErr";
+    D.Plot[1].name= "PegCounts";
+    D.Plot[0].val.push_back(Err);
+    D.Plot[1].val.resize(Pegs.size());
+    for (int idxPeg= 0; idxPeg < (int)Pegs.size(); idxPeg++)
+      D.Plot[1].val[idxPeg]= PegsCount[idxPeg];
 
     // Add to scatter data
-    D.scatLegend.resize(1);
-    D.scatData.resize(1);
-    D.scatData[0].resize(Colors.size());
-    D.scatLegend[0]= "Lengths";
+    D.Scatter.resize(1);
+    D.Scatter[0].name= "Lengths";
+    D.Scatter[0].val.resize(Colors.size());
     for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
-      D.scatData[0][idxCol]= std::array<double, 2>({(double)idxCol, (double)Len[idxCol]});
+      D.Scatter[0].val[idxCol]= std::array<double, 2>({(double)idxCol, (double)Len[idxCol]});
     }
   }
 }

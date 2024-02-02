@@ -39,6 +39,36 @@ class ParamUI
 };
 
 
+class PlotUI
+{
+  public:
+  std::vector<double> val;
+  std::string name;
+  bool isLog;
+  bool isSameRange;
+
+  PlotUI() {
+    val.clear();
+    name= "<name>";
+    isLog= false;
+    isSameRange= false;
+  }
+};
+
+
+class ScatterUI
+{
+  public:
+  std::vector<std::array<double, 2>> val;
+  std::string name;
+
+  ScatterUI() {
+    val.clear();
+    name= "<name>";
+  }
+};
+
+
 class Data
 {
   public:
@@ -62,12 +92,8 @@ class Data
   int idxParamPageUI= 0;
   int idxParamUI= 0;
   int idxCursorUI= 0;
+
   std::vector<ParamUI> UI;
-
-  bool plotLogScale= false;
-  std::vector<std::string> plotLegend;
-  std::vector<std::vector<double>> plotData;
-
-  std::vector<std::string> scatLegend;
-  std::vector<std::vector<std::array<double, 2>>> scatData;
+  std::vector<PlotUI> Plot;
+  std::vector<ScatterUI> Scatter;
 };

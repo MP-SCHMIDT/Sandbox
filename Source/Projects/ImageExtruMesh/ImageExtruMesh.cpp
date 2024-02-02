@@ -11,6 +11,7 @@
 
 // Algo headers
 #include "FileIO/FileInput.hpp"
+#include "FileIO/FileOutput.hpp"
 #include "Geom/MarchingCubes.hpp"
 #include "Math/Field.hpp"
 
@@ -34,12 +35,14 @@ ImageExtruMesh::ImageExtruMesh() {
 void ImageExtruMesh::SetActiveProject() {
   if (!isActivProj) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("InputFile_______", 1));
-    D.UI.push_back(ParamUI("DomainW_________", 50));
-    D.UI.push_back(ParamUI("DomainH_________", 50));
+    D.UI.push_back(ParamUI("ResolutionX_____", 100));
+    D.UI.push_back(ParamUI("ResolutionY_____", 100));
+    D.UI.push_back(ParamUI("SizeX___________", 10.0));
+    D.UI.push_back(ParamUI("SizeY___________", 10.0));
+    D.UI.push_back(ParamUI("SizeZ___________", 1.0));
     D.UI.push_back(ParamUI("SmoothIter______", 3));
     D.UI.push_back(ParamUI("Isovalue________", 0.5));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0));
+    D.UI.push_back(ParamUI("VerboseLevel____", 1));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {
@@ -85,76 +88,70 @@ void ImageExtruMesh::Refresh() {
   isRefreshed= true;
   if (D.UI[VerboseLevel____].I() >= 5) printf("ImageExtruMesh::Refresh()\n");
 
+  // Set the bounding box
+  D.boxMin= {-0.5 * D.UI[SizeX___________].D(), -0.5 * D.UI[SizeY___________].D(), -0.5 * D.UI[SizeZ___________].D()};
+  D.boxMax= {0.5 * D.UI[SizeX___________].D(), 0.5 * D.UI[SizeY___________].D(), 0.5 * D.UI[SizeZ___________].D()};
+
   // Get and check dimensions
-  int nX= 1;
-  int nY= D.UI[DomainW_________].I();
-  int nZ= D.UI[DomainH_________].I();
-  if (nX < 1 || nY < 1 || nZ < 1) return;
+  const int nX= D.UI[ResolutionX_____].I();
+  const int nY= D.UI[ResolutionY_____].I();
+  if (nX < 1 || nY < 1) return;
 
   // Load bitmap file
-  const int inputFile= D.UI[InputFile_______].I();
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
-  if (inputFile == 0) FileInput::LoadImageBMPFile("./FileInput/Images/Logo.bmp", imageRGBA, false);
-  if (imageRGBA.empty()) return;
+  FileInput::LoadImageBMPFile("./FileInput/Images/Logo.bmp", imageRGBA, false);
 
-  // Project bitmap alpha channel as scalar field values
-  std::vector<std::vector<std::vector<double>>> field= Field::AllocField3D(1, nY, nZ, 0.0);
+  // Get bitmap file dimensions
+  int nW, nH;
+  Field::GetFieldDimensions(imageRGBA, nW, nH);
+  if (nW < 1 || nH < 1) return;
+
+  // Sample field from image red channel with zero order interpolation (nearest neighbor) scheme
+  std::vector<std::vector<std::vector<double>>> field= Field::AllocField3D(nX, nY, 1, 0.0);
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
-      for (int z= 0; z < nZ; z++) {
-        const float posW= (float)(imageRGBA.size() - 1) * ((float)y + 0.5f) / (float)nY;
-        const float posH= (float)(imageRGBA[0].size() - 1) * ((float)z + 0.5f) / (float)nZ;
-        const int idxPixelW= std::min(std::max((int)std::round(posW), 0), (int)imageRGBA.size() - 1);
-        const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
-        const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
-        field[x][y][z]= 1.0 - colRGBA[3];
-      }
+      const float posW= (float)(nW - 1) * ((float)x + 0.5f) / (float)nX;
+      const float posH= (float)(nH - 1) * ((float)y + 0.5f) / (float)nY;
+      const int idxPixelW= std::min(std::max((int)std::round(posW), 0), nW - 1);
+      const int idxPixelH= std::min(std::max((int)std::round(posH), 0), nH - 1);
+      field[x][y][0]= imageRGBA[idxPixelW][idxPixelH][0];
     }
   }
 
   // Iteratively smooth the field
   for (int k= 0; k < D.UI[SmoothIter______].I(); k++) {
     std::vector<std::vector<std::vector<double>>> fieldOld= field;
-    for (int y= 1; y < nY - 1; y++) {
-      for (int z= 1; z < nZ - 1; z++) {
-        field[0][y][z]= (fieldOld[0][y][z] + fieldOld[0][y + 1][z] + fieldOld[0][y - 1][z] + fieldOld[0][y][z + 1] + fieldOld[0][y][z - 1]) / 5.0f;
+    for (int x= 1; x < nX - 1; x++) {
+      for (int y= 1; y < nY - 1; y++) {
+        field[x][y][0]= (fieldOld[x][y][0] + fieldOld[x - 1][y][0] + fieldOld[x + 1][y][0] + fieldOld[x][y - 1][0] + fieldOld[x][y + 1][0]) / 5.0f;
       }
     }
   }
 
   // Replicate the field along extrusion direction and add top/bottom empty layers
   std::vector<std::vector<std::vector<double>>> fieldOld= field;
-  field= Field::AllocField3D(nX + 4, nY, nZ, 0.0);
-  field[1]= fieldOld[0];
-  field[2]= fieldOld[0];
+  field= Field::AllocField3D(nX, nY, 4, 0.0);
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      field[x][y][1]= fieldOld[x][y][0];
+      field[x][y][2]= fieldOld[x][y][0];
+    }
+  }
 
   // Compute the isosurface with marching cubes
   std::vector<std::array<double, 3>> oVertices;
   std::vector<std::array<int, 3>> oTriangles;
-  MarchingCubes::ComputeMarchingCubes(0.3f, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({1.0, 1.0, 1.0}), field, oVertices, oTriangles);
+  MarchingCubes::ComputeMarchingCubes(D.UI[Isovalue________].F(), D.boxMin, D.boxMax, field, oVertices, oTriangles);
 
   // Snap the mesh nodes to the box in the extrusion direction
   for (unsigned int k= 0; k < oVertices.size(); k++) {
-    oVertices[k][0]= (oVertices[k][0] < 0.5) ? 0.0 : 1.0;
+    oVertices[k][2]= (oVertices[k][2] < 0.5 * (D.boxMin[2] + D.boxMax[2])) ? D.boxMin[2] : D.boxMax[2];
   }
 
   // Write the obj file on disk
-  std::string iFullpath= "FileOutput/test.obj";
-  printf("Saving OBJ mesh file [%s]\n", iFullpath.c_str());
-  FILE* outputFile= nullptr;
-  outputFile= fopen(iFullpath.c_str(), "w");
-  if (outputFile == nullptr) {
-    printf("[ERROR] Unable to create the file\n\n");
-  }
-  else {
-    for (unsigned int k= 0; k < oVertices.size(); k++) {
-      fprintf(outputFile, "v %lf %lf %lf\n", oVertices[k][0], oVertices[k][1], oVertices[k][2]);
-    }
-    for (unsigned int k= 0; k < oTriangles.size(); k++) {
-      fprintf(outputFile, "f %d %d %d\n", oTriangles[k][0] + 1, oTriangles[k][1] + 1, oTriangles[k][2] + 1);
-    }
-    fclose(outputFile);
-  }
+  std::vector<std::array<double, 3>> oVerticesColors;
+  std::vector<std::array<int, 4>> oQuads;
+  FileOutput::SaveMeshOBJFile("FileOutput/test.obj", oVertices, oVerticesColors, oTriangles, oQuads, D.UI[VerboseLevel____].I());
 }
 
 

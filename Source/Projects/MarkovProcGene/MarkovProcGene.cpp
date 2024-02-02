@@ -103,7 +103,7 @@ void MarkovProcGene::Refresh() {
   // Reset progress counters
   activeSet= -1;
   activeRul= -1;
-  D.plotData.clear();
+  D.Plot.clear();
 
   // Initialize dictionnary and field values
   Dict.clear();
@@ -577,10 +577,9 @@ void MarkovProcGene::Animate() {
         activeSet= idxSet;
         activeMatchCount= matchCount;
       }
-      D.plotLegend.resize(Dict.size());
-      D.plotLegend[idxSet]= "Set" + std::to_string(idxSet);
-      D.plotData.resize(Dict.size());
-      D.plotData[idxSet].push_back((double)matchCount);
+      D.Plot.resize(Dict.size());
+      D.Plot[idxSet].name= "Set" + std::to_string(idxSet);
+      D.Plot[idxSet].val.push_back((double)matchCount);
     }
 
     if (activeSet < 0) continue;
