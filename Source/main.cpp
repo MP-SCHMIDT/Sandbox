@@ -31,7 +31,7 @@
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
-#define PRIVATE_RESEARCH_SANDBOX_SUPERSET
+// #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "NonLinMMABench/NonLinMMABench.hpp"
 #include "StructGenOptim/StructGenOptim.hpp"
