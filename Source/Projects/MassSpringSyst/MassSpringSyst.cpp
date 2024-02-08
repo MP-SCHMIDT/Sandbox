@@ -201,7 +201,8 @@ void MassSpringSyst::Draw() {
     glBegin(GL_POINTS);
     for (int k0= 0; k0 < N; k0++) {
       float r, g, b;
-      Colormap::RatioToJetSmooth(For[k0].norm(), r, g, b);
+      if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetSmooth(For[k0].norm() * D.UI[ColorFactor_____].F(), r, g, b);
+      if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToJetSmooth(Vel[k0].norm() * D.UI[ColorFactor_____].F(), r, g, b);
       glColor3f(r, g, b);
       glVertex3fv(Pos[k0].array());
     }
@@ -217,7 +218,8 @@ void MassSpringSyst::Draw() {
       for (int k1 : Adj[k0]) {
         if (k0 > k1) continue;
         float r, g, b;
-        Colormap::RatioToJetSmooth(((For[k0] + For[k1]) / 2.0f).norm(), r, g, b);
+        if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetSmooth(((For[k0] + For[k1]) / 2.0f).norm() * D.UI[ColorFactor_____].F(), r, g, b);
+        if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToJetSmooth(((Vel[k0] + Vel[k1]) / 2.0f).norm() * D.UI[ColorFactor_____].F(), r, g, b);
         glColor3f(r, g, b);
         glVertex3fv(Pos[k0].array());
         glVertex3fv(Pos[k1].array());
