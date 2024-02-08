@@ -47,6 +47,7 @@ class CompuFluidDyna
     TimeStep________,
     SolvMaxIter_____,
     SolvType________,
+    SolvMatMultType_,
     SolvSOR_________,
     SolvTolRhs______,
     SolvTolRel______,
@@ -57,6 +58,13 @@ class CompuFluidDyna
     CoeffDiffuV_____,
     CoeffVorti______,
     CoeffProj_______,
+    DarcyEnable_____,
+    DarcySmoothIt___,
+    DarcyMinResist__,
+    DarcyMaxResist__,
+    DarcyPenal______,
+    DarcyImplicit___,
+    DarcyProjItera__,
     BCVelX__________,
     BCVelY__________,
     BCVelZ__________,
@@ -110,9 +118,10 @@ class CompuFluidDyna
   std::vector<std::vector<std::vector<float>>> VelZForced;
   std::vector<std::vector<std::vector<float>>> PresForced;
   std::vector<std::vector<std::vector<float>>> SmokForced;
-  std::vector<std::vector<std::array<int, 3>>> VoxIdx;
+  std::vector<std::vector<std::vector<float>>> Poros;
 
   // Fields for scenario run
+  std::vector<std::vector<std::array<int, 3>>> VoxIdx;
   std::vector<std::vector<std::vector<float>>> Dum0;
   std::vector<std::vector<std::vector<float>>> Dum1;
   std::vector<std::vector<std::vector<float>>> Dum2;
@@ -167,6 +176,7 @@ class CompuFluidDyna
                         const std::vector<std::vector<std::vector<float>>>& iField,
                         std::vector<std::vector<std::vector<float>>>& ioField);
   void ExternalForces();
+  void DarcyPenal();
   void ProjectField(const int iMaxIter, const float iTimeStep,
                     std::vector<std::vector<std::vector<float>>>& ioVelX,
                     std::vector<std::vector<std::vector<float>>>& ioVelY,
