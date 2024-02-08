@@ -518,15 +518,28 @@ void callback_display() {
       }
     }
 
-    // Draw the axes and min max values
-    glLineWidth(2.0f);
+    // Draw the axes and zero lines
     glColor3f(0.7f, 0.7f, 0.7f);
-    glBegin(GL_LINE_STRIP);
+    glBegin(GL_LINE_LOOP);
     glVertex3i(textBoxW, scatAreaH + 3 * textBoxH, 0);
     glVertex3i(textBoxW, 3 * textBoxH, 0);
     glVertex3i(textBoxW + scatAreaW, 3 * textBoxH, 0);
+    glVertex3i(textBoxW + scatAreaW, scatAreaH + 3 * textBoxH, 0);
     glEnd();
+    if (valMinX < 0.0 && valMaxX > 0.0 && valMinY < 0.0 && valMaxY > 0.0) {
+      int offsetW= ((0.0 - valMinX) / (valMaxX - valMinX)) * scatAreaW;
+      int offsetH= ((0.0 - valMinY) / (valMaxY - valMinY)) * scatAreaH;
+      glBegin(GL_LINES);
+      glVertex3i(textBoxW + offsetW, scatAreaH + 3 * textBoxH, 0);
+      glVertex3i(textBoxW + offsetW, 3 * textBoxH, 0);
+      glVertex3i(textBoxW, offsetH + 3 * textBoxH, 0);
+      glVertex3i(textBoxW + scatAreaW, offsetH + 3 * textBoxH, 0);
+      glEnd();
+    }
+
+    // Draw the min max values
     char str[50];
+    glLineWidth(2.0f);
     sprintf(str, "%+.2e", valMinX);
     draw_text(textBoxW, 2 * textBoxH, str);
     sprintf(str, "%+.2e", valMaxX);
