@@ -59,3 +59,5 @@ Add both paths to env var (here shown in the case of C: drive root)
 - use `/` key to soft-refresh the active project
 - use `0`-`9` keys to toggle various displays in the active project
 - use `a`-`z` keys to trigger operations in the active project
+
+![Screenshot](Docs/Anim_SandboxUse.gif)
