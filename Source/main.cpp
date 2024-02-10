@@ -526,12 +526,16 @@ void callback_display() {
     glVertex3i(textBoxW + scatAreaW, 3 * textBoxH, 0);
     glVertex3i(textBoxW + scatAreaW, scatAreaH + 3 * textBoxH, 0);
     glEnd();
-    if (valMinX < 0.0 && valMaxX > 0.0 && valMinY < 0.0 && valMaxY > 0.0) {
+    if (valMinX < 0.0 && valMaxX > 0.0) {
       int offsetW= ((0.0 - valMinX) / (valMaxX - valMinX)) * scatAreaW;
-      int offsetH= ((0.0 - valMinY) / (valMaxY - valMinY)) * scatAreaH;
       glBegin(GL_LINES);
       glVertex3i(textBoxW + offsetW, scatAreaH + 3 * textBoxH, 0);
       glVertex3i(textBoxW + offsetW, 3 * textBoxH, 0);
+      glEnd();
+    }
+    if (valMinY < 0.0 && valMaxY > 0.0) {
+      int offsetH= ((0.0 - valMinY) / (valMaxY - valMinY)) * scatAreaH;
+      glBegin(GL_LINES);
       glVertex3i(textBoxW, offsetH + 3 * textBoxH, 0);
       glVertex3i(textBoxW + scatAreaW, offsetH + 3 * textBoxH, 0);
       glEnd();
