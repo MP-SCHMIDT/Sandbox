@@ -25,6 +25,7 @@
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
 #include "MarkovProcGene/MarkovProcGene.hpp"
 #include "MassSpringSyst/MassSpringSyst.hpp"
+#include "ParticForceLaw/ParticForceLaw.hpp"
 #include "ParticLifeOrga/ParticLifeOrga.hpp"
 #include "PosiBasedDynam/PosiBasedDynam.hpp"
 #include "SkeletonFolder/SkeletonFolder.hpp"
@@ -77,6 +78,7 @@ FractalElevMap myFractalElevMap;
 ImageExtruMesh myImageExtruMesh;
 MarkovProcGene myMarkovProcGene;
 MassSpringSyst myMassSpringSyst;
+ParticForceLaw myParticForceLaw;
 ParticLifeOrga myParticLifeOrga;
 PosiBasedDynam myPosiBasedDynam;
 SkeletonFolder mySkeletonFolder;
@@ -99,6 +101,7 @@ enum ProjectID
   ImageExtruMeshID,
   MarkovProcGeneID,
   MassSpringSystID,
+  ParticForceLawID,
   ParticLifeOrgaID,
   PosiBasedDynamID,
   SkeletonFolderID,
@@ -124,6 +127,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj) myImageExtruMesh= ImageExtruMesh();
   if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj) myMarkovProcGene= MarkovProcGene();
   if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj) myMassSpringSyst= MassSpringSyst();
+  if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj) myParticForceLaw= ParticForceLaw();
   if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj) myParticLifeOrga= ParticLifeOrga();
   if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj) myPosiBasedDynam= PosiBasedDynam();
   if (currentProjectID != ProjectID::SkeletonFolderID && mySkeletonFolder.isActivProj) mySkeletonFolder= SkeletonFolder();
@@ -143,6 +147,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.SetActiveProject();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.SetActiveProject();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.SetActiveProject();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.SetActiveProject();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.SetActiveProject();
   if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.SetActiveProject();
@@ -165,6 +170,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Refresh();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Refresh();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Refresh();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Refresh();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Refresh();
   if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.Refresh();
@@ -187,6 +193,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Animate();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Animate();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Animate();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Animate();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Animate();
   if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.Animate();
@@ -209,6 +216,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Draw();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Draw();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Draw();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Draw();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Draw();
   if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.Draw();
@@ -231,6 +239,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.isRefreshed= false;
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.isRefreshed= false;
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.isRefreshed= false;
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.isRefreshed= false;
   if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.isRefreshed= false;
@@ -659,6 +668,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress(keyUpperCase);
+    if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.KeyPress(keyUpperCase);
@@ -861,6 +871,7 @@ void init_menu() {
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
   glutAddMenuEntry("MarkovProcGene", ProjectID::MarkovProcGeneID);
   glutAddMenuEntry("MassSpringSyst", ProjectID::MassSpringSystID);
+  glutAddMenuEntry("ParticForceLaw", ProjectID::ParticForceLawID);
   glutAddMenuEntry("ParticLifeOrga", ProjectID::ParticLifeOrgaID);
   glutAddMenuEntry("PosiBasedDynam", ProjectID::PosiBasedDynamID);
   glutAddMenuEntry("SkeletonFolder", ProjectID::SkeletonFolderID);
