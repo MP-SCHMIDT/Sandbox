@@ -25,10 +25,14 @@ class ParticForceLaw
     DomainX_________,
     DomainY_________,
     DomainZ_________,
+    ScenarioPreset__,
+    Scenario2DID____,
+    Scenario3DID____,
+    Scenario2DThick_,
+    ScenarioForce___,
+    ScenarioMove____,
     LatticePitch____,
     LatticePattern__,
-    ScenarioPreset__,
-    ScenarioForce___,
     StepsPerDraw____,
     TimeStep________,
     IntegType_______,
@@ -68,6 +72,7 @@ class ParticForceLaw
   std::vector<Vec::Vec3<float>> For;
   std::vector<Vec::Vec3<float>> Col;
   std::vector<Vec::Vec3<float>> Ext;
+  std::vector<Vec::Vec3<float>> Mov;
   std::vector<int> Fix;
 
   void ComputeForces();

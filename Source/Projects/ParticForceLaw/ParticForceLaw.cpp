@@ -10,6 +10,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
+#include "FileIO/FileInput.hpp"
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 #include "Util/Random.hpp"
@@ -37,15 +38,19 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("DomainX_________", 1.0));
     D.UI.push_back(ParamUI("DomainY_________", 1.0));
     D.UI.push_back(ParamUI("DomainZ_________", 1.0));
+    D.UI.push_back(ParamUI("ScenarioPreset__", 3));
+    D.UI.push_back(ParamUI("Scenario2DID____", 0));
+    D.UI.push_back(ParamUI("Scenario3DID____", 0));
+    D.UI.push_back(ParamUI("Scenario2DThick_", 0.1));
+    D.UI.push_back(ParamUI("ScenarioForce___", 1.0));
+    D.UI.push_back(ParamUI("ScenarioMove____", 1.0));
     D.UI.push_back(ParamUI("LatticePitch____", 0.05));
     D.UI.push_back(ParamUI("LatticePattern__", 2));
-    D.UI.push_back(ParamUI("ScenarioPreset__", 2));
-    D.UI.push_back(ParamUI("ScenarioForce___", 1.0));
     D.UI.push_back(ParamUI("StepsPerDraw____", 4));
     D.UI.push_back(ParamUI("TimeStep________", 0.002));
-    D.UI.push_back(ParamUI("IntegType_______", 1));
+    D.UI.push_back(ParamUI("IntegType_______", 0));
     D.UI.push_back(ParamUI("ParticleMass____", 1.0));
-    D.UI.push_back(ParamUI("VelocityDamping_", 4.0));
+    D.UI.push_back(ParamUI("VelocityDamping_", 0.0));
     D.UI.push_back(ParamUI("ForceLawPreset__", 0));
     D.UI.push_back(ParamUI("ForceLawNormali_", 1));
     D.UI.push_back(ParamUI("ForceLawScale___", 200.0));
@@ -64,7 +69,7 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("ForceLawCoeff12_", 0.0));
     D.UI.push_back(ParamUI("ForceLawCoeff13_", 1.0));
     D.UI.push_back(ParamUI("ForceLawCoeff14_", 0.0));
-    D.UI.push_back(ParamUI("ColorMode_______", 0));
+    D.UI.push_back(ParamUI("ColorMode_______", 2));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("VisuScale_______", 0.5));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
@@ -88,10 +93,14 @@ bool ParticForceLaw::CheckAlloc() {
   if (D.UI[DomainX_________].hasChanged()) isAllocated= false;
   if (D.UI[DomainY_________].hasChanged()) isAllocated= false;
   if (D.UI[DomainZ_________].hasChanged()) isAllocated= false;
+  if (D.UI[ScenarioPreset__].hasChanged()) isAllocated= false;
+  if (D.UI[Scenario2DID____].hasChanged()) isAllocated= false;
+  if (D.UI[Scenario3DID____].hasChanged()) isAllocated= false;
+  if (D.UI[Scenario2DThick_].hasChanged()) isAllocated= false;
+  if (D.UI[ScenarioForce___].hasChanged()) isAllocated= false;
+  if (D.UI[ScenarioMove____].hasChanged()) isAllocated= false;
   if (D.UI[LatticePitch____].hasChanged()) isAllocated= false;
   if (D.UI[LatticePattern__].hasChanged()) isAllocated= false;
-  if (D.UI[ScenarioPreset__].hasChanged()) isAllocated= false;
-  if (D.UI[ScenarioForce___].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -133,6 +142,7 @@ void ParticForceLaw::Allocate() {
   Acc.clear();
   For.clear();
   Col.clear();
+  Mov.clear();
   Ext.clear();
   Fix.clear();
 
@@ -143,9 +153,9 @@ void ParticForceLaw::Allocate() {
   // Generate the full point cloud over the domain
   std::vector<Vec::Vec3<float>> points;
   float minDist= 0.0f;
-  if (D.UI[LatticePattern__].I() == 0) minDist= 1.0f;                    // SCC pattern
-  if (D.UI[LatticePattern__].I() == 1) minDist= std::sqrt(3.0f) / 2.0f;  // BCC pattern
-  if (D.UI[LatticePattern__].I() == 2) minDist= std::sqrt(2.0f) / 2.0f;  // FCC pattern
+  if (D.UI[LatticePattern__].I() == 0) minDist= 1.0f;                                    // SCC pattern
+  if (D.UI[LatticePattern__].I() == 1) minDist= (2.0f / 3.0f) * std::sqrt(3.0f) / 2.0f;  // BCC pattern
+  if (D.UI[LatticePattern__].I() == 2) minDist= std::sqrt(2.0f) / 2.0f;                  // FCC pattern
   const int nX= (int)std::ceil(float(D.boxMax[0] - D.boxMin[0]) / (D.UI[LatticePitch____].F() * minDist));
   const int nY= (int)std::ceil(float(D.boxMax[1] - D.boxMin[1]) / (D.UI[LatticePitch____].F() * minDist));
   const int nZ= (int)std::ceil(float(D.boxMax[2] - D.boxMin[2]) / (D.UI[LatticePitch____].F() * minDist));
@@ -170,18 +180,66 @@ void ParticForceLaw::Allocate() {
   const Vec::Vec3<float> BoxMax(D.boxMax[0], D.boxMax[1], D.boxMax[2]);
   const float BoxDiag= (BoxMax - BoxMin).norm();
 
+  // Load the 2D scenario file if needed
+  std::vector<std::vector<std::array<float, 4>>> imageRGBA;
+  if (D.UI[ScenarioPreset__].I() == 0) {
+    if (D.UI[Scenario2DID____].I() == 0) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/Coupon.bmp", imageRGBA, false);
+    if (D.UI[Scenario2DID____].I() == 1) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/SandiaFracture.bmp", imageRGBA, false);
+  }
+
+  // Load the 3D scenario file if needed
+  // TODO
+  if (D.UI[ScenarioPreset__].I() == 1) {
+  }
+
   // Add the subset of points for the current scenario
   for (int k= 0; k < (int)points.size(); k++) {
     const Vec::Vec3<float> RelPos= (points[k] - BoxMin).cwiseDiv(BoxMax - BoxMin);
+    // 2D loaded scenario
+    if (D.UI[ScenarioPreset__].I() == 0 && !imageRGBA.empty()) {
+      if (std::abs(RelPos[0] - 0.5f) < 0.5f * D.UI[Scenario2DThick_].F()) {
+        const float posW= (float)(imageRGBA.size() - 1) * RelPos[1];
+        const float posH= (float)(imageRGBA[0].size() - 1) * RelPos[2];
+        const int idxPixelW= std::min(std::max((int)std::round(posW), 0), (int)imageRGBA.size() - 1);
+        const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
+        const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
+        if (colRGBA[3] > 0.5f) {
+          Pos.push_back(points[k]);
+          if (colRGBA[0] > 0.9f) {
+            Fix.push_back(true);
+          }
+          else if (colRGBA[1] < 0.1f) {
+            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
+            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
+          }
+          else if (colRGBA[1] > 0.9f) {
+            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
+            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
+          }
+          else if (colRGBA[2] < 0.1f) {
+            For.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F()));
+            Ext.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F()));
+          }
+          else if (colRGBA[2] > 0.9f) {
+            For.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioForce___].F()));
+            Ext.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioForce___].F()));
+          }
+        }
+      }
+    }
+    // 3D loaded scenario
+    if (D.UI[ScenarioPreset__].I() == 1) {
+      // TODO set particle based on loaded mesh
+    }
     // Full set of points
-    if (D.UI[ScenarioPreset__].I() == 0) {
+    if (D.UI[ScenarioPreset__].I() == 2) {
       Pos.push_back(points[k]);
-      Fix.push_back(false);
     }
     // Box falling on steps
-    else if (D.UI[ScenarioPreset__].I() == 1) {
+    else if (D.UI[ScenarioPreset__].I() == 3) {
       if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.8f)).abs().maxCoeff() < 0.1f * BoxDiag) {
         Pos.push_back(points[k]);
+        For.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F() * D.UI[ParticleMass____].F()));
         Ext.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F() * D.UI[ParticleMass____].F()));
       }
       else if (RelPos[0] > 0.5f && RelPos[2] > 0.3f && RelPos[2] < 0.5f && (RelPos[1] + RelPos[2]) <= 0.8f && RelPos[1] < 0.5f) {
@@ -196,35 +254,41 @@ void ParticForceLaw::Allocate() {
       }
     }
     // Ball blasting through wall
-    else if (D.UI[ScenarioPreset__].I() == 2) {
-      if ((RelPos - Vec::Vec3<float>(0.7f, 0.35f, 0.7f)).norm() < 0.15f) {
+    else if (D.UI[ScenarioPreset__].I() == 4) {
+      if ((RelPos - Vec::Vec3<float>(0.5f, 0.55f, 0.5f)).norm() < 0.15f) {
         Pos.push_back(points[k]);
-        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioForce___].F(), 0.0f));
+        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioMove____].F(), 0.0f));
         Col.push_back(Vec::Vec3<float>(0.8f, 0.3f, 0.3f));
       }
-      else if ((RelPos - Vec::Vec3<float>(0.3f, 0.15f, 0.3f)).norm() < 0.15f) {
+      else if ((RelPos - Vec::Vec3<float>(0.5f, 0.15f, 0.6f)).norm() < 0.15f) {
         Pos.push_back(points[k]);
-        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioForce___].F(), 0.0f));
+        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioMove____].F(), 0.0f));
         Col.push_back(Vec::Vec3<float>(0.3f, 0.8f, 0.3f));
       }
-      else if (RelPos[1] > 0.7f && RelPos[1] < 0.75f) {
+      else if (RelPos[1] > 0.9f && RelPos[1] < 0.95f) {
         Pos.push_back(points[k]);
       }
     }
     // Coupon stretch
-    else if (D.UI[ScenarioPreset__].I() == 2) {
-      if ((RelPos - Vec::Vec3<float>(0.7f, 0.35f, 0.7f)).norm() < 0.15f) {
-        Pos.push_back(points[k]);
-        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioForce___].F(), 0.0f));
-        Col.push_back(Vec::Vec3<float>(0.8f, 0.3f, 0.3f));
-      }
-      else if ((RelPos - Vec::Vec3<float>(0.3f, 0.15f, 0.3f)).norm() < 0.15f) {
-        Pos.push_back(points[k]);
-        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioForce___].F(), 0.0f));
-        Col.push_back(Vec::Vec3<float>(0.3f, 0.8f, 0.3f));
-      }
-      else if (RelPos[1] > 0.7f && RelPos[1] < 0.75f) {
-        Pos.push_back(points[k]);
+    else if (D.UI[ScenarioPreset__].I() == 5) {
+      if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
+        if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
+          if (RelPos[2] < 0.1f) {
+            Pos.push_back(points[k]);
+            Col.push_back(Vec::Vec3<float>(0.5f, 0.5f, 0.1f));
+            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
+            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
+          }
+          else if (RelPos[2] > 0.9f) {
+            Pos.push_back(points[k]);
+            Col.push_back(Vec::Vec3<float>(0.5f, 0.5f, 0.9f));
+            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
+            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
+          }
+          else {
+            Pos.push_back(points[k]);
+          }
+        }
       }
     }
 
@@ -232,6 +296,7 @@ void ParticForceLaw::Allocate() {
     if (Acc.size() < Pos.size()) Acc.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
     if (For.size() < Pos.size()) For.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
     if (Col.size() < Pos.size()) Col.resize(Pos.size(), Vec::Vec3<float>(0.5f, 0.5f, 0.5f));
+    if (Mov.size() < Pos.size()) Mov.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
     if (Ext.size() < Pos.size()) Ext.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
     if (Fix.size() < Pos.size()) Fix.resize(Pos.size(), false);
   }
@@ -343,9 +408,10 @@ void ParticForceLaw::Animate() {
       // Euler integration
       for (int k= 0; k < nbParticles; k++) {
         if (!Fix[k]) {
-          Acc[k]= For[k] / D.UI[ParticleMass____].F();  // at+1 = ft / m
-          Vel[k]+= Acc[k] * dt;                         // vt+1 = at + at+1 * dt
-          Pos[k]+= Vel[k] * dt;                         // xt+1 = vt + vt+1 * dt
+          Acc[k]= For[k] / D.UI[ParticleMass____].F();    // at+1 = ft / m
+          Vel[k]+= Acc[k] * dt;                           // vt+1 = at + at+1 * dt
+          if (Mov[k].abs().sum() > 0.0f) Vel[k]= Mov[k];  // Prescribed movement rate
+          Pos[k]+= Vel[k] * dt;                           // xt+1 = vt + vt+1 * dt
         }
       }
     }
@@ -353,7 +419,7 @@ void ParticForceLaw::Animate() {
       // Velocity Verlet integration - position update
       for (int k= 0; k < nbParticles; k++) {
         if (!Fix[k]) {
-          Pos[k]+= Vel[k] * dt + 0.5 * Acc[k] * dt * dt;  // xt+1 = xt + vt * dt + 0.5 * at * dt * dt
+          Pos[k]+= Vel[k] * dt + 0.5f * Acc[k] * dt * dt;  // xt+1 = xt + vt * dt + 0.5 * at * dt * dt
         }
       }
       // Evaluate net forces acting on particles
@@ -362,8 +428,9 @@ void ParticForceLaw::Animate() {
       for (int k= 0; k < nbParticles; k++) {
         if (!Fix[k]) {
           const Vec::Vec3<float> oldAcc= Acc[k];
-          Acc[k]= For[k] / D.UI[ParticleMass____].F();  // at+1 = ft+1 / m
-          Vel[k]+= 0.5 * (oldAcc + Acc[k]) * dt;        // vt+1 = vt + 0.5 * (at + at+1) * dt
+          Acc[k]= For[k] / D.UI[ParticleMass____].F();    // at+1 = ft+1 / m
+          Vel[k]+= 0.5f * (oldAcc + Acc[k]) * dt;         // vt+1 = vt + 0.5 * (at + at+1) * dt
+          if (Mov[k].abs().sum() > 0.0f) Vel[k]= Mov[k];  // Prescribed movement rate
         }
       }
     }
