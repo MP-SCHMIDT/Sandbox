@@ -8,7 +8,8 @@
 
 
 // Particle-based physics simulation
-// - Memoryless point particles defined only by position and velocity
+// - Memoryless Isotropic Point Particles (MIPP)
+// - Particles defined only by position and velocity
 // - Different from DEM particles because no history, no rotation, etc.
 // - Explicit time integration with forward euler or velocity verlet
 // - Isotropic force law defining force vs distance
