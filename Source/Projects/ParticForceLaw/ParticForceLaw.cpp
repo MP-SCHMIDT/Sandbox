@@ -257,9 +257,7 @@ void ParticForceLaw::Draw() {
       else {
         glPushMatrix();
         glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
-        const float scale= D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F();
-        glScalef(scale, scale, scale);
-        glutSolidSphere(1.0, 12, 6);
+        glutSolidSphere(D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F(), 12, 6);
         glPopMatrix();
       }
     }
