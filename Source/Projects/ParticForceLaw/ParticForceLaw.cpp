@@ -412,24 +412,32 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
         BCPos.push_back(1);
       }
     }
-    // Balls blasting through wall
+    // Ball blasting through wall
     else if (D.UI[ScenarioPreset__].I() == 4) {
-      if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.65f)).norm() < 0.15f) {
-        Pos.push_back(iPointCloud[k]);
-        Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
-        Col.push_back(Vec::Vec3<float>(0.8f, 0.3f, 0.3f));
-      }
-      else if ((RelPos - Vec::Vec3<float>(0.5f, 0.6f, 0.15f)).norm() < 0.15f) {
+      if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.2f)).norm() < 0.15f) {
         Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
         Col.push_back(Vec::Vec3<float>(0.3f, 0.8f, 0.3f));
       }
-      else if (RelPos[2] > 0.9f && RelPos[2] < 0.95f) {
+      else if (RelPos[2] > 0.60f && RelPos[2] < 0.65f) {
         Pos.push_back(iPointCloud[k]);
       }
     }
-    // Coupon stretch - velocity driven
+    // Balls colliding
     else if (D.UI[ScenarioPreset__].I() == 5) {
+      if ((RelPos - Vec::Vec3<float>(0.5f, 0.45f, 0.2f)).norm() < 0.15f) {
+        Pos.push_back(iPointCloud[k]);
+        Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
+        Col.push_back(Vec::Vec3<float>(0.3f, 0.8f, 0.3f));
+      }
+      else if ((RelPos - Vec::Vec3<float>(0.5f, 0.55f, 0.8f)).norm() < 0.15f) {
+        Pos.push_back(iPointCloud[k]);
+        Vel.push_back(Vec::Vec3<float>(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F()));
+        Col.push_back(Vec::Vec3<float>(0.8f, 0.3f, 0.3f));
+      }
+    }
+    // Coupon stretch - velocity driven
+    else if (D.UI[ScenarioPreset__].I() == 6) {
       if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
         if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
           Pos.push_back(iPointCloud[k]);
@@ -439,7 +447,7 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
       }
     }
     // Coupon stretch - force driven
-    else if (D.UI[ScenarioPreset__].I() == 6) {
+    else if (D.UI[ScenarioPreset__].I() == 7) {
       if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
         if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
           Pos.push_back(iPointCloud[k]);
@@ -619,26 +627,26 @@ void ParticForceLaw::ComputeForces() {
       }
     }
     else {
-    // Interaction forces
-    for (int k1= k0 + 1; k1 < (int)Pos.size(); k1++) {
-      // Reject if out of reach
-      const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
-      if (distVec.normSquared() > forceReach * forceReach) continue;
-      // Get linear interpolation of force law for the given particle distance
-      const float distVal= distVec.norm();
-      const float valFloat= (float)(ForceLaw.size() - 1) * distVal / forceReach;
-      const int low= std::min(std::max((int)std::floor(valFloat), 0), (int)ForceLaw.size() - 1);
-      const int upp= std::min(std::max(low + 1, 0), (int)ForceLaw.size() - 1);
-      const float ratio= valFloat - (float)low;
-      const float forceVal= (1.0 - ratio) * ForceLaw[low] + (ratio)*ForceLaw[upp];
-      // Apply inter-particle force to both particles
-      For[k0]+= forceVal * distVec / distVal;
-      For[k1]-= forceVal * distVec / distVal;
-      // Apply inter-particle damping linearly proportional to difference in radial velocity of particle pair
-      const float RadialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
-      For[k0]-= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
-      For[k1]+= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
-    }
+      // Interaction forces
+      for (int k1= k0 + 1; k1 < (int)Pos.size(); k1++) {
+        // Reject if out of reach
+        const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
+        if (distVec.normSquared() > forceReach * forceReach) continue;
+        // Get linear interpolation of force law for the given particle distance
+        const float distVal= distVec.norm();
+        const float valFloat= (float)(ForceLaw.size() - 1) * distVal / forceReach;
+        const int low= std::min(std::max((int)std::floor(valFloat), 0), (int)ForceLaw.size() - 1);
+        const int upp= std::min(std::max(low + 1, 0), (int)ForceLaw.size() - 1);
+        const float ratio= valFloat - (float)low;
+        const float forceVal= (1.0 - ratio) * ForceLaw[low] + (ratio)*ForceLaw[upp];
+        // Apply inter-particle force to both particles
+        For[k0]+= forceVal * distVec / distVal;
+        For[k1]-= forceVal * distVec / distVal;
+        // Apply inter-particle damping linearly proportional to difference in radial velocity of particle pair
+        const float RadialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
+        For[k0]-= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
+        For[k1]+= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
+      }
     }
 
     // External forces
