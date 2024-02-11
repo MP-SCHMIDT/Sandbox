@@ -570,6 +570,17 @@ void ParticForceLaw::ComputeSpatialSort() {
         SpatialSort[idxX][idxY][idxZ].push_back(k);
   }
 
+  // Plot bucket occupancy
+  if (D.Plot.size() < 3) D.Plot.resize(3);
+  D.Plot[2].name= "Buckets";
+  D.Plot[2].val.resize(nX * nY * nZ + 2);
+  D.Plot[2].val[nX * nY * nZ + 0]= 0;
+  D.Plot[2].val[nX * nY * nZ + 1]= nB;
+  for (int x= 0; x < nX; x++)
+    for (int y= 0; y < nY; y++)
+      for (int z= 0; z < nZ; z++)
+        D.Plot[2].val[x * nY * nZ + y * nZ + z]= (double)SpatialSort[x][y][z].size();
+
   if (D.UI[VerboseLevel____].I() >= 1) printf("SpatialSortT %f\n", Timer::PopTimer());
 }
 
