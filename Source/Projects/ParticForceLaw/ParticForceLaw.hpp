@@ -32,6 +32,11 @@ class ParticForceLaw
     Scenario2DThick_,
     LatticePitch____,
     LatticePattern__,
+    SpatialSortUse__,
+    SpatialSortResX_,
+    SpatialSortResY_,
+    SpatialSortResZ_,
+    SpatialSortSize_,
     BCVelX__________,
     BCVelY__________,
     BCVelZ__________,
@@ -81,9 +86,14 @@ class ParticForceLaw
   std::vector<int> BCVel;
   std::vector<int> BCFor;
 
-  void BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud);
-  void BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud);
+  // Spatial sort
+  std::vector<std::vector<std::vector<std::vector<int>>>> SpatialSort;
+
+  // Simulator functions
+  void BuildBaseCloud(std::vector<Vec::Vec3<float>> &oPointCloud);
+  void BuildScenario(const std::vector<Vec::Vec3<float>> &iPointCloud);
   void BuildForceLaw();
+  void ComputeSpatialSort();
   void ComputeForces();
   void StepSimulation();
 

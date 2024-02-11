@@ -45,6 +45,11 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("Scenario2DThick_", 0.1));
     D.UI.push_back(ParamUI("LatticePitch____", 0.05));
     D.UI.push_back(ParamUI("LatticePattern__", 2));
+    D.UI.push_back(ParamUI("SpatialSortUse__", 1));
+    D.UI.push_back(ParamUI("SpatialSortResX_", 10));
+    D.UI.push_back(ParamUI("SpatialSortResY_", 10));
+    D.UI.push_back(ParamUI("SpatialSortResZ_", 10));
+    D.UI.push_back(ParamUI("SpatialSortSize_", 10));
     D.UI.push_back(ParamUI("BCVelX__________", 0.0));
     D.UI.push_back(ParamUI("BCVelY__________", 0.0));
     D.UI.push_back(ParamUI("BCVelZ__________", 1.0));
@@ -149,6 +154,7 @@ void ParticForceLaw::Allocate() {
   BCPos.clear();
   BCVel.clear();
   BCFor.clear();
+  SpatialSort.clear();
 
   // Get domain dimensions
   D.boxMin= {0.5 - 0.5 * D.UI[DomainX_________].D(), 0.5 - 0.5 * D.UI[DomainY_________].D(), 0.5 - 0.5 * D.UI[DomainZ_________].D()};
@@ -268,6 +274,28 @@ void ParticForceLaw::Draw() {
       glDisable(GL_LIGHTING);
     }
   }
+
+  // Draw the spatial sort status
+  if (D.displayMode2) {
+    int nX, nY, nZ, nB;
+    Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
+    glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
+    glBegin(GL_POINTS);
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          float r= 0.5, g= 0.5, b= 0.5;
+          Colormap::RatioToJetBrightSmooth((float)SpatialSort[x][y][z].size() / D.UI[SpatialSortSize_].F(), r, g, b);
+          glColor3f(r, g, b);
+          glVertex3f(D.boxMin[0] + ((float)x + 0.5f) / (float)nX * (D.boxMax[0] - D.boxMin[0]),
+                     D.boxMin[1] + ((float)y + 0.5f) / (float)nY * (D.boxMax[1] - D.boxMin[2]),
+                     D.boxMin[2] + ((float)z + 0.5f) / (float)nZ * (D.boxMax[2] - D.boxMin[2]));
+        }
+      }
+    }
+    glEnd();
+  }
+
   if (D.UI[VerboseLevel____].I() >= 2) printf("DrawT %f\n", Timer::PopTimer());
 }
 
@@ -508,6 +536,36 @@ void ParticForceLaw::BuildForceLaw() {
 }
 
 
+void ParticForceLaw::ComputeSpatialSort() {
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  int nX, nY, nZ, nB;
+  Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
+  if (nX != D.UI[SpatialSortResX_].I() ||
+      nY != D.UI[SpatialSortResY_].I() ||
+      nZ != D.UI[SpatialSortResZ_].I() ||
+      nB != D.UI[SpatialSortSize_].I()) {
+    SpatialSort= Field::AllocField4D(D.UI[SpatialSortResX_].I(), D.UI[SpatialSortResY_].I(), D.UI[SpatialSortResZ_].I(), D.UI[SpatialSortSize_].I(), -1);
+    Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
+  }
+
+  for (int x= 0; x < nX; x++)
+    for (int y= 0; y < nY; y++)
+      for (int z= 0; z < nZ; z++)
+        SpatialSort[x][y][z].clear();
+
+  for (int k= 0; k < (int)Pos.size(); k++) {
+    const int idxX= (int)std::floor((float)nX * (Pos[k][0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
+    const int idxY= (int)std::floor((float)nY * (Pos[k][1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
+    const int idxZ= (int)std::floor((float)nZ * (Pos[k][2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
+    if (idxX >= 0 && idxX < nX && idxY >= 0 && idxY < nY && idxZ >= 0 && idxZ < nZ)
+      if ((int)SpatialSort[idxX][idxY][idxZ].size() < D.UI[SpatialSortSize_].I())
+        SpatialSort[idxX][idxY][idxZ].push_back(k);
+  }
+
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SpatialSortT %f\n", Timer::PopTimer());
+}
+
+
 void ParticForceLaw::ComputeForces() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
@@ -519,10 +577,49 @@ void ParticForceLaw::ComputeForces() {
   const Vec::Vec3<float> BCForVecNega(-D.UI[BCForX__________].F(), -D.UI[BCForY__________].F(), -D.UI[BCForZ__________].F());
   const Vec::Vec3<float> BCForVecPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
 
+  // Compute the spatial sort for linear neighbor search
+  ComputeSpatialSort();
+  int nX, nY, nZ, nB;
+  Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
+
   // Compute particle forces
   for (int k0= 0; k0 < (int)Pos.size(); k0++) {
+    if (D.UI[SpatialSortUse__].B()) {
+      const int idxXBeg= (int)std::floor((float)nX * (Pos[k0][0] - forceReach - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
+      const int idxYBeg= (int)std::floor((float)nY * (Pos[k0][1] - forceReach - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
+      const int idxZBeg= (int)std::floor((float)nZ * (Pos[k0][2] - forceReach - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
+      const int idxXEnd= (int)std::floor((float)nX * (Pos[k0][0] + forceReach - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
+      const int idxYEnd= (int)std::floor((float)nY * (Pos[k0][1] + forceReach - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
+      const int idxZEnd= (int)std::floor((float)nZ * (Pos[k0][2] + forceReach - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
+      for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, nX - 1); x++) {
+        for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, nY - 1); y++) {
+          for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, nZ - 1); z++) {
+            for (int k1 : SpatialSort[x][y][z]) {
+              if (k1 <= k0) continue;
+              // Reject if out of reach
+              const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
+              if (distVec.normSquared() > forceReach * forceReach) continue;
+              // Get linear interpolation of force law for the given particle distance
+              const float distVal= distVec.norm();
+              const float valFloat= (float)(ForceLaw.size() - 1) * distVal / forceReach;
+              const int low= std::min(std::max((int)std::floor(valFloat), 0), (int)ForceLaw.size() - 1);
+              const int upp= std::min(std::max(low + 1, 0), (int)ForceLaw.size() - 1);
+              const float ratio= valFloat - (float)low;
+              const float forceVal= (1.0 - ratio) * ForceLaw[low] + (ratio)*ForceLaw[upp];
+              // Apply inter-particle force to both particles
+              For[k0]+= forceVal * distVec / distVal;
+              For[k1]-= forceVal * distVec / distVal;
+              // Apply inter-particle damping linearly proportional to difference in radial velocity of particle pair
+              const float RadialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
+              For[k0]-= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
+              For[k1]+= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
+            }
+          }
+        }
+      }
+    }
+    else {
     // Interaction forces
-    // TODO spatial partition buckets
     for (int k1= k0 + 1; k1 < (int)Pos.size(); k1++) {
       // Reject if out of reach
       const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
@@ -542,6 +639,8 @@ void ParticForceLaw::ComputeForces() {
       For[k0]-= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
       For[k1]+= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
     }
+    }
+
     // External forces
     if (BCFor[k0] != 0) For[k0]+= (BCFor[k0] < 0) ? (BCForVecNega) : (BCForVecPosi);
   }
