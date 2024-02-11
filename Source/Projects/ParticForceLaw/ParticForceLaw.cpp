@@ -511,10 +511,6 @@ void ParticForceLaw::BuildForceLaw() {
 
 
 void ParticForceLaw::ComputeForces() {
-  // Get and check particle system sizes
-  const int nbParticles= (int)Pos.size();
-  if (nbParticles <= 0) return;
-
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
   // Reset forces
@@ -526,10 +522,10 @@ void ParticForceLaw::ComputeForces() {
   const Vec::Vec3<float> BCForVecPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
 
   // Compute particle forces
-  for (int k0= 0; k0 < nbParticles; k0++) {
+  for (int k0= 0; k0 < (int)Pos.size(); k0++) {
     // Interaction forces
     // TODO spatial partition buckets
-    for (int k1= k0 + 1; k1 < nbParticles; k1++) {
+    for (int k1= k0 + 1; k1 < (int)Pos.size(); k1++) {
       // Reject if out of reach
       const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
       if (distVec.normSquared() > forceReach * forceReach) continue;
