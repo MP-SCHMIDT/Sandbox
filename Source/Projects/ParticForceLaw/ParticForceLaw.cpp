@@ -151,6 +151,7 @@ void ParticForceLaw::Allocate() {
   Acc.clear();
   For.clear();
   Col.clear();
+  Sensor.clear();
   BCPos.clear();
   BCVel.clear();
   BCFor.clear();
@@ -288,7 +289,7 @@ void ParticForceLaw::Draw() {
           Colormap::RatioToJetBrightSmooth((float)SpatialSort[x][y][z].size() / D.UI[SpatialSortSize_].F(), r, g, b);
           glColor3f(r, g, b);
           glVertex3f(D.boxMin[0] + ((float)x + 0.5f) / (float)nX * (D.boxMax[0] - D.boxMin[0]),
-                     D.boxMin[1] + ((float)y + 0.5f) / (float)nY * (D.boxMax[1] - D.boxMin[2]),
+                     D.boxMin[1] + ((float)y + 0.5f) / (float)nY * (D.boxMax[1] - D.boxMin[1]),
                      D.boxMin[2] + ((float)z + 0.5f) / (float)nZ * (D.boxMax[2] - D.boxMin[2]));
         }
       }
@@ -378,11 +379,12 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
           const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
           if (colRGBA[3] > 0.5f) {
             Pos.push_back(iPointCloud[k]);
+            if (colRGBA[0] < 0.1f) Sensor.push_back(1);
             if (colRGBA[0] > 0.9f) BCPos.push_back(1);
-            else if (colRGBA[1] < 0.1f) BCVel.push_back(-1);
-            else if (colRGBA[1] > 0.9f) BCVel.push_back(1);
-            else if (colRGBA[2] < 0.1f) BCFor.push_back(-1);
-            else if (colRGBA[2] > 0.9f) BCFor.push_back(1);
+            if (colRGBA[1] < 0.1f) BCVel.push_back(-1);
+            if (colRGBA[1] > 0.9f) BCVel.push_back(1);
+            if (colRGBA[2] < 0.1f) BCFor.push_back(-1);
+            if (colRGBA[2] > 0.9f) BCFor.push_back(1);
           }
         }
       }
@@ -457,6 +459,7 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
       }
     }
 
+    if (Sensor.size() < Pos.size()) Sensor.push_back(0);
     if (BCPos.size() < Pos.size()) BCPos.push_back(0);
     if (BCVel.size() < Pos.size()) BCVel.push_back(0);
     if (BCFor.size() < Pos.size()) BCFor.push_back(0);
@@ -546,6 +549,7 @@ void ParticForceLaw::BuildForceLaw() {
 
 void ParticForceLaw::ComputeSpatialSort() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+
   int nX, nY, nZ, nB;
   Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
   if (nX != D.UI[SpatialSortResX_].I() ||
@@ -570,9 +574,9 @@ void ParticForceLaw::ComputeSpatialSort() {
         SpatialSort[idxX][idxY][idxZ].push_back(k);
   }
 
-  // Plot bucket occupancy
+  // Plot spatial sort occupancy
   if (D.Plot.size() < 3) D.Plot.resize(3);
-  D.Plot[2].name= "Buckets";
+  D.Plot[2].name= "SpatialSort";
   D.Plot[2].val.resize(nX * nY * nZ + 2);
   D.Plot[2].val[nX * nY * nZ + 0]= 0;
   D.Plot[2].val[nX * nY * nZ + 1]= nB;
@@ -707,6 +711,21 @@ void ParticForceLaw::StepSimulation() {
       }
     }
   }
+
+  // Scatter plot of sensor data
+  if (D.Scatter.size() < 1) D.Scatter.resize(1);
+  D.Scatter[0].name= "ForceDisp";
+  float sumPos= 0.0f;
+  float sumFor= 0.0f;
+  int count= 0;
+  for (int k= 0; k < (int)Pos.size(); k++) {
+    if (Sensor[k]) {
+      count++;
+      sumPos+= Pos[k][2];
+      sumFor+= For[k].norm();
+    }
+  }
+  D.Scatter[0].val.push_back(std::array<double, 2>{sumPos / (float)count, sumFor / (float)count});
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("StepT %f\n", Timer::PopTimer());
 }

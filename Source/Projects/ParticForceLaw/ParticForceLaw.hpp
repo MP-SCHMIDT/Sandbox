@@ -82,6 +82,7 @@ class ParticForceLaw
   std::vector<Vec::Vec3<float>> Acc;
   std::vector<Vec::Vec3<float>> For;
   std::vector<Vec::Vec3<float>> Col;
+  std::vector<int> Sensor;
   std::vector<int> BCPos;
   std::vector<int> BCVel;
   std::vector<int> BCFor;
