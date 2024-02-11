@@ -219,7 +219,7 @@ void ParticForceLaw::Draw() {
   if (!isAllocated) return;
   if (!isRefreshed) return;
 
-  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  if (D.UI[VerboseLevel____].I() >= 2) Timer::PushTimer();
 
   // Display particles
   if (D.displayMode1) {
@@ -270,7 +270,7 @@ void ParticForceLaw::Draw() {
       glDisable(GL_LIGHTING);
     }
   }
-  if (D.UI[VerboseLevel____].I() >= 1) printf("DrawT %f\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 2) printf("DrawT %f\n", Timer::PopTimer());
 }
 
 
