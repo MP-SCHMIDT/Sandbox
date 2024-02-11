@@ -301,6 +301,15 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
     }
   }
 
+  // Recenter the point cloud
+  Vec::Vec3<float> avgPos(0.0f, 0.0f, 0.0f);
+  for (int k= 0; k < (int)oPointCloud.size(); k++)
+    avgPos= avgPos + oPointCloud[k];
+  avgPos/= (float)oPointCloud.size();
+  for (int k= 0; k < (int)oPointCloud.size(); k++)
+    for (int dim= 0; dim < 3; dim++)
+      oPointCloud[k][dim]= oPointCloud[k][dim] - avgPos[dim] + (D.boxMin[dim] + D.boxMax[dim]) / 2.0f;
+
   if (D.UI[VerboseLevel____].I() >= 1) printf("BaseCloudT %f\n", Timer::PopTimer());
 }
 
