@@ -29,10 +29,14 @@ class ParticForceLaw
     Scenario2DID____,
     Scenario3DID____,
     Scenario2DThick_,
-    ScenarioForce___,
-    ScenarioMove____,
     LatticePitch____,
     LatticePattern__,
+    BCVelX__________,
+    BCVelY__________,
+    BCVelZ__________,
+    BCForX__________,
+    BCForY__________,
+    BCForZ__________,
     StepsPerDraw____,
     TimeStep________,
     IntegType_______,
@@ -71,9 +75,9 @@ class ParticForceLaw
   std::vector<Vec::Vec3<float>> Acc;
   std::vector<Vec::Vec3<float>> For;
   std::vector<Vec::Vec3<float>> Col;
-  std::vector<Vec::Vec3<float>> Ext;
-  std::vector<Vec::Vec3<float>> Mov;
-  std::vector<int> Fix;
+  std::vector<int> BCPos;
+  std::vector<int> BCVel;
+  std::vector<int> BCFor;
 
   void ComputeForces();
 

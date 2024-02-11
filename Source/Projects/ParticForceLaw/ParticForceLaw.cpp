@@ -38,19 +38,23 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("DomainX_________", 1.0));
     D.UI.push_back(ParamUI("DomainY_________", 1.0));
     D.UI.push_back(ParamUI("DomainZ_________", 1.0));
-    D.UI.push_back(ParamUI("ScenarioPreset__", 3));
+    D.UI.push_back(ParamUI("ScenarioPreset__", 5));
     D.UI.push_back(ParamUI("Scenario2DID____", 0));
     D.UI.push_back(ParamUI("Scenario3DID____", 0));
     D.UI.push_back(ParamUI("Scenario2DThick_", 0.1));
-    D.UI.push_back(ParamUI("ScenarioForce___", 1.0));
-    D.UI.push_back(ParamUI("ScenarioMove____", 1.0));
     D.UI.push_back(ParamUI("LatticePitch____", 0.05));
     D.UI.push_back(ParamUI("LatticePattern__", 2));
-    D.UI.push_back(ParamUI("StepsPerDraw____", 4));
+    D.UI.push_back(ParamUI("BCVelX__________", 0.0));
+    D.UI.push_back(ParamUI("BCVelY__________", 0.0));
+    D.UI.push_back(ParamUI("BCVelZ__________", 1.0));
+    D.UI.push_back(ParamUI("BCForX__________", 0.0));
+    D.UI.push_back(ParamUI("BCForY__________", 0.0));
+    D.UI.push_back(ParamUI("BCForZ__________", 1.0));
+    D.UI.push_back(ParamUI("StepsPerDraw____", 1));
     D.UI.push_back(ParamUI("TimeStep________", 0.002));
-    D.UI.push_back(ParamUI("IntegType_______", 0));
+    D.UI.push_back(ParamUI("IntegType_______", 1));
     D.UI.push_back(ParamUI("ParticleMass____", 1.0));
-    D.UI.push_back(ParamUI("VelocityDamping_", 0.0));
+    D.UI.push_back(ParamUI("VelocityDamping_", 1.0));
     D.UI.push_back(ParamUI("ForceLawPreset__", 0));
     D.UI.push_back(ParamUI("ForceLawNormali_", 1));
     D.UI.push_back(ParamUI("ForceLawScale___", 200.0));
@@ -97,8 +101,6 @@ bool ParticForceLaw::CheckAlloc() {
   if (D.UI[Scenario2DID____].hasChanged()) isAllocated= false;
   if (D.UI[Scenario3DID____].hasChanged()) isAllocated= false;
   if (D.UI[Scenario2DThick_].hasChanged()) isAllocated= false;
-  if (D.UI[ScenarioForce___].hasChanged()) isAllocated= false;
-  if (D.UI[ScenarioMove____].hasChanged()) isAllocated= false;
   if (D.UI[LatticePitch____].hasChanged()) isAllocated= false;
   if (D.UI[LatticePattern__].hasChanged()) isAllocated= false;
   return isAllocated;
@@ -142,16 +144,16 @@ void ParticForceLaw::Allocate() {
   Acc.clear();
   For.clear();
   Col.clear();
-  Mov.clear();
-  Ext.clear();
-  Fix.clear();
+  BCPos.clear();
+  BCVel.clear();
+  BCFor.clear();
 
   // Get domain dimensions
   D.boxMin= {0.5 - 0.5 * D.UI[DomainX_________].D(), 0.5 - 0.5 * D.UI[DomainY_________].D(), 0.5 - 0.5 * D.UI[DomainZ_________].D()};
   D.boxMax= {0.5 + 0.5 * D.UI[DomainX_________].D(), 0.5 + 0.5 * D.UI[DomainY_________].D(), 0.5 + 0.5 * D.UI[DomainZ_________].D()};
 
   // Generate the full point cloud over the domain
-  std::vector<Vec::Vec3<float>> points;
+  std::vector<Vec::Vec3<float>> pointCloud;
   float minDist= 0.0f;
   if (D.UI[LatticePattern__].I() == 0) minDist= 1.0f;                                    // SCC pattern
   if (D.UI[LatticePattern__].I() == 1) minDist= (2.0f / 3.0f) * std::sqrt(3.0f) / 2.0f;  // BCC pattern
@@ -167,7 +169,7 @@ void ParticForceLaw::Allocate() {
         if (D.UI[LatticePattern__].I() == 1 && ((x % 2 == 0 && y % 2 == 0 && z % 2 == 0) || (x % 2 + y % 2 + z % 2 == 3))) keep= true;  // BCC pattern
         if (D.UI[LatticePattern__].I() == 2 && ((x + y + z) % 2 == 0)) keep= true;                                                      // FCC pattern
         if (keep)
-          points.push_back(Vec::Vec3<float>(
+          pointCloud.push_back(Vec::Vec3<float>(
               D.boxMin[0] + x * D.UI[LatticePitch____].F() * minDist,
               D.boxMin[1] + y * D.UI[LatticePitch____].F() * minDist,
               D.boxMin[2] + z * D.UI[LatticePitch____].F() * minDist));
@@ -179,6 +181,10 @@ void ParticForceLaw::Allocate() {
   const Vec::Vec3<float> BoxMin(D.boxMin[0], D.boxMin[1], D.boxMin[2]);
   const Vec::Vec3<float> BoxMax(D.boxMax[0], D.boxMax[1], D.boxMax[2]);
   const float BoxDiag= (BoxMax - BoxMin).norm();
+  const Vec::Vec3<float> BCForVecNega(-D.UI[BCForX__________].F(), -D.UI[BCForY__________].F(), -D.UI[BCForZ__________].F());
+  const Vec::Vec3<float> BCForVecPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
+  const Vec::Vec3<float> BCVelVecNega(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F());
+  const Vec::Vec3<float> BCVelVecPosi(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F());
 
   // Load the 2D scenario file if needed
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
@@ -188,117 +194,108 @@ void ParticForceLaw::Allocate() {
   }
 
   // Load the 3D scenario file if needed
-  // TODO
   if (D.UI[ScenarioPreset__].I() == 1) {
+    // TODO
   }
 
   // Add the subset of points for the current scenario
-  for (int k= 0; k < (int)points.size(); k++) {
-    const Vec::Vec3<float> RelPos= (points[k] - BoxMin).cwiseDiv(BoxMax - BoxMin);
+  for (int k= 0; k < (int)pointCloud.size(); k++) {
+    const Vec::Vec3<float> RelPos= (pointCloud[k] - BoxMin).cwiseDiv(BoxMax - BoxMin);
     // 2D loaded scenario
-    if (D.UI[ScenarioPreset__].I() == 0 && !imageRGBA.empty()) {
-      if (std::abs(RelPos[0] - 0.5f) < 0.5f * D.UI[Scenario2DThick_].F()) {
-        const float posW= (float)(imageRGBA.size() - 1) * RelPos[1];
-        const float posH= (float)(imageRGBA[0].size() - 1) * RelPos[2];
-        const int idxPixelW= std::min(std::max((int)std::round(posW), 0), (int)imageRGBA.size() - 1);
-        const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
-        const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
-        if (colRGBA[3] > 0.5f) {
-          Pos.push_back(points[k]);
-          if (colRGBA[0] > 0.9f) {
-            Fix.push_back(true);
-          }
-          else if (colRGBA[1] < 0.1f) {
-            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
-            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
-          }
-          else if (colRGBA[1] > 0.9f) {
-            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
-            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
-          }
-          else if (colRGBA[2] < 0.1f) {
-            For.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F()));
-            Ext.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F()));
-          }
-          else if (colRGBA[2] > 0.9f) {
-            For.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioForce___].F()));
-            Ext.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioForce___].F()));
+    if (D.UI[ScenarioPreset__].I() == 0) {
+      if (!imageRGBA.empty()) {
+        if (std::abs(RelPos[0] - 0.5f) < 0.5f * D.UI[Scenario2DThick_].F()) {
+          const float posW= (float)(imageRGBA.size() - 1) * RelPos[1];
+          const float posH= (float)(imageRGBA[0].size() - 1) * RelPos[2];
+          const int idxPixelW= std::min(std::max((int)std::round(posW), 0), (int)imageRGBA.size() - 1);
+          const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
+          const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
+          if (colRGBA[3] > 0.5f) {
+            Pos.push_back(pointCloud[k]);
+            if (colRGBA[0] > 0.9f) BCPos.push_back(1);
+            else if (colRGBA[1] < 0.1f) BCVel.push_back(-1);
+            else if (colRGBA[1] > 0.9f) BCVel.push_back(1);
+            else if (colRGBA[2] < 0.1f) BCFor.push_back(-1);
+            else if (colRGBA[2] > 0.9f) BCFor.push_back(1);
           }
         }
       }
     }
     // 3D loaded scenario
-    if (D.UI[ScenarioPreset__].I() == 1) {
+    else if (D.UI[ScenarioPreset__].I() == 1) {
       // TODO set particle based on loaded mesh
     }
     // Full set of points
-    if (D.UI[ScenarioPreset__].I() == 2) {
-      Pos.push_back(points[k]);
+    else if (D.UI[ScenarioPreset__].I() == 2) {
+      Pos.push_back(pointCloud[k]);
     }
     // Box falling on steps
     else if (D.UI[ScenarioPreset__].I() == 3) {
       if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.8f)).abs().maxCoeff() < 0.1f * BoxDiag) {
-        Pos.push_back(points[k]);
-        For.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F() * D.UI[ParticleMass____].F()));
-        Ext.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioForce___].F() * D.UI[ParticleMass____].F()));
+        Pos.push_back(pointCloud[k]);
+        BCFor.push_back(-1);
       }
       else if (RelPos[0] > 0.5f && RelPos[2] > 0.3f && RelPos[2] < 0.5f && (RelPos[1] + RelPos[2]) <= 0.8f && RelPos[1] < 0.5f) {
-        Pos.push_back(points[k]);
+        Pos.push_back(pointCloud[k]);
         Col.push_back(Vec::Vec3<float>(0.3f, 0.3f, 0.3f));
-        Fix.push_back(true);
+        BCPos.push_back(1);
       }
       else if (RelPos[0] < 0.6f && RelPos[2] < 0.06f && RelPos[1] > 0.5f) {
-        Pos.push_back(points[k]);
+        Pos.push_back(pointCloud[k]);
         Col.push_back(Vec::Vec3<float>(0.3f, 0.3f, 0.3f));
-        Fix.push_back(true);
+        BCPos.push_back(1);
       }
     }
-    // Ball blasting through wall
+    // Balls blasting through wall
     else if (D.UI[ScenarioPreset__].I() == 4) {
-      if ((RelPos - Vec::Vec3<float>(0.5f, 0.55f, 0.5f)).norm() < 0.15f) {
-        Pos.push_back(points[k]);
-        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioMove____].F(), 0.0f));
+      if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.65f)).norm() < 0.15f) {
+        Pos.push_back(pointCloud[k]);
+        Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
         Col.push_back(Vec::Vec3<float>(0.8f, 0.3f, 0.3f));
       }
-      else if ((RelPos - Vec::Vec3<float>(0.5f, 0.15f, 0.6f)).norm() < 0.15f) {
-        Pos.push_back(points[k]);
-        Vel.push_back(Vec::Vec3<float>(0.0f, D.UI[ScenarioMove____].F(), 0.0f));
+      else if ((RelPos - Vec::Vec3<float>(0.5f, 0.6f, 0.15f)).norm() < 0.15f) {
+        Pos.push_back(pointCloud[k]);
+        Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
         Col.push_back(Vec::Vec3<float>(0.3f, 0.8f, 0.3f));
       }
-      else if (RelPos[1] > 0.9f && RelPos[1] < 0.95f) {
-        Pos.push_back(points[k]);
+      else if (RelPos[2] > 0.9f && RelPos[2] < 0.95f) {
+        Pos.push_back(pointCloud[k]);
       }
     }
-    // Coupon stretch
+    // Coupon stretch - velocity driven
     else if (D.UI[ScenarioPreset__].I() == 5) {
       if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
         if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
-          if (RelPos[2] < 0.1f) {
-            Pos.push_back(points[k]);
-            Col.push_back(Vec::Vec3<float>(0.5f, 0.5f, 0.1f));
-            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
-            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, -D.UI[ScenarioMove____].F()));
-          }
-          else if (RelPos[2] > 0.9f) {
-            Pos.push_back(points[k]);
-            Col.push_back(Vec::Vec3<float>(0.5f, 0.5f, 0.9f));
-            Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
-            Mov.push_back(Vec::Vec3<float>(0.0f, 0.0f, D.UI[ScenarioMove____].F()));
-          }
-          else {
-            Pos.push_back(points[k]);
-          }
+          Pos.push_back(pointCloud[k]);
+          if (RelPos[2] < 0.1f) BCVel.push_back(-1);
+          else if (RelPos[2] > 0.9f) BCVel.push_back(1);
+        }
+      }
+    }
+    // Coupon stretch - force driven
+    else if (D.UI[ScenarioPreset__].I() == 6) {
+      if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
+        if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
+          Pos.push_back(pointCloud[k]);
+          if (RelPos[2] < 0.1f) BCFor.push_back(-1);
+          else if (RelPos[2] > 0.9f) BCFor.push_back(1);
         }
       }
     }
 
-    if (Vel.size() < Pos.size()) Vel.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-    if (Acc.size() < Pos.size()) Acc.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-    if (For.size() < Pos.size()) For.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-    if (Col.size() < Pos.size()) Col.resize(Pos.size(), Vec::Vec3<float>(0.5f, 0.5f, 0.5f));
-    if (Mov.size() < Pos.size()) Mov.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-    if (Ext.size() < Pos.size()) Ext.resize(Pos.size(), Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-    if (Fix.size() < Pos.size()) Fix.resize(Pos.size(), false);
+    if (BCPos.size() < Pos.size()) BCPos.push_back(0);
+    if (BCVel.size() < Pos.size()) BCVel.push_back(0);
+    if (BCFor.size() < Pos.size()) BCFor.push_back(0);
+
+    if (Vel.size() < Pos.size()) Vel.push_back(Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+    if (Acc.size() < Pos.size()) Acc.push_back(Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+    if (For.size() < Pos.size()) For.push_back(Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+    if (Col.size() < Pos.size()) Col.push_back(Vec::Vec3<float>(0.5f, 0.5f, 0.5f));
+
+    if (!Pos.empty()) {
+      if (BCVel[Pos.size() - 1] != 0) Vel[Pos.size() - 1]= (BCVel[Pos.size() - 1] < 0) ? (BCVelVecNega) : (BCVelVecPosi);
+      if (BCFor[Pos.size() - 1] != 0) For[Pos.size() - 1]= (BCFor[Pos.size() - 1] < 0) ? (BCForVecNega) : (BCForVecPosi);
+    }
   }
 }
 
@@ -372,12 +369,12 @@ void ParticForceLaw::Refresh() {
   for (int k= 0; k < (int)ForceLaw.size(); k++)
     ForceLaw[k]*= D.UI[ForceLawScale___].F();
 
-  // Draw the force law in the scatter plot
-  D.Scatter.clear();
-  D.Scatter.resize(1);
-  D.Scatter[0].name= "ForceLaw";
+  // Draw the force law in the plot
+  if (D.Plot.size() < 2) D.Plot.resize(2);
+  D.Plot[1].name= "ForceLaw";
+  D.Plot[1].val.resize(ForceLaw.size());
   for (int k= 0; k < (int)ForceLaw.size(); k++)
-    D.Scatter[0].val.push_back(std::array<double, 2>{(double)k / 10.0, (double)ForceLaw[k]});
+    D.Plot[1].val[k]= ForceLaw[k];
 }
 
 
@@ -395,9 +392,15 @@ void ParticForceLaw::Animate() {
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
 
+  // TODO add timers
+
   // Get and check particle system sizes
   const int nbParticles= (int)Pos.size();
   if (nbParticles <= 0) return;
+
+  // Precompute values
+  const Vec::Vec3<float> BCVelVecNega(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F());
+  const Vec::Vec3<float> BCVelVecPosi(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F());
 
   // Step forward simulation with explicit numerical integration
   for (int stepIdx= 0; stepIdx < D.UI[StepsPerDraw____].I(); stepIdx++) {
@@ -407,18 +410,18 @@ void ParticForceLaw::Animate() {
       ComputeForces();
       // Euler integration
       for (int k= 0; k < nbParticles; k++) {
-        if (!Fix[k]) {
-          Acc[k]= For[k] / D.UI[ParticleMass____].F();    // at+1 = ft / m
-          Vel[k]+= Acc[k] * dt;                           // vt+1 = at + at+1 * dt
-          if (Mov[k].abs().sum() > 0.0f) Vel[k]= Mov[k];  // Prescribed movement rate
-          Pos[k]+= Vel[k] * dt;                           // xt+1 = vt + vt+1 * dt
+        if (BCPos[k] == 0) {
+          Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft / m
+          if (BCVel[k] == 0) Vel[k]+= Acc[k] * dt;                    // vt+1 = at + at+1 * dt
+          else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
+          Pos[k]+= Vel[k] * dt;                                       // xt+1 = vt + vt+1 * dt
         }
       }
     }
     else {
       // Velocity Verlet integration - position update
       for (int k= 0; k < nbParticles; k++) {
-        if (!Fix[k]) {
+        if (BCPos[k] == 0) {
           Pos[k]+= Vel[k] * dt + 0.5f * Acc[k] * dt * dt;  // xt+1 = xt + vt * dt + 0.5 * at * dt * dt
         }
       }
@@ -426,18 +429,18 @@ void ParticForceLaw::Animate() {
       ComputeForces();
       // Velocity Verlet integration - acceleration and velocity update
       for (int k= 0; k < nbParticles; k++) {
-        if (!Fix[k]) {
+        if (BCPos[k] == 0) {
           const Vec::Vec3<float> oldAcc= Acc[k];
-          Acc[k]= For[k] / D.UI[ParticleMass____].F();    // at+1 = ft+1 / m
-          Vel[k]+= 0.5f * (oldAcc + Acc[k]) * dt;         // vt+1 = vt + 0.5 * (at + at+1) * dt
-          if (Mov[k].abs().sum() > 0.0f) Vel[k]= Mov[k];  // Prescribed movement rate
+          Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft+1 / m
+          if (BCVel[k] == 0) Vel[k]+= 0.5f * (oldAcc + Acc[k]) * dt;  // vt+1 = vt + 0.5 * (at + at+1) * dt
+          else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
         }
       }
     }
   }
 
   // Plot data
-  D.Plot.resize(1);
+  if (D.Plot.size() < 1) D.Plot.resize(1);
   D.Plot[0].name= "KE";
   if (D.Plot[0].val.size() < 10000) {
     D.Plot[0].val.reserve(10000);
@@ -466,9 +469,9 @@ void ParticForceLaw::Draw() {
         b= Col[k][2];
       }
       if (D.UI[ColorMode_______].I() == 1) {
-        r= D.UI[ColorFactor_____].F() * Ext[k][0] + 0.5f;
-        g= D.UI[ColorFactor_____].F() * Ext[k][1] + 0.5f;
-        b= D.UI[ColorFactor_____].F() * Ext[k][2] + 0.5f;
+        r= 0.5f + 0.3f * (float)BCPos[k];
+        g= 0.5f + 0.3f * (float)BCVel[k];
+        b= 0.5f + 0.3f * (float)BCFor[k];
       }
       if (D.UI[ColorMode_______].I() == 2) {
         r= D.UI[ColorFactor_____].F() * Vel[k][0] + 0.5f;
@@ -501,10 +504,13 @@ void ParticForceLaw::ComputeForces() {
 
   // Precompute values
   const float forceReach= D.UI[LatticePitch____].F() * 1.4f;
+  const Vec::Vec3<float> BCForVecNega(-D.UI[BCForX__________].F(), -D.UI[BCForY__________].F(), -D.UI[BCForZ__________].F());
+  const Vec::Vec3<float> BCForVecPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
 
   // Compute particle forces
   for (int k0= 0; k0 < nbParticles; k0++) {
     // Interaction forces
+    // TODO spatial partition buckets
     for (int k1= k0 + 1; k1 < nbParticles; k1++) {
       // Reject if out of reach
       const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
@@ -525,6 +531,6 @@ void ParticForceLaw::ComputeForces() {
       For[k1]+= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
     }
     // External forces
-    For[k0]+= Ext[k0];
+    if (BCFor[k0] != 0) For[k0]+= (BCFor[k0] < 0) ? (BCForVecNega) : (BCForVecPosi);
   }
 }
