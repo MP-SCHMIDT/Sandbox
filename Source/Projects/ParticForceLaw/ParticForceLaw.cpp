@@ -14,6 +14,7 @@
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 #include "Util/Random.hpp"
+#include "Util/Timer.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -76,7 +77,8 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("ColorMode_______", 2));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("VisuScale_______", 0.5));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0));
+    D.UI.push_back(ParamUI("VisuSimple______", 1));
+    D.UI.push_back(ParamUI("VerboseLevel____", 1));
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) {
@@ -407,8 +409,11 @@ void ParticForceLaw::Animate() {
     const float dt= D.UI[TimeStep________].F();
     if (D.UI[IntegType_______].I() == 0) {
       // Evaluate net forces acting on particles
+      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
       ComputeForces();
+      if (D.UI[VerboseLevel____].I() >= 1) printf("ForceT %f ", Timer::PopTimer());
       // Euler integration
+      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
       for (int k= 0; k < nbParticles; k++) {
         if (BCPos[k] == 0) {
           Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft / m
@@ -417,17 +422,23 @@ void ParticForceLaw::Animate() {
           Pos[k]+= Vel[k] * dt;                                       // xt+1 = vt + vt+1 * dt
         }
       }
+      if (D.UI[VerboseLevel____].I() >= 1) printf("IntegT %f ", Timer::PopTimer());
     }
     else {
       // Velocity Verlet integration - position update
+      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
       for (int k= 0; k < nbParticles; k++) {
         if (BCPos[k] == 0) {
           Pos[k]+= Vel[k] * dt + 0.5f * Acc[k] * dt * dt;  // xt+1 = xt + vt * dt + 0.5 * at * dt * dt
         }
       }
+      if (D.UI[VerboseLevel____].I() >= 1) printf("IntegT %f ", Timer::PopTimer());
       // Evaluate net forces acting on particles
+      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
       ComputeForces();
+      if (D.UI[VerboseLevel____].I() >= 1) printf("ForceT %f ", Timer::PopTimer());
       // Velocity Verlet integration - acceleration and velocity update
+      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
       for (int k= 0; k < nbParticles; k++) {
         if (BCPos[k] == 0) {
           const Vec::Vec3<float> oldAcc= Acc[k];
@@ -436,6 +447,7 @@ void ParticForceLaw::Animate() {
           else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
         }
       }
+      if (D.UI[VerboseLevel____].I() >= 1) printf("IntegT %f ", Timer::PopTimer());
     }
   }
 
@@ -458,8 +470,15 @@ void ParticForceLaw::Draw() {
   if (!isRefreshed) return;
 
   // Display particles
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
   if (D.displayMode1) {
-    glEnable(GL_LIGHTING);
+    if (D.UI[VisuSimple______].B()) {
+      glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
+      glBegin(GL_POINTS);
+    }
+    else {
+      glEnable(GL_LIGHTING);
+    }
     for (int k= 0; k < (int)Pos.size(); k++) {
       // Set particle color
       float r= 0.5, g= 0.5, b= 0.5;
@@ -481,16 +500,27 @@ void ParticForceLaw::Draw() {
       if (D.UI[ColorMode_______].I() == 3) Colormap::RatioToJetBrightSmooth(Vel[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
       if (D.UI[ColorMode_______].I() == 4) Colormap::RatioToJetBrightSmooth(For[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
       glColor3f(r, g, b);
-      // Draw sphere
-      glPushMatrix();
-      glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
-      const float scale= D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F();
-      glScalef(scale, scale, scale);
-      glutSolidSphere(1.0, 12, 6);
-      glPopMatrix();
+      if (D.UI[VisuSimple______].B()) {
+        glVertex3fv(Pos[k].array());
+      }
+      else {
+        glPushMatrix();
+        glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
+        const float scale= D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F();
+        glScalef(scale, scale, scale);
+        glutSolidSphere(1.0, 12, 6);
+        glPopMatrix();
+      }
     }
-    glDisable(GL_LIGHTING);
+    if (D.UI[VisuSimple______].B()) {
+      glEnd();
+    }
+    else {
+      glDisable(GL_LIGHTING);
+    }
   }
+  if (D.UI[VerboseLevel____].I() >= 1) printf("DrawPartiT %f ", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("\n");
 }
 
 

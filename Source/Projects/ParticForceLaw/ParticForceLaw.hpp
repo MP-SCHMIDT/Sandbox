@@ -63,6 +63,7 @@ class ParticForceLaw
     ColorMode_______,
     ColorFactor_____,
     VisuScale_______,
+    VisuSimple______,
     VerboseLevel____,
   };
 
