@@ -156,6 +156,128 @@ void ParticForceLaw::Allocate() {
 
   // Generate the full point cloud over the domain
   std::vector<Vec::Vec3<float>> pointCloud;
+  BuildBaseCloud(pointCloud);
+
+  // Generate the scenario
+  BuildScenario(pointCloud);
+}
+
+
+// Refresh the project
+void ParticForceLaw::Refresh() {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  if (CheckRefresh()) return;
+  isRefreshed= true;
+
+  // Generate the force law
+  BuildForceLaw();
+
+  // Draw the force law in the plot
+  if (D.Plot.size() < 2) D.Plot.resize(2);
+  D.Plot[1].name= "ForceLaw";
+  D.Plot[1].val.resize(ForceLaw.size());
+  for (int k= 0; k < (int)ForceLaw.size(); k++)
+    D.Plot[1].val[k]= ForceLaw[k];
+}
+
+
+// Handle keypress
+void ParticForceLaw::KeyPress(const unsigned char key) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)key;  // Disable warning unused variable
+}
+
+
+// Animate the project
+void ParticForceLaw::Animate() {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  if (!CheckRefresh()) Refresh();
+
+  // Step forward simulation with explicit numerical integration
+  for (int stepIdx= 0; stepIdx < D.UI[StepsPerDraw____].I(); stepIdx++) {
+    StepSimulation();
+  }
+
+  // Plot data
+  if (D.Plot.size() < 1) D.Plot.resize(1);
+  D.Plot[0].name= "KE";
+  if (D.Plot[0].val.size() < 10000) {
+    D.Plot[0].val.reserve(10000);
+    D.Plot[0].val.push_back(0.0f);
+    for (int k= 0; k < (int)Pos.size(); k++)
+      D.Plot[0].val[D.Plot[0].val.size() - 1]+= D.UI[ParticleMass____].F() * Vel[k].normSquared();
+  }
+}
+
+
+// Draw the project
+void ParticForceLaw::Draw() {
+  if (!isActivProj) return;
+  if (!isAllocated) return;
+  if (!isRefreshed) return;
+
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+
+  // Display particles
+  if (D.displayMode1) {
+    if (D.UI[VisuSimple______].B()) {
+      glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
+      glBegin(GL_POINTS);
+    }
+    else {
+      glEnable(GL_LIGHTING);
+    }
+    for (int k= 0; k < (int)Pos.size(); k++) {
+      // Set particle color
+      float r= 0.5, g= 0.5, b= 0.5;
+      if (D.UI[ColorMode_______].I() == 0) {
+        r= Col[k][0];
+        g= Col[k][1];
+        b= Col[k][2];
+      }
+      if (D.UI[ColorMode_______].I() == 1) {
+        r= 0.5f + 0.3f * (float)BCPos[k];
+        g= 0.5f + 0.3f * (float)BCVel[k];
+        b= 0.5f + 0.3f * (float)BCFor[k];
+      }
+      if (D.UI[ColorMode_______].I() == 2) {
+        r= D.UI[ColorFactor_____].F() * Vel[k][0] + 0.5f;
+        g= D.UI[ColorFactor_____].F() * Vel[k][1] + 0.5f;
+        b= D.UI[ColorFactor_____].F() * Vel[k][2] + 0.5f;
+      }
+      if (D.UI[ColorMode_______].I() == 3) Colormap::RatioToJetBrightSmooth(Vel[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
+      if (D.UI[ColorMode_______].I() == 4) Colormap::RatioToJetBrightSmooth(For[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
+      glColor3f(r, g, b);
+      if (D.UI[VisuSimple______].B()) {
+        glVertex3fv(Pos[k].array());
+      }
+      else {
+        glPushMatrix();
+        glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
+        const float scale= D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F();
+        glScalef(scale, scale, scale);
+        glutSolidSphere(1.0, 12, 6);
+        glPopMatrix();
+      }
+    }
+    if (D.UI[VisuSimple______].B()) {
+      glEnd();
+    }
+    else {
+      glDisable(GL_LIGHTING);
+    }
+  }
+  if (D.UI[VerboseLevel____].I() >= 1) printf("DrawT %f\n", Timer::PopTimer());
+}
+
+
+void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) {
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+
+  oPointCloud.clear();
   float minDist= 0.0f;
   if (D.UI[LatticePattern__].I() == 0) minDist= 1.0f;                                    // SCC pattern
   if (D.UI[LatticePattern__].I() == 1) minDist= (2.0f / 3.0f) * std::sqrt(3.0f) / 2.0f;  // BCC pattern
@@ -171,13 +293,20 @@ void ParticForceLaw::Allocate() {
         if (D.UI[LatticePattern__].I() == 1 && ((x % 2 == 0 && y % 2 == 0 && z % 2 == 0) || (x % 2 + y % 2 + z % 2 == 3))) keep= true;  // BCC pattern
         if (D.UI[LatticePattern__].I() == 2 && ((x + y + z) % 2 == 0)) keep= true;                                                      // FCC pattern
         if (keep)
-          pointCloud.push_back(Vec::Vec3<float>(
+          oPointCloud.push_back(Vec::Vec3<float>(
               D.boxMin[0] + x * D.UI[LatticePitch____].F() * minDist,
               D.boxMin[1] + y * D.UI[LatticePitch____].F() * minDist,
               D.boxMin[2] + z * D.UI[LatticePitch____].F() * minDist));
       }
     }
   }
+
+  if (D.UI[VerboseLevel____].I() >= 1) printf("BaseCloudT %f\n", Timer::PopTimer());
+}
+
+
+void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud) {
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
   // Calculate some helper variables for scenario setup
   const Vec::Vec3<float> BoxMin(D.boxMin[0], D.boxMin[1], D.boxMin[2]);
@@ -201,8 +330,8 @@ void ParticForceLaw::Allocate() {
   }
 
   // Add the subset of points for the current scenario
-  for (int k= 0; k < (int)pointCloud.size(); k++) {
-    const Vec::Vec3<float> RelPos= (pointCloud[k] - BoxMin).cwiseDiv(BoxMax - BoxMin);
+  for (int k= 0; k < (int)iPointCloud.size(); k++) {
+    const Vec::Vec3<float> RelPos= (iPointCloud[k] - BoxMin).cwiseDiv(BoxMax - BoxMin);
     // 2D loaded scenario
     if (D.UI[ScenarioPreset__].I() == 0) {
       if (!imageRGBA.empty()) {
@@ -213,7 +342,7 @@ void ParticForceLaw::Allocate() {
           const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
           const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
           if (colRGBA[3] > 0.5f) {
-            Pos.push_back(pointCloud[k]);
+            Pos.push_back(iPointCloud[k]);
             if (colRGBA[0] > 0.9f) BCPos.push_back(1);
             else if (colRGBA[1] < 0.1f) BCVel.push_back(-1);
             else if (colRGBA[1] > 0.9f) BCVel.push_back(1);
@@ -229,21 +358,21 @@ void ParticForceLaw::Allocate() {
     }
     // Full set of points
     else if (D.UI[ScenarioPreset__].I() == 2) {
-      Pos.push_back(pointCloud[k]);
+      Pos.push_back(iPointCloud[k]);
     }
     // Box falling on steps
     else if (D.UI[ScenarioPreset__].I() == 3) {
       if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.8f)).abs().maxCoeff() < 0.1f * BoxDiag) {
-        Pos.push_back(pointCloud[k]);
+        Pos.push_back(iPointCloud[k]);
         BCFor.push_back(-1);
       }
       else if (RelPos[0] > 0.5f && RelPos[2] > 0.3f && RelPos[2] < 0.5f && (RelPos[1] + RelPos[2]) <= 0.8f && RelPos[1] < 0.5f) {
-        Pos.push_back(pointCloud[k]);
+        Pos.push_back(iPointCloud[k]);
         Col.push_back(Vec::Vec3<float>(0.3f, 0.3f, 0.3f));
         BCPos.push_back(1);
       }
       else if (RelPos[0] < 0.6f && RelPos[2] < 0.06f && RelPos[1] > 0.5f) {
-        Pos.push_back(pointCloud[k]);
+        Pos.push_back(iPointCloud[k]);
         Col.push_back(Vec::Vec3<float>(0.3f, 0.3f, 0.3f));
         BCPos.push_back(1);
       }
@@ -251,24 +380,24 @@ void ParticForceLaw::Allocate() {
     // Balls blasting through wall
     else if (D.UI[ScenarioPreset__].I() == 4) {
       if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.65f)).norm() < 0.15f) {
-        Pos.push_back(pointCloud[k]);
+        Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
         Col.push_back(Vec::Vec3<float>(0.8f, 0.3f, 0.3f));
       }
       else if ((RelPos - Vec::Vec3<float>(0.5f, 0.6f, 0.15f)).norm() < 0.15f) {
-        Pos.push_back(pointCloud[k]);
+        Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
         Col.push_back(Vec::Vec3<float>(0.3f, 0.8f, 0.3f));
       }
       else if (RelPos[2] > 0.9f && RelPos[2] < 0.95f) {
-        Pos.push_back(pointCloud[k]);
+        Pos.push_back(iPointCloud[k]);
       }
     }
     // Coupon stretch - velocity driven
     else if (D.UI[ScenarioPreset__].I() == 5) {
       if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
         if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
-          Pos.push_back(pointCloud[k]);
+          Pos.push_back(iPointCloud[k]);
           if (RelPos[2] < 0.1f) BCVel.push_back(-1);
           else if (RelPos[2] > 0.9f) BCVel.push_back(1);
         }
@@ -278,7 +407,7 @@ void ParticForceLaw::Allocate() {
     else if (D.UI[ScenarioPreset__].I() == 6) {
       if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
         if (RelPos[1] > 0.3f && RelPos[1] < 0.7f) {
-          Pos.push_back(pointCloud[k]);
+          Pos.push_back(iPointCloud[k]);
           if (RelPos[2] < 0.1f) BCFor.push_back(-1);
           else if (RelPos[2] > 0.9f) BCFor.push_back(1);
         }
@@ -299,17 +428,14 @@ void ParticForceLaw::Allocate() {
       if (BCFor[Pos.size() - 1] != 0) For[Pos.size() - 1]= (BCFor[Pos.size() - 1] < 0) ? (BCForVecNega) : (BCForVecPosi);
     }
   }
+
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ScenarioT %f\n", Timer::PopTimer());
 }
 
 
-// Refresh the project
-void ParticForceLaw::Refresh() {
-  if (!isActivProj) return;
-  if (!CheckAlloc()) Allocate();
-  if (CheckRefresh()) return;
-  isRefreshed= true;
+void ParticForceLaw::BuildForceLaw() {
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
-  // Generate the force law
   ForceLaw.clear();
   // Custom force law
   if (D.UI[ForceLawPreset__].I() == 0) {
@@ -371,156 +497,7 @@ void ParticForceLaw::Refresh() {
   for (int k= 0; k < (int)ForceLaw.size(); k++)
     ForceLaw[k]*= D.UI[ForceLawScale___].F();
 
-  // Draw the force law in the plot
-  if (D.Plot.size() < 2) D.Plot.resize(2);
-  D.Plot[1].name= "ForceLaw";
-  D.Plot[1].val.resize(ForceLaw.size());
-  for (int k= 0; k < (int)ForceLaw.size(); k++)
-    D.Plot[1].val[k]= ForceLaw[k];
-}
-
-
-// Handle keypress
-void ParticForceLaw::KeyPress(const unsigned char key) {
-  if (!isActivProj) return;
-  if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
-}
-
-
-// Animate the project
-void ParticForceLaw::Animate() {
-  if (!isActivProj) return;
-  if (!CheckAlloc()) Allocate();
-  if (!CheckRefresh()) Refresh();
-
-  // TODO add timers
-
-  // Get and check particle system sizes
-  const int nbParticles= (int)Pos.size();
-  if (nbParticles <= 0) return;
-
-  // Precompute values
-  const Vec::Vec3<float> BCVelVecNega(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F());
-  const Vec::Vec3<float> BCVelVecPosi(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F());
-
-  // Step forward simulation with explicit numerical integration
-  for (int stepIdx= 0; stepIdx < D.UI[StepsPerDraw____].I(); stepIdx++) {
-    const float dt= D.UI[TimeStep________].F();
-    if (D.UI[IntegType_______].I() == 0) {
-      // Evaluate net forces acting on particles
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      ComputeForces();
-      if (D.UI[VerboseLevel____].I() >= 1) printf("ForceT %f ", Timer::PopTimer());
-      // Euler integration
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      for (int k= 0; k < nbParticles; k++) {
-        if (BCPos[k] == 0) {
-          Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft / m
-          if (BCVel[k] == 0) Vel[k]+= Acc[k] * dt;                    // vt+1 = at + at+1 * dt
-          else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
-          Pos[k]+= Vel[k] * dt;                                       // xt+1 = vt + vt+1 * dt
-        }
-      }
-      if (D.UI[VerboseLevel____].I() >= 1) printf("IntegT %f ", Timer::PopTimer());
-    }
-    else {
-      // Velocity Verlet integration - position update
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      for (int k= 0; k < nbParticles; k++) {
-        if (BCPos[k] == 0) {
-          Pos[k]+= Vel[k] * dt + 0.5f * Acc[k] * dt * dt;  // xt+1 = xt + vt * dt + 0.5 * at * dt * dt
-        }
-      }
-      if (D.UI[VerboseLevel____].I() >= 1) printf("IntegT %f ", Timer::PopTimer());
-      // Evaluate net forces acting on particles
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      ComputeForces();
-      if (D.UI[VerboseLevel____].I() >= 1) printf("ForceT %f ", Timer::PopTimer());
-      // Velocity Verlet integration - acceleration and velocity update
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      for (int k= 0; k < nbParticles; k++) {
-        if (BCPos[k] == 0) {
-          const Vec::Vec3<float> oldAcc= Acc[k];
-          Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft+1 / m
-          if (BCVel[k] == 0) Vel[k]+= 0.5f * (oldAcc + Acc[k]) * dt;  // vt+1 = vt + 0.5 * (at + at+1) * dt
-          else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
-        }
-      }
-      if (D.UI[VerboseLevel____].I() >= 1) printf("IntegT %f ", Timer::PopTimer());
-    }
-  }
-
-  // Plot data
-  if (D.Plot.size() < 1) D.Plot.resize(1);
-  D.Plot[0].name= "KE";
-  if (D.Plot[0].val.size() < 10000) {
-    D.Plot[0].val.reserve(10000);
-    D.Plot[0].val.push_back(0.0f);
-    for (int k= 0; k < (int)Pos.size(); k++)
-      D.Plot[0].val[D.Plot[0].val.size() - 1]+= D.UI[ParticleMass____].F() * Vel[k].normSquared();
-  }
-}
-
-
-// Draw the project
-void ParticForceLaw::Draw() {
-  if (!isActivProj) return;
-  if (!isAllocated) return;
-  if (!isRefreshed) return;
-
-  // Display particles
-  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  if (D.displayMode1) {
-    if (D.UI[VisuSimple______].B()) {
-      glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
-      glBegin(GL_POINTS);
-    }
-    else {
-      glEnable(GL_LIGHTING);
-    }
-    for (int k= 0; k < (int)Pos.size(); k++) {
-      // Set particle color
-      float r= 0.5, g= 0.5, b= 0.5;
-      if (D.UI[ColorMode_______].I() == 0) {
-        r= Col[k][0];
-        g= Col[k][1];
-        b= Col[k][2];
-      }
-      if (D.UI[ColorMode_______].I() == 1) {
-        r= 0.5f + 0.3f * (float)BCPos[k];
-        g= 0.5f + 0.3f * (float)BCVel[k];
-        b= 0.5f + 0.3f * (float)BCFor[k];
-      }
-      if (D.UI[ColorMode_______].I() == 2) {
-        r= D.UI[ColorFactor_____].F() * Vel[k][0] + 0.5f;
-        g= D.UI[ColorFactor_____].F() * Vel[k][1] + 0.5f;
-        b= D.UI[ColorFactor_____].F() * Vel[k][2] + 0.5f;
-      }
-      if (D.UI[ColorMode_______].I() == 3) Colormap::RatioToJetBrightSmooth(Vel[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
-      if (D.UI[ColorMode_______].I() == 4) Colormap::RatioToJetBrightSmooth(For[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
-      glColor3f(r, g, b);
-      if (D.UI[VisuSimple______].B()) {
-        glVertex3fv(Pos[k].array());
-      }
-      else {
-        glPushMatrix();
-        glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
-        const float scale= D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F();
-        glScalef(scale, scale, scale);
-        glutSolidSphere(1.0, 12, 6);
-        glPopMatrix();
-      }
-    }
-    if (D.UI[VisuSimple______].B()) {
-      glEnd();
-    }
-    else {
-      glDisable(GL_LIGHTING);
-    }
-  }
-  if (D.UI[VerboseLevel____].I() >= 1) printf("DrawPartiT %f ", Timer::PopTimer());
-  if (D.UI[VerboseLevel____].I() >= 1) printf("\n");
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ForceLawT %f\n", Timer::PopTimer());
 }
 
 
@@ -528,6 +505,8 @@ void ParticForceLaw::ComputeForces() {
   // Get and check particle system sizes
   const int nbParticles= (int)Pos.size();
   if (nbParticles <= 0) return;
+
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
   // Reset forces
   std::fill(For.begin(), For.end(), Vec::Vec3<float>(0.0, 0.0, 0.0));
@@ -563,4 +542,50 @@ void ParticForceLaw::ComputeForces() {
     // External forces
     if (BCFor[k0] != 0) For[k0]+= (BCFor[k0] < 0) ? (BCForVecNega) : (BCForVecPosi);
   }
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ForcesT %f\n", Timer::PopTimer());
+}
+
+
+void ParticForceLaw::StepSimulation() {
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+
+  // Precompute values
+  const Vec::Vec3<float> BCVelVecNega(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F());
+  const Vec::Vec3<float> BCVelVecPosi(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F());
+
+  const float dt= D.UI[TimeStep________].F();
+  if (D.UI[IntegType_______].I() == 0) {
+    // Evaluate net forces acting on particles
+    ComputeForces();
+    // Euler integration
+    for (int k= 0; k < (int)Pos.size(); k++) {
+      if (BCPos[k] == 0) {
+        Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft / m
+        if (BCVel[k] == 0) Vel[k]+= Acc[k] * dt;                    // vt+1 = at + at+1 * dt
+        else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
+        Pos[k]+= Vel[k] * dt;                                       // xt+1 = vt + vt+1 * dt
+      }
+    }
+  }
+  else {
+    // Velocity Verlet integration - position update
+    for (int k= 0; k < (int)Pos.size(); k++) {
+      if (BCPos[k] == 0) {
+        Pos[k]+= Vel[k] * dt + 0.5f * Acc[k] * dt * dt;  // xt+1 = xt + vt * dt + 0.5 * at * dt * dt
+      }
+    }
+    // Evaluate net forces acting on particles
+    ComputeForces();
+    // Velocity Verlet integration - acceleration and velocity update
+    for (int k= 0; k < (int)Pos.size(); k++) {
+      if (BCPos[k] == 0) {
+        const Vec::Vec3<float> oldAcc= Acc[k];
+        Acc[k]= For[k] / D.UI[ParticleMass____].F();                // at+1 = ft+1 / m
+        if (BCVel[k] == 0) Vel[k]+= 0.5f * (oldAcc + Acc[k]) * dt;  // vt+1 = vt + 0.5 * (at + at+1) * dt
+        else Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Prescribed velocity
+      }
+    }
+  }
+
+  if (D.UI[VerboseLevel____].I() >= 1) printf("StepT %f\n", Timer::PopTimer());
 }

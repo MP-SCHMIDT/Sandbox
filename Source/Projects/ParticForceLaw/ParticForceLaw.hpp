@@ -80,7 +80,11 @@ class ParticForceLaw
   std::vector<int> BCVel;
   std::vector<int> BCFor;
 
+  void BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud);
+  void BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud);
+  void BuildForceLaw();
   void ComputeForces();
+  void StepSimulation();
 
   public:
   bool isActivProj;
