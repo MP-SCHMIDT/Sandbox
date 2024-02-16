@@ -89,11 +89,12 @@ class Data
   std::array<double, 3> boxMin= {0.0, 0.0, 0.0};
   std::array<double, 3> boxMax= {1.0, 1.0, 1.0};
 
-  int idxParamPageUI= 0;
-  int idxParamUI= 0;
-  int idxCursorUI= 0;
+  int idxFirstParamPageUI= 0;  // Index of currently displayed parameter page
+  int idxParamUI= 0;           // Index of currently selected parameter
+  int idxCursorUI= 0;          // Index of currently selected character in the parameter value
 
   std::vector<ParamUI> UI;
   std::vector<PlotUI> Plot;
   std::vector<ScatterUI> Scatter;
+  std::vector<std::string> Status;
 };

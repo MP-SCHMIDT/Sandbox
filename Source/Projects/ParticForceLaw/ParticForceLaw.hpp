@@ -28,14 +28,10 @@ class ParticForceLaw
     DomainZ_________,
     ScenarioPreset__,
     Scenario2DID____,
-    Scenario3DID____,
     Scenario2DThick_,
     LatticePitch____,
-    LatticePattern__,
-    SpatialSortUse__,
-    SpatialSortResX_,
-    SpatialSortResY_,
-    SpatialSortResZ_,
+    MaterialDensity_,
+    SpatialSortNb___,
     SpatialSortSize_,
     BCVelX__________,
     BCVelY__________,
@@ -46,37 +42,36 @@ class ParticForceLaw
     StepsPerDraw____,
     TimeStep________,
     IntegType_______,
-    ParticleMass____,
+    UseForceControl_,
+    BCPosCoeff______,
+    BCVelCoeff______,
     VelocityDamping_,
-    ForceLawPreset__,
-    ForceLawNormali_,
-    ForceLawScale___,
-    ForceLawCoeff00_,
-    ForceLawCoeff01_,
-    ForceLawCoeff02_,
-    ForceLawCoeff03_,
-    ForceLawCoeff04_,
-    ForceLawCoeff05_,
-    ForceLawCoeff06_,
-    ForceLawCoeff07_,
-    ForceLawCoeff08_,
-    ForceLawCoeff09_,
-    ForceLawCoeff10_,
-    ForceLawCoeff11_,
-    ForceLawCoeff12_,
-    ForceLawCoeff13_,
-    ForceLawCoeff14_,
     ColorMode_______,
     ColorFactor_____,
+    ColorDecay______,
     VisuScale_______,
     VisuSimple______,
+    ForceLawPreset__,
+    ForceLawTailTol_,
+    ForceLawNormali_,
+    ForceLawScale___,
+    ForceLawA_______,
+    ForceLaw08______,
+    ForceLaw09______,
+    ForceLawB_______,
+    ForceLaw11______,
+    ForceLaw12______,
+    ForceLaw13______,
+    ForceLawC_______,
+    ForceLaw15______,
+    ForceLaw20______,
+    ForceLaw25______,
+    ForceLaw30______,
     VerboseLevel____,
   };
 
-  // Force law
-  std::vector<float> ForceLaw;
-
   // Particles
+  std::vector<Vec::Vec3<float>> Ref;
   std::vector<Vec::Vec3<float>> Pos;
   std::vector<Vec::Vec3<float>> Vel;
   std::vector<Vec::Vec3<float>> Acc;
@@ -87,6 +82,13 @@ class ParticForceLaw
   std::vector<int> BCVel;
   std::vector<int> BCFor;
 
+  // Force law
+  std::vector<float> ForceLaw;
+
+  float ForceLawStep;
+  float ParticleMass;
+  float SimTime;
+
   // Spatial sort
   std::vector<std::vector<std::vector<std::vector<int>>>> SpatialSort;
 
@@ -96,6 +98,7 @@ class ParticForceLaw
   void BuildForceLaw();
   void ComputeSpatialSort();
   void ComputeForces();
+  void ApplyBCForces();
   void StepSimulation();
 
   public:

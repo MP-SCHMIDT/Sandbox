@@ -46,27 +46,30 @@ static int winPosW, winPosH;
 static int currentProjectID;
 static bool isDarkMode;
 static bool isSmoothDraw;
+Camera *cam;
 
 // Global constants used by the display
-constexpr int winFPS= 60;
-constexpr int paramPerPage= 40;
-constexpr int paramLabelNbChar= 16;
-constexpr int paramSpaceNbChar= 1;
-constexpr int paramValSignNbChar= 1;
-constexpr int paramValInteNbChar= 9;
-constexpr int paramValSepaNbChar= 1;
-constexpr int paramValFracNbChar= 9;
+constexpr int winFPS= 60;             // Target framerate
+constexpr int paramPerPage= 40;       // Max number of UI param per page
+constexpr int paramLabelNbChar= 16;   // Number of characters per label
+constexpr int paramSpaceNbChar= 1;    // Number of character spacing between label and value
+constexpr int paramValSignNbChar= 1;  // Number of characters in sign part of the param value
+constexpr int paramValInteNbChar= 9;  // Number of characters in integer part of the param value
+constexpr int paramValSepaNbChar= 1;  // Number of characters in separator part of the param value
+constexpr int paramValFracNbChar= 9;  // Number of characters in fractional part of the param value
 constexpr int paramValNbChar= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar + paramValFracNbChar;
-constexpr int charHeight= 14;
-constexpr int charWidth= 10;
-constexpr int pixelMargin= 1;
-constexpr int plotAreaW= 600;
-constexpr int plotAreaH= 100;
-constexpr int scatAreaW= 240;
-constexpr int scatAreaH= 240;
+constexpr int plotAreaW= 600;  // Width of the plot area
+constexpr int plotAreaH= 100;  // Height of the plot area
+constexpr int scatAreaW= 240;  // Width of the scatter area
+constexpr int scatAreaH= 240;  // Height of the scatter area
+constexpr int winMarginL= 2;   // Margin size on the left of the window
+constexpr int winMarginR= 2;   // Margin size on the right of the window
+constexpr int winMarginT= 0;   // Margin size on the top of the window
+constexpr int winMarginB= 5;   // Margin size on the bottom of the window
+constexpr int charHeight= 14;  // Character width in pizels
+constexpr int charWidth= 10;   // Character height in pizels
 constexpr int textBoxW= 9 * charWidth;
 constexpr int textBoxH= charHeight;
-Camera *cam;
 
 // Global variables used by the projects
 Data D;
@@ -338,13 +341,13 @@ float elapsed_time() {
 
 
 // Utility function to draw text
-void draw_text(int const x, int const y, char *const text) {
+void draw_text(const int w, const int h, const char *text) {
+  constexpr float baseHeight= 152.38f;
+  constexpr float baseWidth= 104.76f;
   glPushMatrix();
-  glTranslatef(float(x), float(y), 0.0f);
-  const float baseHeight= 152.38f;
-  const float baseWidth= 104.76f;
-  glScalef(float(charWidth) / baseWidth, float(charHeight) / baseHeight, 1.0f);
-  for (char *p= text; *p; p++)
+  glTranslatef(float(w), float(h), 0.0f);
+  glScalef((float)charWidth / baseWidth, (float)charHeight / baseHeight, 1.0f);
+  for (const char *p= text; *p; p++)
     glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, *p);
   glPopMatrix();
 }
@@ -420,7 +423,7 @@ void callback_display() {
 
   // Draw the parameter list
   glLineWidth(2.0f);
-  for (int k= D.idxParamPageUI; k < std::min((int)D.UI.size(), D.idxParamPageUI + paramPerPage); k++) {
+  for (int k= D.idxFirstParamPageUI; k < std::min((int)D.UI.size(), D.idxFirstParamPageUI + paramPerPage); k++) {
     if (k == D.idxParamUI)
       glColor3f(0.8f, 0.4f, 0.4f);
     else {
@@ -429,11 +432,13 @@ void callback_display() {
     }
     char str[50];
     sprintf(str, "%s %+020.9f", D.UI[k].name.c_str(), D.UI[k].D());  // Format must match paramValNbChar settings
-    draw_text(0, winH - (k - D.idxParamPageUI + 1) * (charHeight + pixelMargin), str);
+    draw_text(winMarginL, winH - winMarginT - (k - D.idxFirstParamPageUI + 1) * charHeight, str);
     if (k == D.idxParamUI) {
       sprintf(str, "_");
-      draw_text((paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth, winH - (k - D.idxParamPageUI + 1) * (charHeight + pixelMargin), str);
-      draw_text((paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth, winH - 1 - (k - D.idxParamPageUI) * (charHeight + pixelMargin), str);
+      draw_text(winMarginL + (paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth,
+                winH - winMarginT - (k - D.idxFirstParamPageUI + 1) * charHeight, str);
+      draw_text(winMarginL + (paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth,
+                winH - winMarginT - (k - D.idxFirstParamPageUI) * charHeight, str);
     }
   }
   glLineWidth(1.0f);
@@ -463,19 +468,25 @@ void callback_display() {
       glLineWidth(2.0f);
       char str[50];
       strcpy(str, D.Plot[k0].name.c_str());
-      draw_text(winW - plotAreaW - 3 * textBoxW, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+      draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW,
+                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       if (D.Plot[k0].isLog) {
         strcpy(str, std::string("log").c_str());
-        draw_text(winW - plotAreaW - 3 * textBoxW - textBoxW / 2, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+        draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW - textBoxW / 2,
+                  winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       }
       sprintf(str, "%+.2e", valMax);
-      draw_text(winW - textBoxW - plotAreaW + k0 * textBoxW, winH - textBoxH - pixelMargin, str);
+      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * textBoxW,
+                winH - winMarginT - textBoxH, str);
       sprintf(str, "%+.2e", valMin);
-      draw_text(winW - textBoxW - plotAreaW + k0 * textBoxW, winH - plotAreaH - 2 * textBoxH - 2 * pixelMargin, str);
+      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * textBoxW,
+                winH - winMarginT - plotAreaH - 2 * textBoxH, str);
       sprintf(str, "%+.2e", D.Plot[k0].val[0]);
-      draw_text(winW - plotAreaW - 2 * textBoxW, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+      draw_text(winW - winMarginR - plotAreaW - 2 * textBoxW,
+                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       sprintf(str, "%+.2e", D.Plot[k0].val[D.Plot[k0].val.size() - 1]);
-      draw_text(winW - textBoxW, winH - textBoxH - textBoxH * k0 - textBoxH - pixelMargin, str);
+      draw_text(winW - winMarginR - textBoxW,
+                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       glLineWidth(1.0f);
 
       // Draw the zero axes
@@ -483,8 +494,10 @@ void callback_display() {
         double valScaled= -valMin / (valMax - valMin);
         if (valScaled >= 0.0 && valScaled <= 1.0) {
           glBegin(GL_LINES);
-          glVertex3i(winW - plotAreaW - textBoxW, winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
-          glVertex3i(winW - plotAreaW - textBoxW + plotAreaW, winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
+          glVertex3i(winW - winMarginR - plotAreaW - textBoxW,
+                     winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
+          glVertex3i(winW - winMarginR - plotAreaW - textBoxW + plotAreaW,
+                     winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
           glEnd();
         }
       }
@@ -502,7 +515,8 @@ void callback_display() {
           else if (D.Plot[k0].val[k1] <= 0.0) valScaled= 0.0;
           else if (valMin < 0.0) valScaled= 1.0;
           else valScaled= (std::log10(D.Plot[k0].val[k1]) - std::log10(valMin)) / (std::log10(valMax) - std::log10(valMin));
-          glVertex3i(winW - plotAreaW - textBoxW + plotAreaW * k1 / std::max((int)D.Plot[k0].val.size() - 1, 1), winH - plotAreaH - textBoxH - 2 * pixelMargin + plotAreaH * valScaled, 0);
+          glVertex3i(winW - winMarginR - plotAreaW - textBoxW + plotAreaW * k1 / std::max((int)D.Plot[k0].val.size() - 1, 1),
+                     winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
         }
         glEnd();
       }
@@ -528,25 +542,26 @@ void callback_display() {
     }
 
     // Draw the axes and zero lines
-    glColor3f(0.7f, 0.7f, 0.7f);
+    if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+    else glColor3f(0.2f, 0.2f, 0.2f);
     glBegin(GL_LINE_LOOP);
-    glVertex3i(textBoxW, scatAreaH + 3 * textBoxH, 0);
-    glVertex3i(textBoxW, 3 * textBoxH, 0);
-    glVertex3i(textBoxW + scatAreaW, 3 * textBoxH, 0);
-    glVertex3i(textBoxW + scatAreaW, scatAreaH + 3 * textBoxH, 0);
+    glVertex3i(winMarginL + textBoxW, winMarginB + scatAreaH + 3 * textBoxH, 0);
+    glVertex3i(winMarginL + textBoxW, winMarginB + 3 * textBoxH, 0);
+    glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + 3 * textBoxH, 0);
+    glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + scatAreaH + 3 * textBoxH, 0);
     glEnd();
     if (valMinX < 0.0 && valMaxX > 0.0) {
       int offsetW= ((0.0 - valMinX) / (valMaxX - valMinX)) * scatAreaW;
       glBegin(GL_LINES);
-      glVertex3i(textBoxW + offsetW, scatAreaH + 3 * textBoxH, 0);
-      glVertex3i(textBoxW + offsetW, 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW + offsetW, winMarginB + scatAreaH + 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW + offsetW, winMarginB + 3 * textBoxH, 0);
       glEnd();
     }
     if (valMinY < 0.0 && valMaxY > 0.0) {
       int offsetH= ((0.0 - valMinY) / (valMaxY - valMinY)) * scatAreaH;
       glBegin(GL_LINES);
-      glVertex3i(textBoxW, offsetH + 3 * textBoxH, 0);
-      glVertex3i(textBoxW + scatAreaW, offsetH + 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW, winMarginB + offsetH + 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + offsetH + 3 * textBoxH, 0);
       glEnd();
     }
 
@@ -554,13 +569,13 @@ void callback_display() {
     char str[50];
     glLineWidth(2.0f);
     sprintf(str, "%+.2e", valMinX);
-    draw_text(textBoxW, 2 * textBoxH, str);
+    draw_text(winMarginL + textBoxW, winMarginB + 2 * textBoxH, str);
     sprintf(str, "%+.2e", valMaxX);
-    draw_text(textBoxW + scatAreaW - textBoxW, 2 * textBoxH, str);
+    draw_text(winMarginL + textBoxW + scatAreaW - textBoxW, winMarginB + 2 * textBoxH, str);
     sprintf(str, "%+.2e", valMinY);
-    draw_text(0, 3 * textBoxH, str);
+    draw_text(winMarginL, winMarginB + 3 * textBoxH, str);
     sprintf(str, "%+.2e", valMaxY);
-    draw_text(0, 3 * textBoxH + scatAreaH - textBoxH, str);
+    draw_text(winMarginL, winMarginB + 3 * textBoxH + scatAreaH - textBoxH, str);
     glLineWidth(1.0f);
 
     // Draw the scatter legend and points
@@ -581,7 +596,8 @@ void callback_display() {
       for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
         const double relPosX= (D.Scatter[k0].val[k1][0] - valMinX) / (valMaxX - valMinX);
         const double relPosY= (D.Scatter[k0].val[k1][1] - valMinY) / (valMaxY - valMinY);
-        glVertex3i(textBoxW + (int)std::round((double)scatAreaW * relPosX), 3 * textBoxH + (int)std::round((double)scatAreaH * relPosY), 0);
+        glVertex3i(winMarginL + textBoxW + (int)std::round((double)scatAreaW * relPosX),
+                   winMarginB + 3 * textBoxH + (int)std::round((double)scatAreaH * relPosY), 0);
       }
       glEnd();
     }
@@ -593,10 +609,27 @@ void callback_display() {
   {
     glLineWidth(2.0f);
     if (D.playAnimation) glColor3f(1.0f, 0.6f, 0.6f);
-    else glColor3f(0.8f, 0.8f, 0.8f);
+    else if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+    else glColor3f(0.2f, 0.2f, 0.2f);
     char str[50];
     sprintf(str, "%.3fs", elapsed_time());
-    draw_text(0, 2, str);
+    draw_text(winMarginL, winMarginB, str);
+    glLineWidth(1.0f);
+  }
+
+  // Draw the status text
+  {
+    glLineWidth(2.0f);
+    int cumulLen= 10;
+    for (std::string text : D.Status) {
+      if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+      else glColor3f(0.2f, 0.2f, 0.2f);
+      // draw_text(0, cumulLen * charWidth, text.c_str());
+      char str[50];
+      sprintf(str, "%s", text.c_str());
+      draw_text(winMarginL + cumulLen * charWidth, winMarginB, str);
+      cumulLen+= text.length() + 1;
+    }
     glLineWidth(1.0f);
   }
 
@@ -641,7 +674,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (!std::isnan(D.UI[D.idxParamUI].D()))
       D.UI[D.idxParamUI].Set(0.0);
   }
-  else if (key == '\t') D.idxParamPageUI= (D.idxParamPageUI + paramPerPage < (int)D.UI.size()) ? (D.idxParamPageUI + paramPerPage) : (0);
+  else if (key == '\t') D.idxFirstParamPageUI= (D.idxFirstParamPageUI + paramPerPage < (int)D.UI.size()) ? (D.idxFirstParamPageUI + paramPerPage) : (0);
   else if (key == '1') D.displayMode1= !D.displayMode1;
   else if (key == '2') D.displayMode2= !D.displayMode2;
   else if (key == '3') D.displayMode3= !D.displayMode3;
@@ -698,12 +731,12 @@ void callback_keyboard_special(int key, int x, int y) {
   if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
     if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 10 + int(D.UI.size())) % int(D.UI.size());
     if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 10) % int(D.UI.size());
-    D.idxParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
+    D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
   }
   else {
     if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 1 + int(D.UI.size())) % int(D.UI.size());
     if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 1) % int(D.UI.size());
-    D.idxParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
+    D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
   }
 
   if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
@@ -743,27 +776,23 @@ void callback_mouse_click(int button, int state, int x, int y) {
 
   if (state == GLUT_UP && (button == 3 || button == 4)) {
     if (!D.UI.empty()) {
-      if (x < (paramLabelNbChar + paramSpaceNbChar + paramValNbChar) * charWidth) {
-        if ((y - 3) > pixelMargin && (y - 3) < int(D.UI.size()) * (charHeight + pixelMargin)) {
-          if (button == 3) {  // Mouse wheel up
-            if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
-            if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
-            if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
-          }
-          if (button == 4) {  // Mouse wheel down
-            if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
-            if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
-            if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
-          }
-
-          // Compute refresh
-          project_Refresh();
-        }
+      if (button == 3) {  // Mouse wheel up
+        if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
+        if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
+          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
+        if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
+          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
       }
+      if (button == 4) {  // Mouse wheel down
+        if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
+        if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
+          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
+        if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
+          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+      }
+
+      // Compute refresh
+      project_Refresh();
     }
   }
 
@@ -783,10 +812,12 @@ void callback_mouse_motion(int x, int y) {
 void callback_passive_mouse_motion(int x, int y) {
   const int prevParamIdx= D.idxParamUI;
   const int prevCursorIdx= D.idxCursorUI;
-  if (x < (paramLabelNbChar + paramSpaceNbChar + paramValNbChar) * charWidth) {
-    if ((y - 3) > pixelMargin && (y - 3) < std::min(int(D.UI.size()), D.idxParamPageUI + paramPerPage) * (charHeight + pixelMargin)) {
-      D.idxParamUI= D.idxParamPageUI + (y - 3) / (charHeight + pixelMargin);
-      D.idxCursorUI= std::max((x - (paramLabelNbChar + paramSpaceNbChar) * charWidth) / charWidth, 0);
+  if (x > winMarginL + (paramLabelNbChar + paramSpaceNbChar) * charWidth &&
+      x < winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar) * charWidth) {
+    if (y > winMarginT &&
+        y < winMarginT + std::min((int)D.UI.size() - D.idxFirstParamPageUI, paramPerPage) * charHeight) {
+      D.idxParamUI= D.idxFirstParamPageUI + (y - winMarginT) / charHeight;
+      D.idxCursorUI= std::min(std::max((x - winMarginL - (paramLabelNbChar + paramSpaceNbChar) * charWidth) / charWidth, 0), paramValNbChar);
     }
   }
 
