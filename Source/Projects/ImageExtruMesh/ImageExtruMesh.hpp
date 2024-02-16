@@ -1,6 +1,11 @@
 #pragma once
 
 
+// Standard lib
+#include <array>
+#include <vector>
+
+
 class ImageExtruMesh
 {
   private:
@@ -17,10 +22,19 @@ class ImageExtruMesh
     CenterY_________,
     CenterZ_________,
     BaseRelHeight___,
+    GeomSnapMode____,
+    MidRelHeight____,
+    SphereShift_____,
+    OffsetScaling___,
     SmoothIter______,
     Isovalue________,
     VerboseLevel____,
   };
+
+  std::vector<std::array<double, 3>> Verts;
+  std::vector<std::array<double, 3>> VertsCol;
+  std::vector<std::array<int, 3>> Tris;
+  std::vector<std::array<int, 4>> Quads;
 
   public:
   bool isActivProj;

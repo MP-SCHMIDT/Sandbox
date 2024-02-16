@@ -14,6 +14,7 @@
 #include "FileIO/FileOutput.hpp"
 #include "Geom/MarchingCubes.hpp"
 #include "Math/Field.hpp"
+#include "Math/Vec.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -45,6 +46,10 @@ void ImageExtruMesh::SetActiveProject() {
     D.UI.push_back(ParamUI("CenterY_________", 0.0));
     D.UI.push_back(ParamUI("CenterZ_________", 0.0));
     D.UI.push_back(ParamUI("BaseRelHeight___", 0.5));
+    D.UI.push_back(ParamUI("GeomSnapMode____", 1));
+    D.UI.push_back(ParamUI("MidRelHeight____", 0.3));
+    D.UI.push_back(ParamUI("SphereShift_____", -10.0));
+    D.UI.push_back(ParamUI("OffsetScaling___", 1.0));
     D.UI.push_back(ParamUI("SmoothIter______", 4));
     D.UI.push_back(ParamUI("Isovalue________", 0.5));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
@@ -71,6 +76,8 @@ bool ImageExtruMesh::CheckAlloc() {
 
 // Check if parameter changes should trigger a refresh
 bool ImageExtruMesh::CheckRefresh() {
+  for (int idxParam= ResolutionX_____; idxParam <= Isovalue________; idxParam++)
+    if (D.UI[idxParam].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
@@ -155,19 +162,36 @@ void ImageExtruMesh::Refresh() {
   }
 
   // Compute the isosurface with marching cubes
-  std::vector<std::array<double, 3>> oVertices;
-  std::vector<std::array<int, 3>> oTriangles;
-  MarchingCubes::ComputeMarchingCubes(D.UI[Isovalue________].F(), D.boxMin, D.boxMax, field, oVertices, oTriangles);
+  Verts.clear();
+  VertsCol.clear();
+  Tris.clear();
+  Quads.clear();
+  MarchingCubes::ComputeMarchingCubes(D.UI[Isovalue________].F(), D.boxMin, D.boxMax, field, Verts, Tris);
 
-  // // Snap the mesh nodes to the box in the extrusion direction
-  // for (unsigned int k= 0; k < oVertices.size(); k++) {
-  //   oVertices[k][2]= (oVertices[k][2] < 0.5 * (D.boxMin[2] + D.boxMax[2])) ? D.boxMin[2] : D.boxMax[2];
-  // }
-
-  // Write the obj file on disk
-  std::vector<std::array<double, 3>> oVerticesColors;
-  std::vector<std::array<int, 4>> oQuads;
-  FileOutput::SaveMeshOBJFile("FileOutput/test.obj", oVertices, oVerticesColors, oTriangles, oQuads, D.UI[VerboseLevel____].I());
+  if (D.UI[GeomSnapMode____].I() == 1) {
+    // Snap the mesh nodes to the box in the extrusion direction
+    for (unsigned int k= 0; k < Verts.size(); k++) {
+      Verts[k][2]= (Verts[k][2] < D.boxMin[2] + 0.5 * (D.boxMax[2] - D.boxMin[2])) ? D.boxMin[2] : D.boxMax[2];
+    }
+  }
+  else if (D.UI[GeomSnapMode____].I() == 2) {
+    // Snap the mesh nodes to a sphere
+    for (unsigned int k= 0; k < Verts.size(); k++) {
+      // Snap the bottom mesh nodes to the box in the extrusion direction
+      if (Verts[k][2] < D.boxMin[2] + D.UI[MidRelHeight____].D() * (D.boxMax[2] - D.boxMin[2])) {
+        Verts[k][2]= D.boxMin[2];
+      }
+      else {
+        // Snap the top mesh nodes to the surface of a sphere
+        Vec::Vec3<double> vert(Verts[k][0], Verts[k][1], Verts[k][2]);
+        Vec::Vec3<double> sphere(0.5 * (D.boxMin[0] + D.boxMax[0]), 0.5 * (D.boxMin[1] + D.boxMax[1]), D.boxMin[2] + D.UI[SphereShift_____].D());
+        double radius= (sphere - Vec::Vec3<double>(D.boxMin[0], D.boxMin[1], D.boxMin[2])).norm();
+        double offset= vert[2] - D.UI[MidRelHeight____].D() * (D.boxMax[2] - D.boxMin[2]);
+        vert= sphere + (vert - sphere).normalized() * (radius + offset * D.UI[OffsetScaling___].D());
+        Verts[k]= std::array<double, 3>{vert[0], vert[1], vert[2]};
+      }
+    }
+  }
 }
 
 
@@ -177,6 +201,9 @@ void ImageExtruMesh::KeyPress(const unsigned char key) {
   if (!CheckAlloc()) Allocate();
   (void)key;  // Disable warning unused variable
   if (D.UI[VerboseLevel____].I() >= 5) printf("ImageExtruMesh::KeyPress()\n");
+
+  // Write the obj file on disk
+  FileOutput::SaveMeshOBJFile("FileOutput/test.obj", Verts, VertsCol, Tris, Quads, D.UI[VerboseLevel____].I());
 }
 
 
@@ -195,4 +222,27 @@ void ImageExtruMesh::Draw() {
   if (!isAllocated) return;
   if (!isRefreshed) return;
   if (D.UI[VerboseLevel____].I() >= 5) printf("ImageExtruMesh::Draw()\n");
+
+  // Draw triangles
+  if (D.displayMode3) {
+    glEnable(GL_LIGHTING);
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_TRIANGLES);
+    for (int k= 0; k < (int)Tris.size(); k++) {
+      Vec::Vec3<double> v0(Verts[Tris[k][0]][0], Verts[Tris[k][0]][1], Verts[Tris[k][0]][2]);
+      Vec::Vec3<double> v1(Verts[Tris[k][1]][0], Verts[Tris[k][1]][1], Verts[Tris[k][1]][2]);
+      Vec::Vec3<double> v2(Verts[Tris[k][2]][0], Verts[Tris[k][2]][1], Verts[Tris[k][2]][2]);
+      Vec::Vec3<double> n0= (v1 - v0).cross(v2 - v0).normalized();
+      Vec::Vec3<double> n1= n0;
+      Vec::Vec3<double> n2= n0;
+      glNormal3f(n0[0], n0[1], n0[2]);
+      glVertex3f(v0[0], v0[1], v0[2]);
+      glNormal3f(n1[0], n1[1], n1[2]);
+      glVertex3f(v1[0], v1[1], v1[2]);
+      glNormal3f(n2[0], n2[1], n2[2]);
+      glVertex3f(v2[0], v2[1], v2[2]);
+    }
+    glEnd();
+    glDisable(GL_LIGHTING);
+  }
 }
