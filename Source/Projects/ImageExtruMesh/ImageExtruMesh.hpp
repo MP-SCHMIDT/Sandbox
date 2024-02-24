@@ -21,6 +21,9 @@ class ImageExtruMesh
     CenterX_________,
     CenterY_________,
     CenterZ_________,
+    HeightMapMode___,
+    HeightMapSlope__,
+    ValOffset_______,
     BaseRelHeight___,
     GeomSnapMode____,
     MidRelHeight____,
@@ -30,6 +33,8 @@ class ImageExtruMesh
     Isovalue________,
     VerboseLevel____,
   };
+
+  std::vector<std::vector<std::vector<double>>> ScalarField;
 
   std::vector<std::array<double, 3>> Verts;
   std::vector<std::array<double, 3>> VertsCol;

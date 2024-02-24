@@ -9,9 +9,10 @@
 
 // Particle-based physics simulation
 // - Memoryless Isotropic Point Particles (MIPP)
+// - Different from DEM simulations because no history, no rotation, etc.
 // - Particles defined only by position and velocity
-// - Different from DEM particles because no history, no rotation, etc.
-// - Explicit time integration with forward euler or velocity verlet
+// - Base particle cloud as FCC lattice
+// - Explicit time integration with forward Euler or velocity Verlet
 // - Isotropic force law defining force vs distance
 //
 // Reference article from MIT CBA group
@@ -30,29 +31,8 @@ class ParticForceLaw
     Scenario2DID____,
     Scenario2DThick_,
     LatticePitch____,
-    MaterialDensity_,
-    SpatialSortNb___,
-    SpatialSortSize_,
-    BCVelX__________,
-    BCVelY__________,
-    BCVelZ__________,
-    BCForX__________,
-    BCForY__________,
-    BCForZ__________,
-    StepsPerDraw____,
-    TimeStep________,
-    IntegType_______,
-    UseForceControl_,
-    BCPosCoeff______,
-    BCVelCoeff______,
-    VelocityDamping_,
-    ColorMode_______,
-    ColorFactor_____,
-    ColorDecay______,
-    VisuScale_______,
-    VisuSimple______,
+    ______________00,
     ForceLawPreset__,
-    ForceLawTailTol_,
     ForceLawNormali_,
     ForceLawScale___,
     ForceLawA_______,
@@ -67,6 +47,29 @@ class ParticForceLaw
     ForceLaw20______,
     ForceLaw25______,
     ForceLaw30______,
+    ______________01,
+    BCVelX__________,
+    BCVelY__________,
+    BCVelZ__________,
+    BCForX__________,
+    BCForY__________,
+    BCForZ__________,
+    StepsPerDraw____,
+    TimeStep________,
+    MaterialDensity_,
+    VelocityDamping_,
+    SpatialSortNb___,
+    SpatialSortSize_,
+    IntegType_______,
+    UseForceControl_,
+    BCPosCoeff______,
+    BCVelCoeff______,
+    ColorMode_______,
+    ColorFactor_____,
+    ColorDecay______,
+    VisuScale_______,
+    VisuSimple______,
+    VisuHideOOB_____,
     VerboseLevel____,
   };
 
@@ -82,15 +85,15 @@ class ParticForceLaw
   std::vector<int> BCVel;
   std::vector<int> BCFor;
 
-  // Force law
-  std::vector<float> ForceLaw;
-
-  float ForceLawStep;
-  float ParticleMass;
-  float SimTime;
-
   // Spatial sort
   std::vector<std::vector<std::vector<std::vector<int>>>> SpatialSort;
+
+  // Force law
+  std::vector<float> ForceLaw;
+  float ForceLawStep;
+
+  // Misc
+  float SimTime;
 
   // Simulator functions
   void BuildBaseCloud(std::vector<Vec::Vec3<float>> &oPointCloud);

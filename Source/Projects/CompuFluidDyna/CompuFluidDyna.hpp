@@ -4,6 +4,9 @@
 #include <array>
 #include <vector>
 
+// Algo headers
+#include "Math/Vec.hpp"
+
 
 // Fluid simulation code
 // - Eulerian voxel grid
@@ -15,7 +18,7 @@
 // - Uses iterative MackCormack backtracking scheme to achieve 2nd order accuracy in advection steps
 // - Reinjects dissipated vorticity at smallest scale using vorticity confinement approach
 // - Handles arbitrary boundary conditions and obstacles in the simulation domain using boolean flag fields
-// - Validated on Re < 2000 in lid-driven cavity flow, Poiseuille, Couette and venturi benchmarks
+// - Validated on Re < 1000 in lid-driven cavity flow, Poiseuille, Couette and venturi benchmarks
 // - Uses SI units
 //
 // References for fluid flow photographs, scenarios and visual comparison
@@ -32,39 +35,57 @@
 // https://www.youtube.com/watch?v=iKAVRgIrUOU JS, Matthias Müller, slightly different approach for pressure
 // https://www.youtube.com/watch?v=wbYe58NGJJI python
 // https://github.com/NiallHornFX/StableFluids3D-GL/blob/master/src/fluidsolver3d.cpp
+//
+// TODO Test heuristic optimization of solid regions
+// Optimisation of pipes with constant diameter using the heuristic optimality criterion - David Blacher, Michael Harasek
+// https://open-research-europe.ec.europa.eu/articles/3-156
+// https://github.com/AIT-LKR/SEROS
+//
+// TODO switch to continusous Solid field and implement Brinkman penalization ?
+// On the Calculation of the Brinkman Penalization Term in Density-Based Topology Optimization of Fluid-Dependent Problems - Mohamed Abdelhamid, Aleksander Czekanski
+// https://arxiv.org/pdf/2302.14156.pdf
+// Towards improved porous models for solid/fluid topology optimization - Maarten J. B. Theulings, Matthijs Langelaar, Fred van Keulen & Robert Maas
+// https://link.springer.com/article/10.1007/s00158-023-03570-4
+//
+// TODO Evaluate feasibility of adjoint analysis to get gradients for optim
+// Topology optimization of unsteady flow problems using the lattice Boltzmann method - Sebastian Arlund Nørgaard, Ole Sigmund, Boyan S Lazarov
+// https://www.researchgate.net/publication/287621818_Topology_optimization_of_unsteady_flow_problems_using_the_lattice_Boltzmann_method
+// https://github.com/northgaard/LBM-TopOpt
+// A detailed introduction to density‑based topology optimisation of fluid flow problems with implementation in MATLAB - Joe Alexandersen
+// https://link.springer.com/article/10.1007/s00158-022-03420-9
+// https://github.com/sdu-multiphysics/topflow
 class CompuFluidDyna
 {
   private:
   // List of UI parameters for this project
   enum ParamType
   {
-    Scenario________,
-    InputFile_______,
     ResolutionX_____,
     ResolutionY_____,
     ResolutionZ_____,
     VoxelSize_______,
+    Scenario________,
+    InputFile_______,
     TimeStep________,
+    Multithread_____,
     SolvMaxIter_____,
     SolvType________,
-    SolvMatMultType_,
-    SolvSOR_________,
     SolvTolRhs______,
     SolvTolRel______,
     SolvTolAbs______,
     CoeffGravi______,
     CoeffAdvec______,
+    CoeffAdvecTol___,
     CoeffDiffuS_____,
     CoeffDiffuV_____,
     CoeffVorti______,
     CoeffProj_______,
-    DarcyEnable_____,
-    DarcySmoothIt___,
+    PorosSmoothIt___,
+    PorosMinThresh__,
+    PorosOffset_____,
     DarcyMinResist__,
     DarcyMaxResist__,
     DarcyPenal______,
-    DarcyImplicit___,
-    DarcyProjItera__,
     BCVelX__________,
     BCVelY__________,
     BCVelZ__________,
@@ -76,6 +97,8 @@ class CompuFluidDyna
     ObjectPosZ______,
     ObjectSize0_____,
     ObjectSize1_____,
+    ParticCount_____,
+    ParticDuration__,
     ScaleFactor_____,
     ColorFactor_____,
     ColorThresh_____,
@@ -85,6 +108,8 @@ class CompuFluidDyna
     SlicePlotY______,
     SlicePlotZ______,
     PlotSolve_______,
+    PlotMFR0Offset__,
+    PlotMFR1Offset__,
     VerboseLevel____,
   };
 
@@ -121,7 +146,6 @@ class CompuFluidDyna
   std::vector<std::vector<std::vector<float>>> Poros;
 
   // Fields for scenario run
-  std::vector<std::vector<std::array<int, 3>>> VoxIdx;
   std::vector<std::vector<std::vector<float>>> Dum0;
   std::vector<std::vector<std::vector<float>>> Dum1;
   std::vector<std::vector<std::vector<float>>> Dum2;
@@ -141,42 +165,20 @@ class CompuFluidDyna
   std::vector<std::vector<std::vector<float>>> AdvY;
   std::vector<std::vector<std::vector<float>>> AdvZ;
 
+  // Array for streamline or particle display
+  std::vector<Vec::Vec3<float>> ParticlesPos;
+  std::vector<float> ParticlesAge;
+
   // Initialization and display functions
   void InitializeScenario();
   void UpdateUIData();
 
-  // Solver functions
+  // Simulation functions
   void RunSimulationStep();
+  void UpdateSolidFieldFromPoros();
   void ApplyBC(const int iFieldID, std::vector<std::vector<std::vector<float>>>& ioField);
-  void ImplicitFieldAdd(const std::vector<std::vector<std::vector<float>>>& iFieldA,
-                        const std::vector<std::vector<std::vector<float>>>& iFieldB,
-                        std::vector<std::vector<std::vector<float>>>& oField);
-  void ImplicitFieldSub(const std::vector<std::vector<std::vector<float>>>& iFieldA,
-                        const std::vector<std::vector<std::vector<float>>>& iFieldB,
-                        std::vector<std::vector<std::vector<float>>>& oField);
-  void ImplicitFieldScale(const float iVal,
-                          const std::vector<std::vector<std::vector<float>>>& iField,
-                          std::vector<std::vector<std::vector<float>>>& oField);
-  float ImplicitFieldDotProd(const std::vector<std::vector<std::vector<float>>>& iFieldA,
-                             const std::vector<std::vector<std::vector<float>>>& iFieldB);
-  void ImplicitFieldLaplacianMatMult(const int iFieldID, const float iTimeStep,
-                                     const bool iDiffuMode, const float iDiffuCoeff, const bool iPrecondMode,
-                                     const std::vector<std::vector<std::vector<float>>>& iField,
-                                     std::vector<std::vector<std::vector<float>>>& oField);
-  void ConjugateGradientSolve(const int iFieldID, const int iMaxIter, const float iTimeStep,
-                              const bool iDiffuMode, const float iDiffuCoeff,
-                              const std::vector<std::vector<std::vector<float>>>& iField,
-                              std::vector<std::vector<std::vector<float>>>& ioField);
-  void GradientDescentSolve(const int iFieldID, const int iMaxIter, const float iTimeStep,
-                            const bool iDiffuMode, const float iDiffuCoeff,
-                            const std::vector<std::vector<std::vector<float>>>& iField,
-                            std::vector<std::vector<std::vector<float>>>& ioField);
-  void GaussSeidelSolve(const int iFieldID, const int iMaxIter, const float iTimeStep,
-                        const bool iDiffuMode, const float iDiffuCoeff,
-                        const std::vector<std::vector<std::vector<float>>>& iField,
-                        std::vector<std::vector<std::vector<float>>>& ioField);
-  void ExternalForces();
-  void DarcyPenal();
+  void ExternalGravityForce();
+  void ExternalDarcyForce();
   void ProjectField(const int iMaxIter, const float iTimeStep,
                     std::vector<std::vector<std::vector<float>>>& ioVelX,
                     std::vector<std::vector<std::vector<float>>>& ioVelY,
@@ -192,8 +194,56 @@ class CompuFluidDyna
                             std::vector<std::vector<std::vector<float>>>& ioVelX,
                             std::vector<std::vector<std::vector<float>>>& ioVelY,
                             std::vector<std::vector<std::vector<float>>>& ioVelZ);
-  void ComputeVelocityDivergence();
-  void ComputeVelocityCurlVorticity();
+  void ComputeParticlesMovement();
+
+  // Vector field operators
+  void ComputeVectorFieldDivergence(const std::vector<std::vector<std::vector<float>>>& iVecX,
+                                    const std::vector<std::vector<std::vector<float>>>& iVecY,
+                                    const std::vector<std::vector<std::vector<float>>>& iVecZ,
+                                    std::vector<std::vector<std::vector<float>>>& oDiv);
+  void ComputeVectorFieldCurl(const std::vector<std::vector<std::vector<float>>>& iVecX,
+                              const std::vector<std::vector<std::vector<float>>>& iVecY,
+                              const std::vector<std::vector<std::vector<float>>>& iVecZ,
+                              std::vector<std::vector<std::vector<float>>>& oCurlX,
+                              std::vector<std::vector<std::vector<float>>>& oCurlY,
+                              std::vector<std::vector<std::vector<float>>>& oCurlZ);
+  void ComputeVectorFieldNorm(const std::vector<std::vector<std::vector<float>>>& iVecX,
+                              const std::vector<std::vector<std::vector<float>>>& iVecY,
+                              const std::vector<std::vector<std::vector<float>>>& iVecZ,
+                              std::vector<std::vector<std::vector<float>>>& oNorm);
+
+  // Linear solver function helpers
+  void ImplicitFieldAdd(const std::vector<std::vector<std::vector<float>>>& iFieldA,
+                        const std::vector<std::vector<std::vector<float>>>& iFieldB,
+                        std::vector<std::vector<std::vector<float>>>& oField);
+  void ImplicitFieldSub(const std::vector<std::vector<std::vector<float>>>& iFieldA,
+                        const std::vector<std::vector<std::vector<float>>>& iFieldB,
+                        std::vector<std::vector<std::vector<float>>>& oField);
+  void ImplicitFieldScale(const float iVal,
+                          const std::vector<std::vector<std::vector<float>>>& iField,
+                          std::vector<std::vector<std::vector<float>>>& oField);
+  float ImplicitFieldDotProd(const std::vector<std::vector<std::vector<float>>>& iFieldA,
+                             const std::vector<std::vector<std::vector<float>>>& iFieldB);
+  void ImplicitFieldLaplacianMatMult(const int iFieldID, const float iTimeStep, const float iDiffuCoeff, const bool iPrecondMode,
+                                     const std::vector<std::vector<std::vector<float>>>& iField,
+                                     std::vector<std::vector<std::vector<float>>>& oField);
+
+  // Linear solver functions
+  void LinearSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
+                   const std::vector<std::vector<std::vector<float>>>& iField,
+                   std::vector<std::vector<std::vector<float>>>& ioField);
+  void PreconditionedConjugateGradientSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
+                                            const std::vector<std::vector<std::vector<float>>>& iField,
+                                            std::vector<std::vector<std::vector<float>>>& ioField);
+  void ConjugateGradientSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
+                              const std::vector<std::vector<std::vector<float>>>& iField,
+                              std::vector<std::vector<std::vector<float>>>& ioField);
+  void GradientDescentSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
+                            const std::vector<std::vector<std::vector<float>>>& iField,
+                            std::vector<std::vector<std::vector<float>>>& ioField);
+  void GaussSeidelSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
+                        const std::vector<std::vector<std::vector<float>>>& iField,
+                        std::vector<std::vector<std::vector<float>>>& ioField);
 
   public:
   bool isActivProj;

@@ -3,6 +3,7 @@
 
 // Standard lib
 #include <cmath>
+#include <numbers>
 #include <vector>
 
 // GLUT lib
@@ -14,7 +15,6 @@
 #include "Geom/Sketch.hpp"
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
-#include "Util/Random.hpp"
 #include "Util/Timer.hpp"
 
 // Global headers
@@ -44,9 +44,23 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("Scenario2DID____", 0));
     D.UI.push_back(ParamUI("Scenario2DThick_", 0.5));
     D.UI.push_back(ParamUI("LatticePitch____", 0.04));
-    D.UI.push_back(ParamUI("MaterialDensity_", 10000.0));
-    D.UI.push_back(ParamUI("SpatialSortNb___", 1000));
-    D.UI.push_back(ParamUI("SpatialSortSize_", 40));
+    D.UI.push_back(ParamUI("______________00", NAN));
+    D.UI.push_back(ParamUI("ForceLawPreset__", 0));
+    D.UI.push_back(ParamUI("ForceLawNormali_", 1));
+    D.UI.push_back(ParamUI("ForceLawScale___", 100.0));
+    D.UI.push_back(ParamUI("ForceLawA_______", 1.0));
+    D.UI.push_back(ParamUI("ForceLaw08______", 1.0));
+    D.UI.push_back(ParamUI("ForceLaw09______", 1.0));
+    D.UI.push_back(ParamUI("ForceLawB_______", 0.0));
+    D.UI.push_back(ParamUI("ForceLaw11______", -1.0));
+    D.UI.push_back(ParamUI("ForceLaw12______", 0.0));
+    D.UI.push_back(ParamUI("ForceLaw13______", 1.0));
+    D.UI.push_back(ParamUI("ForceLawC_______", 0.0));
+    D.UI.push_back(ParamUI("ForceLaw15______", 0.0));
+    D.UI.push_back(ParamUI("ForceLaw20______", 0.0));
+    D.UI.push_back(ParamUI("ForceLaw25______", 0.0));
+    D.UI.push_back(ParamUI("ForceLaw30______", 0.0));
+    D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("BCVelX__________", 0.0));
     D.UI.push_back(ParamUI("BCVelY__________", 0.0));
     D.UI.push_back(ParamUI("BCVelZ__________", 1.0));
@@ -55,32 +69,20 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("BCForZ__________", 1.0));
     D.UI.push_back(ParamUI("StepsPerDraw____", 1));
     D.UI.push_back(ParamUI("TimeStep________", 0.002));
+    D.UI.push_back(ParamUI("MaterialDensity_", 200.0));
+    D.UI.push_back(ParamUI("VelocityDamping_", 0.0));
+    D.UI.push_back(ParamUI("SpatialSortNb___", 1000));
+    D.UI.push_back(ParamUI("SpatialSortSize_", 40));
     D.UI.push_back(ParamUI("IntegType_______", 1));
     D.UI.push_back(ParamUI("UseForceControl_", 0));
     D.UI.push_back(ParamUI("BCPosCoeff______", 1.0));
     D.UI.push_back(ParamUI("BCVelCoeff______", 1.0));
-    D.UI.push_back(ParamUI("VelocityDamping_", 0.0));
     D.UI.push_back(ParamUI("ColorMode_______", 3));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("ColorDecay______", 0.5));
     D.UI.push_back(ParamUI("VisuScale_______", 0.5));
     D.UI.push_back(ParamUI("VisuSimple______", 1));
-    D.UI.push_back(ParamUI("ForceLawPreset__", 0));
-    D.UI.push_back(ParamUI("ForceLawTailTol_", 1.e-2));
-    D.UI.push_back(ParamUI("ForceLawNormali_", 1));
-    D.UI.push_back(ParamUI("ForceLawScale___", 100.0));
-    D.UI.push_back(ParamUI("ForceLawA_______", 1.0));
-    D.UI.push_back(ParamUI("ForceLaw08______", 1.0));
-    D.UI.push_back(ParamUI("ForceLaw09______", 1.0));
-    D.UI.push_back(ParamUI("ForceLawB_______", 0.0));
-    D.UI.push_back(ParamUI("ForceLaw11______", -1.32));
-    D.UI.push_back(ParamUI("ForceLaw12______", 0.0));
-    D.UI.push_back(ParamUI("ForceLaw13______", 1.32));
-    D.UI.push_back(ParamUI("ForceLawC_______", 0.0));
-    D.UI.push_back(ParamUI("ForceLaw15______", 0.0));
-    D.UI.push_back(ParamUI("ForceLaw20______", 0.0));
-    D.UI.push_back(ParamUI("ForceLaw25______", 0.0));
-    D.UI.push_back(ParamUI("ForceLaw30______", 0.0));
+    D.UI.push_back(ParamUI("VisuHideOOB_____", 0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
@@ -113,7 +115,6 @@ bool ParticForceLaw::CheckAlloc() {
 // Check if parameter changes should trigger a refresh
 bool ParticForceLaw::CheckRefresh() {
   if (D.UI[ForceLawPreset__].hasChanged()) isRefreshed= false;
-  if (D.UI[ForceLawTailTol_].hasChanged()) isRefreshed= false;
   if (D.UI[ForceLawNormali_].hasChanged()) isRefreshed= false;
   if (D.UI[ForceLawScale___].hasChanged()) isRefreshed= false;
   for (int idxParam= ForceLawA_______; idxParam <= ForceLaw30______; idxParam++)
@@ -203,7 +204,7 @@ void ParticForceLaw::Animate() {
     D.Plot[2].val.push_back(0.0f);
     D.Plot[3].val.push_back(0.0f);
     for (int k= 0; k < (int)Pos.size(); k++) {
-      D.Plot[2].val[D.Plot[2].val.size() - 1]+= ParticleMass * Vel[k].normSquared();
+      D.Plot[2].val[D.Plot[2].val.size() - 1]+= Vel[k].normSquared();
       D.Plot[3].val[D.Plot[3].val.size() - 1]+= For[k].norm();
     }
   }
@@ -224,6 +225,10 @@ void ParticForceLaw::Draw() {
       glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
       glBegin(GL_POINTS);
       for (int k= 0; k < (int)Pos.size(); k++) {
+        if (D.UI[VisuHideOOB_____].B())
+          if (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
+              Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
+              Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2]) continue;
         glColor3fv(Col[k].array());
         glVertex3fv(Pos[k].array());
       }
@@ -232,6 +237,10 @@ void ParticForceLaw::Draw() {
     else {
       glEnable(GL_LIGHTING);
       for (int k= 0; k < (int)Pos.size(); k++) {
+        if (D.UI[VisuHideOOB_____].B())
+          if (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
+              Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
+              Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2]) continue;
         glColor3fv(Col[k].array());
         glPushMatrix();
         glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
@@ -304,10 +313,6 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
       if (points[k][1] >= D.boxMin[1] && points[k][1] <= D.boxMax[1])
         if (points[k][2] >= D.boxMin[2] && points[k][2] <= D.boxMax[2])
           oPointCloud.push_back(points[k]);
-
-  // Get the particle mass from the cloud and target density
-  const float boxVolume= (D.boxMax[0] - D.boxMin[0]) * (D.boxMax[1] - D.boxMin[1]) * (D.boxMax[2] - D.boxMin[2]);
-  ParticleMass= boxVolume * D.UI[MaterialDensity_].F() / (float)oPointCloud.size();
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("BaseCloudT %f\n", Timer::PopTimer());
 }
@@ -392,7 +397,9 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
         Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
       }
-      else if (RelPos[2] > 0.60f && RelPos[2] < 0.65f) {
+      else if (RelPos[0] > 0.1f && RelPos[0] < 0.9f &&
+               RelPos[1] > 0.1f && RelPos[1] < 0.9f &&
+               RelPos[2] > 0.45f && RelPos[2] < 0.55f) {
         Pos.push_back(iPointCloud[k]);
       }
     }
@@ -409,25 +416,25 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
     }
     // Coupon stretch - Velocity or Force driven
     else if (D.UI[ScenarioPreset__].I() == 6 || D.UI[ScenarioPreset__].I() == 7) {
-      if (RelPos[0] > 0.45f && RelPos[0] < 0.55f) {
-        if (RelPos[1] > 0.35f && RelPos[1] < 0.65f) {
+      if (RelPos[0] > 0.1f && RelPos[0] < 0.9f) {
+        if (RelPos[1] > 0.1f && RelPos[1] < 0.9f) {
           if (RelPos[2] > 0.2f && RelPos[2] < 0.8f) {
             Pos.push_back(iPointCloud[k]);
             if (D.UI[ScenarioPreset__].I() == 6) {
               if (RelPos[2] < 0.3f) {
-                Sensor.push_back(1);
                 BCVel.push_back(-1);
               }
               else if (RelPos[2] > 0.7f) {
+                Sensor.push_back(1);
                 BCVel.push_back(1);
               }
             }
             else {
               if (RelPos[2] < 0.3f) {
-                Sensor.push_back(1);
                 BCFor.push_back(-1);
               }
               else if (RelPos[2] > 0.7f) {
+                Sensor.push_back(1);
                 BCFor.push_back(1);
               }
             }
@@ -546,20 +553,17 @@ void ParticForceLaw::BuildForceLaw() {
   }
 
   // Cutoff the zero tail of the force law
-  if (D.UI[ForceLawTailTol_].F() > 0.0f) {
-    float BaseVal= ForceLaw[0];
-    for (int k= (int)ForceLaw.size() - 2; k >= 0; k--) {
-      if (std::abs(ForceLaw[k + 1]) < std::abs(D.UI[ForceLawTailTol_].F() * BaseVal) &&
-          std::abs(ForceLaw[k]) < std::abs(D.UI[ForceLawTailTol_].F() * BaseVal))
-        ForceLaw.pop_back();
-      else
-        break;
-    }
+  const float tailTol= 1.e-2;
+  for (int k= (int)ForceLaw.size() - 2; k >= 0; k--) {
+    if (std::abs(ForceLaw[k + 1]) < std::abs(tailTol * ForceLaw[0]) && std::abs(ForceLaw[k]) < std::abs(tailTol * ForceLaw[0]))
+      ForceLaw.pop_back();
+    else
+      break;
   }
 
   // Optionally normalize the force law
   if (D.UI[ForceLawNormali_].B()) {
-    float BaseVal= ForceLaw[0];
+    const float BaseVal= ForceLaw[0];
     for (int k= 0; k < (int)ForceLaw.size(); k++)
       ForceLaw[k]/= BaseVal;
   }
@@ -632,7 +636,8 @@ void ParticForceLaw::ComputeForces() {
   std::fill(For.begin(), For.end(), Vec::Vec3<float>(0.0, 0.0, 0.0));
 
   // Precompute values
-  const float forceReach= D.UI[LatticePitch____].F() * ForceLawStep * (float)(ForceLaw.size() - 1);
+  const float forceReach= ForceLawStep * (float)(ForceLaw.size() - 1) * D.UI[LatticePitch____].F();
+  const float surfArea= 4.0f * std::numbers::pi * D.UI[LatticePitch____].F() * D.UI[LatticePitch____].F();
 
   // Compute the spatial sort for linear neighbor search
   ComputeSpatialSort();
@@ -655,23 +660,24 @@ void ParticForceLaw::ComputeForces() {
         for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, nZ - 1); z++) {
           // Check candidate particles
           for (int k1 : SpatialSort[x][y][z]) {
-            if (k1 == k0) continue;
-            // Reject if out of reach
+            // Skip if invalid neighbor
+            if (k0 == k1) continue;
             const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
-            if (distVec.normSquared() > forceReach * forceReach) continue;
-            // Get linear interpolation of force law for the given particle distance
-            const float distVal= distVec.norm();
+            const float distSquared= distVec.normSquared();
+            if (distSquared > forceReach * forceReach) continue;
+            const float distVal= std::sqrt(distSquared);
+            // Get linear interpolation of force law for the given distance
             const float valFloat= (float)(ForceLaw.size() - 1) * distVal / forceReach;
             const int low= std::min(std::max((int)std::floor(valFloat), 0), (int)ForceLaw.size() - 1);
             const int upp= std::min(std::max(low + 1, 0), (int)ForceLaw.size() - 1);
             const float ratio= valFloat - (float)low;
-            const float forceVal= (1.0 - ratio) * ForceLaw[low] + (ratio)*ForceLaw[upp];
-            // Apply inter-particle force to both particles
-            For[k0]+= forceVal * distVec / distVal;
-            // Apply inter-particle damping linearly proportional to difference in radial velocity of particle pair
-            // TODO make damping distance dependant ?
-            const float RadialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
-            For[k0]-= D.UI[VelocityDamping_].F() * RadialVel * distVec / distVal;
+            const float forceVal= ((1.0 - ratio) * ForceLaw[low] + (ratio)*ForceLaw[upp]);
+            // Apply inter-particle force
+            For[k0]+= forceVal * surfArea * distVec / distVal;
+            // Get radial velocity of particle pair
+            const float radialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
+            // Apply inter-particle damping proportional to radial velocity
+            For[k0]-= D.UI[VelocityDamping_].F() * radialVel * surfArea * distVec / distVal;  // TODO make distance-dependant ?
           }
         }
       }
@@ -690,6 +696,7 @@ void ParticForceLaw::ApplyBCForces() {
   const Vec::Vec3<float> BCForVecPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
   const Vec::Vec3<float> BCVelVecNega(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F());
   const Vec::Vec3<float> BCVelVecPosi(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F());
+  const float surfArea= 4.0f * std::numbers::pi * D.UI[LatticePitch____].F() * D.UI[LatticePitch____].F();
 
   // Apply boundary conditions via force controller
   for (int k= 0; k < (int)Pos.size(); k++) {
@@ -699,7 +706,7 @@ void ParticForceLaw::ApplyBCForces() {
       //              =>  dt*dt*ft/m              == xbc - xt - dt*vt
       //              =>  ft                      == m*(xbc - xt - dt*vt)/dt*dt
       Vec::Vec3<float> ErrVec= Ref[k] - Pos[k];
-      For[k]+= D.UI[BCPosCoeff______].F() * ParticleMass * (ErrVec.normalized() * ErrVec.normSquared() - dt * Vel[k]) / (dt * dt);
+      For[k]+= D.UI[BCPosCoeff______].F() * surfArea * (ErrVec.normalized() * ErrVec.normSquared() - dt * Vel[k]) / (dt * dt);
     }
     else if (BCVel[k] != 0) {
       // vt+1 = vt + dt*ft/m
@@ -707,7 +714,7 @@ void ParticForceLaw::ApplyBCForces() {
       //              =>  dt*ft/m      == vbc - vt
       //              =>  ft           == m*(vbc-vt)/dt
       Vec::Vec3<float> ErrVec= ((BCVel[k] < 0) ? (BCVelVecNega) : (BCVelVecPosi)) - Vel[k];
-      For[k]+= D.UI[BCVelCoeff______].F() * ParticleMass * ErrVec.normalized() * ErrVec.normSquared() / dt;
+      For[k]+= D.UI[BCVelCoeff______].F() * surfArea * ErrVec.normalized() * ErrVec.normSquared() / dt;
     }
     else if (BCFor[k] != 0) {
       For[k]+= (BCFor[k] < 0) ? (BCForVecNega) : (BCForVecPosi);
@@ -727,6 +734,7 @@ void ParticForceLaw::StepSimulation() {
   const Vec::Vec3<float> BCForVecPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
   const Vec::Vec3<float> BCVelVecNega(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F());
   const Vec::Vec3<float> BCVelVecPosi(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F());
+  const float particleMass= D.UI[MaterialDensity_].F() * std::pow(D.UI[LatticePitch____].F(), 3.0f);
 
   // Explicit integration
   if (D.UI[IntegType_______].I() == 0) {
@@ -738,7 +746,7 @@ void ParticForceLaw::StepSimulation() {
         if (BCFor[k] != 0) For[k]+= (BCFor[k] < 0) ? (BCForVecNega) : (BCForVecPosi);  // Add force
     // Euler integration
     for (int k= 0; k < (int)Pos.size(); k++) {
-      Acc[k]= For[k] / ParticleMass;                           // at = ft / m
+      Acc[k]= For[k] / particleMass;                           // at = ft / m
       Vel[k]+= dt * Acc[k];                                    // vt+1 = vt + dt * at
       if (!D.UI[UseForceControl_].B() && BCVel[k] != 0)        // Boundary conditions check
         Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Overwrite velocity
@@ -774,7 +782,7 @@ void ParticForceLaw::StepSimulation() {
       }
       else {
         const Vec::Vec3<float> oldAcc= Acc[k];   // Store previous acceleration
-        Acc[k]= For[k] / ParticleMass;           // at+1 = ft+1 / m
+        Acc[k]= For[k] / particleMass;           // at+1 = ft+1 / m
         Vel[k]+= 0.5f * dt * (oldAcc + Acc[k]);  // vt+1 = vt + 0.5 * dt * (at + at+1)
       }
     }
@@ -799,10 +807,9 @@ void ParticForceLaw::StepSimulation() {
 
   // Write the status
   SimTime+= dt;
-  if ((int)D.Status.size() < 3) D.Status.resize(3);
+  if ((int)D.Status.size() < 2) D.Status.resize(2);
   D.Status[0]= std::string{"NbParticles: "} + std::to_string((int)Pos.size());
-  D.Status[1]= std::string{"ParticleMass: "} + std::to_string(ParticleMass);
-  D.Status[2]= std::string{"SimTime: "} + std::to_string(SimTime);
+  D.Status[1]= std::string{"SimTime: "} + std::to_string(SimTime);
 
   // Scatter plot of sensor data
   if (D.Scatter.size() < 1) D.Scatter.resize(1);
