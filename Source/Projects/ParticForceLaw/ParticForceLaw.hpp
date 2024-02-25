@@ -8,12 +8,12 @@
 
 
 // Particle-based physics simulation
-// - Memoryless Isotropic Point Particles (MIPP)
+// - Memoryless Isotropic Point Particles (MIPP) defined only by position and velocity
 // - Different from DEM simulations because no history, no rotation, etc.
-// - Particles defined only by position and velocity
-// - Base particle cloud as FCC lattice
+// - Base particle cloud as FCC lattice, Poisson sphere sampling, etc.
 // - Explicit time integration with forward Euler or velocity Verlet
 // - Isotropic force law defining force vs distance
+// - Fast neighborhood search with spatial partition into buckets of fixed size
 //
 // Reference article from MIT CBA group
 // Mesoscale material modeling with memoryless isotropic point particles
@@ -31,6 +31,7 @@ class ParticForceLaw
     Scenario2DID____,
     Scenario2DThick_,
     LatticePitch____,
+    LatticePattern__,
     ______________00,
     ForceLawPreset__,
     ForceLawNormali_,
@@ -57,9 +58,10 @@ class ParticForceLaw
     StepsPerDraw____,
     TimeStep________,
     MaterialDensity_,
+    RadialDamping___,
     VelocityDamping_,
-    SpatialSortNb___,
-    SpatialSortSize_,
+    BucketsCount____,
+    BucketsCapacity_,
     IntegType_______,
     UseForceControl_,
     BCPosCoeff______,
@@ -85,8 +87,11 @@ class ParticForceLaw
   std::vector<int> BCVel;
   std::vector<int> BCFor;
 
-  // Spatial sort
-  std::vector<std::vector<std::vector<std::vector<int>>>> SpatialSort;
+  // Buckets for spatial partition
+  std::vector<std::vector<std::vector<std::vector<int>>>> Buckets;
+  int nX;
+  int nY;
+  int nZ;
 
   // Force law
   std::vector<float> ForceLaw;
@@ -95,11 +100,18 @@ class ParticForceLaw
   // Misc
   float SimTime;
 
-  // Simulator functions
-  void BuildBaseCloud(std::vector<Vec::Vec3<float>> &oPointCloud);
-  void BuildScenario(const std::vector<Vec::Vec3<float>> &iPointCloud);
+  // Scenario functions
+  void BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud);
+  void BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud);
+
+  // Material properties functions
   void BuildForceLaw();
-  void ComputeSpatialSort();
+
+  // Spatial partition functions
+  void ComputeBuckets();
+  void GetBucketIdx(const Vec::Vec3<float>& iPos, int& oIdxX, int& oIdxY, int& oIdxZ);
+
+  // Simulator functions
   void ComputeForces();
   void ApplyBCForces();
   void StepSimulation();

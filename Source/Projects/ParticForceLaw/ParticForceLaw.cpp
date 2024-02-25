@@ -12,9 +12,11 @@
 // Algo headers
 #include "Draw/Colormap.hpp"
 #include "FileIO/FileInput.hpp"
+#include "Geom/BoxGrid.hpp"
 #include "Geom/Sketch.hpp"
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
+#include "Util/Random.hpp"
 #include "Util/Timer.hpp"
 
 // Global headers
@@ -44,6 +46,7 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("Scenario2DID____", 0));
     D.UI.push_back(ParamUI("Scenario2DThick_", 0.5));
     D.UI.push_back(ParamUI("LatticePitch____", 0.04));
+    D.UI.push_back(ParamUI("LatticePattern__", 0));
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("ForceLawPreset__", 0));
     D.UI.push_back(ParamUI("ForceLawNormali_", 1));
@@ -70,9 +73,10 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("StepsPerDraw____", 1));
     D.UI.push_back(ParamUI("TimeStep________", 0.002));
     D.UI.push_back(ParamUI("MaterialDensity_", 200.0));
+    D.UI.push_back(ParamUI("RadialDamping___", 0.0));
     D.UI.push_back(ParamUI("VelocityDamping_", 0.0));
-    D.UI.push_back(ParamUI("SpatialSortNb___", 1000));
-    D.UI.push_back(ParamUI("SpatialSortSize_", 40));
+    D.UI.push_back(ParamUI("BucketsCount____", 1000));
+    D.UI.push_back(ParamUI("BucketsCapacity_", 40));
     D.UI.push_back(ParamUI("IntegType_______", 1));
     D.UI.push_back(ParamUI("UseForceControl_", 0));
     D.UI.push_back(ParamUI("BCPosCoeff______", 1.0));
@@ -108,6 +112,7 @@ bool ParticForceLaw::CheckAlloc() {
   if (D.UI[Scenario2DID____].hasChanged()) isAllocated= false;
   if (D.UI[Scenario2DThick_].hasChanged()) isAllocated= false;
   if (D.UI[LatticePitch____].hasChanged()) isAllocated= false;
+  if (D.UI[LatticePattern__].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -141,7 +146,8 @@ void ParticForceLaw::Allocate() {
   BCPos.clear();
   BCVel.clear();
   BCFor.clear();
-  SpatialSort.clear();
+  Buckets.clear();
+  nX= nY= nZ= 0;
 
   // Get domain dimensions
   D.boxMin= {0.5 - 0.5 * D.UI[DomainX_________].D(), 0.5 - 0.5 * D.UI[DomainY_________].D(), 0.5 - 0.5 * D.UI[DomainZ_________].D()};
@@ -153,6 +159,9 @@ void ParticForceLaw::Allocate() {
 
   // Generate the scenario
   BuildScenario(pointCloud);
+
+  // Generate the spatial partition
+  ComputeBuckets();
 }
 
 
@@ -251,26 +260,41 @@ void ParticForceLaw::Draw() {
     }
   }
 
-  // Draw the spatial sort status
-  if (D.displayMode2) {
-    int nX, nY, nZ, nB;
-    Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
-    glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
-    glBegin(GL_POINTS);
+  // Display spatial partition buckets status
+  if (!D.displayMode2) {
+    glLineWidth(2.0f);
+    // Get dimensions
+    double stepX, stepY, stepZ;
+    BoxGrid::GetVoxelSizes(nX, nY, nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ);
+    const int bucketCapacity= std::max(D.UI[BucketsCapacity_].I(), 1);
+    // Set transformation
+    glPushMatrix();
+    glTranslatef(D.boxMin[0] + 0.5f * (float)stepX, D.boxMin[1] + 0.5f * (float)stepY, D.boxMin[2] + 0.5f * (float)stepZ);
+    glScalef((float)stepX, (float)stepY, (float)stepZ);
     for (int x= 0; x < nX; x++) {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
-          float r= 0.5, g= 0.5, b= 0.5;
-          Colormap::RatioToJetBrightSmooth((float)SpatialSort[x][y][z].size() / D.UI[SpatialSortSize_].F(), r, g, b);
+          // Color by occupancy
+          float r= 0.5f, g= 0.5f, b= 0.5f;
+          Colormap::RatioToJetBrightSmooth((float)Buckets[x][y][z].size() / (float)bucketCapacity, r, g, b);
           glColor3f(r, g, b);
-          glVertex3f(D.boxMin[0] + (D.boxMax[0] - D.boxMin[0]) * ((float)x + 0.5f) / (float)nX,
-                     D.boxMin[1] + (D.boxMax[1] - D.boxMin[1]) * ((float)y + 0.5f) / (float)nY,
-                     D.boxMin[2] + (D.boxMax[2] - D.boxMin[2]) * ((float)z + 0.5f) / (float)nZ);
+          // Draw wire box
+          glPushMatrix();
+          glTranslatef((float)x, (float)y, (float)z);
+          glutWireCube(1.0);
+          glPopMatrix();
         }
       }
     }
-    glEnd();
+    glPopMatrix();
+    glLineWidth(1.0f);
   }
+
+  // Write the status
+  if ((int)D.Status.size() < 3) D.Status.resize(3);
+  D.Status[0]= std::string{" NbBuckets="} + std::to_string(nX * nY * nZ);
+  D.Status[1]= std::string{" NbParticles="} + std::to_string((int)Pos.size());
+  D.Status[2]= std::string{" SimTime="} + std::to_string(SimTime);
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("DrawT %f\n", Timer::PopTimer());
 }
@@ -279,40 +303,87 @@ void ParticForceLaw::Draw() {
 void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
-  // Generate the base point cloud with an FCC pattern
-  std::vector<Vec::Vec3<float>> points;
-  const float minDist= std::sqrt(2.0f) / 2.0f;
-  const int nX= (int)std::ceil(float(D.boxMax[0] - D.boxMin[0]) / (D.UI[LatticePitch____].F() * minDist));
-  const int nY= (int)std::ceil(float(D.boxMax[1] - D.boxMin[1]) / (D.UI[LatticePitch____].F() * minDist));
-  const int nZ= (int)std::ceil(float(D.boxMax[2] - D.boxMin[2]) / (D.UI[LatticePitch____].F() * minDist));
-  for (int x= 0; x < (nX / 2) * 2 + 1; x++) {
-    for (int y= 0; y < (nY / 2) * 2 + 1; y++) {
-      for (int z= 0; z < (nZ / 2) * 2 + 1; z++) {
-        if (((x + y + z) % 2 == 0))
-          points.push_back(Vec::Vec3<float>(
-              D.boxMin[0] + x * D.UI[LatticePitch____].F() * minDist,
-              D.boxMin[1] + y * D.UI[LatticePitch____].F() * minDist,
-              D.boxMin[2] + z * D.UI[LatticePitch____].F() * minDist));
+  // Reset the base point cloud
+  oPointCloud.clear();
+
+  // Regular lattice pattern
+  if (D.UI[LatticePattern__].I() == 0 || D.UI[LatticePattern__].I() == 1 || D.UI[LatticePattern__].I() == 2) {
+    float minDist= 0.0f;
+    if (D.UI[LatticePattern__].I() == 0) minDist= 1.0f;                                    // SCC pattern
+    if (D.UI[LatticePattern__].I() == 1) minDist= (2.0f / 3.0f) * std::sqrt(3.0f) / 2.0f;  // BCC pattern
+    if (D.UI[LatticePattern__].I() == 2) minDist= std::sqrt(2.0f) / 2.0f;                  // FCC pattern
+    const int cellNbX= (int)std::ceil(float(D.boxMax[0] - D.boxMin[0]) / (D.UI[LatticePitch____].F() * minDist));
+    const int cellNbY= (int)std::ceil(float(D.boxMax[1] - D.boxMin[1]) / (D.UI[LatticePitch____].F() * minDist));
+    const int cellNbZ= (int)std::ceil(float(D.boxMax[2] - D.boxMin[2]) / (D.UI[LatticePitch____].F() * minDist));
+    for (int x= 0; x < (cellNbX / 2) * 2 + 1; x++) {
+      for (int y= 0; y < (cellNbY / 2) * 2 + 1; y++) {
+        for (int z= 0; z < (cellNbZ / 2) * 2 + 1; z++) {
+          bool keep= false;
+          if (D.UI[LatticePattern__].I() == 0) keep= true;                                                                                // SCC pattern
+          if (D.UI[LatticePattern__].I() == 1 && ((x % 2 == 0 && y % 2 == 0 && z % 2 == 0) || (x % 2 + y % 2 + z % 2 == 3))) keep= true;  // BCC pattern
+          if (D.UI[LatticePattern__].I() == 2 && ((x + y + z) % 2 == 0)) keep= true;                                                      // FCC pattern
+          if (keep)
+            oPointCloud.push_back(Vec::Vec3<float>(
+                D.boxMin[0] + x * D.UI[LatticePitch____].F() * minDist,
+                D.boxMin[1] + y * D.UI[LatticePitch____].F() * minDist,
+                D.boxMin[2] + z * D.UI[LatticePitch____].F() * minDist));
+        }
+      }
+    }
+  }
+  // Poisson sphere sampling
+  else if (D.UI[LatticePattern__].I() == 3) {
+    ComputeBuckets();
+    const int bucketCapacity= std::max(D.UI[BucketsCapacity_].I(), 1);
+    int failStreak= 0;
+    const int maxAttempts= 1000;
+    const float relMinDist= 0.9;
+    while (failStreak < maxAttempts) {
+      const Vec::Vec3<float> candidate(Random::Val(D.boxMin[0], D.boxMax[0]), Random::Val(D.boxMin[1], D.boxMax[1]), Random::Val(D.boxMin[2], D.boxMax[2]));
+      bool keep= true;
+      // Get range to check in spatial partition
+      int idxXBeg, idxYBeg, idxZBeg, idxXEnd, idxYEnd, idxZEnd;
+      Vec::Vec3<float> vecOffset(D.UI[LatticePitch____].F(), D.UI[LatticePitch____].F(), D.UI[LatticePitch____].F());
+      GetBucketIdx(candidate - vecOffset, idxXBeg, idxYBeg, idxZBeg);
+      GetBucketIdx(candidate + vecOffset, idxXEnd, idxYEnd, idxZEnd);
+      // Check range in spatial partition
+      for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, nX - 1) && keep; x++) {
+        for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, nY - 1) && keep; y++) {
+          for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, nZ - 1) && keep; z++) {
+            // Check candidate particles
+            for (int k : Buckets[x][y][z]) {
+              // Skip if invalid neighbor
+              if ((candidate - oPointCloud[k]).normSquared() < std::pow(D.UI[LatticePitch____].F() * relMinDist, 2.0f)) {
+                keep= false;
+                break;
+              }
+            }
+          }
+        }
+      }
+      if (keep) {
+        failStreak= 0;
+        oPointCloud.push_back(candidate);
+        int idxX, idxY, idxZ;
+        GetBucketIdx(candidate, idxX, idxY, idxZ);
+        if (idxX >= 0 && idxX < nX && idxY >= 0 && idxY < nY && idxZ >= 0 && idxZ < nZ)
+          if ((int)Buckets[idxX][idxY][idxZ].size() < bucketCapacity)
+            Buckets[idxX][idxY][idxZ].push_back((int)oPointCloud.size() - 1);
+      }
+      else {
+        failStreak++;
       }
     }
   }
 
   // Recenter the point cloud
   Vec::Vec3<float> avgPos(0.0f, 0.0f, 0.0f);
-  for (int k= 0; k < (int)points.size(); k++)
-    avgPos= avgPos + points[k];
-  avgPos/= (float)points.size();
-  for (int k= 0; k < (int)points.size(); k++)
+  for (int k= 0; k < (int)oPointCloud.size(); k++)
+    avgPos= avgPos + oPointCloud[k];
+  avgPos/= (float)oPointCloud.size();
+  for (int k= 0; k < (int)oPointCloud.size(); k++)
     for (int dim= 0; dim < 3; dim++)
-      points[k][dim]= points[k][dim] - avgPos[dim] + (D.boxMin[dim] + D.boxMax[dim]) / 2.0f;
-
-  // Get the points in the box
-  oPointCloud.clear();
-  for (int k= 0; k < (int)points.size(); k++)
-    if (points[k][0] >= D.boxMin[0] && points[k][0] <= D.boxMax[0])
-      if (points[k][1] >= D.boxMin[1] && points[k][1] <= D.boxMax[1])
-        if (points[k][2] >= D.boxMin[2] && points[k][2] <= D.boxMax[2])
-          oPointCloud.push_back(points[k]);
+      oPointCloud[k][dim]= oPointCloud[k][dim] - avgPos[dim] + (D.boxMin[dim] + D.boxMax[dim]) / 2.0f;
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("BaseCloudT %f\n", Timer::PopTimer());
 }
@@ -334,9 +405,8 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
   if (D.UI[ScenarioPreset__].I() == 0) {
     if (D.UI[Scenario2DID____].I() == 0) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/Coupon.bmp", imageRGBA, false);
-    if (D.UI[Scenario2DID____].I() == 1) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/CouponsSet.bmp", imageRGBA, false);
-    if (D.UI[Scenario2DID____].I() == 2) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/SandiaFracture.bmp", imageRGBA, false);
-    if (D.UI[Scenario2DID____].I() == 3) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/KalthoffFracture.bmp", imageRGBA, false);
+    if (D.UI[Scenario2DID____].I() == 1) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/SandiaFracture.bmp", imageRGBA, false);
+    if (D.UI[Scenario2DID____].I() == 2) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/KalthoffFracture.bmp", imageRGBA, false);
   }
 
   // Load the 3D scenario file if needed
@@ -463,6 +533,14 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
         }
       }
     }
+    // Simple sphere
+    else if (D.UI[ScenarioPreset__].I() == 10) {
+      if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.5f)).norm() < 0.4f) {
+        Pos.push_back(iPointCloud[k]);
+        BCFor.push_back(-1);
+        Sensor.push_back(1);
+      }
+    }
 
     // Fill the missing default values
     if (Sensor.size() < Pos.size()) Sensor.push_back(0);
@@ -576,53 +654,58 @@ void ParticForceLaw::BuildForceLaw() {
 }
 
 
-void ParticForceLaw::ComputeSpatialSort() {
+void ParticForceLaw::ComputeBuckets() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
-  // Check validity of inputs
-  if (D.UI[SpatialSortNb___].I() < 1) return;
-  if (D.UI[SpatialSortSize_].I() < 1) return;
+  // Get param
+  const int bucketCount= std::max(D.UI[BucketsCount____].I(), 1);
+  const int bucketCapacity= std::max(D.UI[BucketsCapacity_].I(), 1);
 
   // Compute the appropriate voxel size and grid resolution
   const float boxVolume= (D.boxMax[0] - D.boxMin[0]) * (D.boxMax[1] - D.boxMin[1]) * (D.boxMax[2] - D.boxMin[2]);
-  const float stepSize= std::pow(boxVolume, 1.0f / 3.0f) / std::pow((float)D.UI[SpatialSortNb___].I(), 1.0f / 3.0f);
-  const int nX= std::max(1, (int)std::round((D.boxMax[0] - D.boxMin[0]) / stepSize));
-  const int nY= std::max(1, (int)std::round((D.boxMax[1] - D.boxMin[1]) / stepSize));
-  const int nZ= std::max(1, (int)std::round((D.boxMax[2] - D.boxMin[2]) / stepSize));
+  const float stepSize= std::pow(boxVolume, 1.0f / 3.0f) / std::pow((float)bucketCount, 1.0f / 3.0f);
+  nX= std::max(1, (int)std::round((D.boxMax[0] - D.boxMin[0]) / stepSize));
+  nY= std::max(1, (int)std::round((D.boxMax[1] - D.boxMin[1]) / stepSize));
+  nZ= std::max(1, (int)std::round((D.boxMax[2] - D.boxMin[2]) / stepSize));
 
-  // Allocate/initialize the spatial sort if needed
+  // Allocate/initialize the spatial partition if needed
   int nXOld, nYOld, nZOld, nBOld;
-  Field::GetFieldDimensions(SpatialSort, nXOld, nYOld, nZOld, nBOld);
-  if (nXOld != nX || nYOld != nY || nZOld != nZ || nBOld != D.UI[SpatialSortSize_].I())
-    SpatialSort= Field::AllocField4D(nX, nY, nZ, D.UI[SpatialSortSize_].I(), -1);
-
+  Field::GetFieldDimensions(Buckets, nXOld, nYOld, nZOld, nBOld);
+  if (nXOld != nX || nYOld != nY || nZOld != nZ || (int)Buckets[0][0][0].capacity() != bucketCapacity)
+    Buckets= Field::AllocField4D(nX, nY, nZ, bucketCapacity, -1);
   for (int x= 0; x < nX; x++)
     for (int y= 0; y < nY; y++)
       for (int z= 0; z < nZ; z++)
-        SpatialSort[x][y][z].clear();
+        Buckets[x][y][z].clear();
 
-  // Fill the spatial sort
+  // Fill the spatial partition
   for (int k= 0; k < (int)Pos.size(); k++) {
-    const int idxX= (int)std::floor((float)nX * (Pos[k][0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
-    const int idxY= (int)std::floor((float)nY * (Pos[k][1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
-    const int idxZ= (int)std::floor((float)nZ * (Pos[k][2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
+    int idxX, idxY, idxZ;
+    GetBucketIdx(Pos[k], idxX, idxY, idxZ);
     if (idxX >= 0 && idxX < nX && idxY >= 0 && idxY < nY && idxZ >= 0 && idxZ < nZ)
-      if ((int)SpatialSort[idxX][idxY][idxZ].size() < D.UI[SpatialSortSize_].I())
-        SpatialSort[idxX][idxY][idxZ].push_back(k);
+      if ((int)Buckets[idxX][idxY][idxZ].size() < bucketCapacity)
+        Buckets[idxX][idxY][idxZ].push_back(k);
   }
 
-  // Plot spatial sort occupancy
+  // Plot spatial partition occupancy
   if (D.Plot.size() < 1) D.Plot.resize(1);
-  D.Plot[0].name= "SpatialSort";
+  D.Plot[0].name= "Buckets";
   D.Plot[0].val.resize(nX * nY * nZ + 2);
   D.Plot[0].val[nX * nY * nZ + 0]= 0;
-  D.Plot[0].val[nX * nY * nZ + 1]= D.UI[SpatialSortSize_].I();
+  D.Plot[0].val[nX * nY * nZ + 1]= bucketCapacity;
   for (int x= 0; x < nX; x++)
     for (int y= 0; y < nY; y++)
       for (int z= 0; z < nZ; z++)
-        D.Plot[0].val[x * nY * nZ + y * nZ + z]= (double)SpatialSort[x][y][z].size();
+        D.Plot[0].val[x * nY * nZ + y * nZ + z]= (double)Buckets[x][y][z].size();
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("SpatialSortT %f\n", Timer::PopTimer());
+}
+
+
+void ParticForceLaw::GetBucketIdx(const Vec::Vec3<float>& iPos, int& oIdxX, int& oIdxY, int& oIdxZ) {
+  oIdxX= (iPos[0] == D.boxMax[0]) ? (nX - 1) : ((int)std::floor((float)nX * (iPos[0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0])));
+  oIdxY= (iPos[1] == D.boxMax[1]) ? (nY - 1) : ((int)std::floor((float)nY * (iPos[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1])));
+  oIdxZ= (iPos[2] == D.boxMax[2]) ? (nZ - 1) : ((int)std::floor((float)nZ * (iPos[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2])));
 }
 
 
@@ -639,29 +722,30 @@ void ParticForceLaw::ComputeForces() {
   const float forceReach= ForceLawStep * (float)(ForceLaw.size() - 1) * D.UI[LatticePitch____].F();
   const float surfArea= 4.0f * std::numbers::pi * D.UI[LatticePitch____].F() * D.UI[LatticePitch____].F();
 
-  // Compute the spatial sort for linear neighbor search
-  ComputeSpatialSort();
-  int nX, nY, nZ, nB;
-  Field::GetFieldDimensions(SpatialSort, nX, nY, nZ, nB);
+  // Compute the spatial partition for linear neighbor search
+  ComputeBuckets();
 
 // Compute particle forces
 #pragma omp parallel for
   for (int k0= 0; k0 < (int)Pos.size(); k0++) {
-    // Get range to check in spatial sort
-    const int idxXBeg= (int)std::floor((float)nX * (Pos[k0][0] - forceReach - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
-    const int idxYBeg= (int)std::floor((float)nY * (Pos[k0][1] - forceReach - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
-    const int idxZBeg= (int)std::floor((float)nZ * (Pos[k0][2] - forceReach - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
-    const int idxXEnd= (int)std::floor((float)nX * (Pos[k0][0] + forceReach - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
-    const int idxYEnd= (int)std::floor((float)nY * (Pos[k0][1] + forceReach - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
-    const int idxZEnd= (int)std::floor((float)nZ * (Pos[k0][2] + forceReach - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
-    // Check range in spatial sort
+    if (Pos[k0][0] < D.boxMin[0] || Pos[k0][0] > D.boxMax[0] ||
+        Pos[k0][1] < D.boxMin[1] || Pos[k0][1] > D.boxMax[1] ||
+        Pos[k0][2] < D.boxMin[2] || Pos[k0][2] > D.boxMax[2]) continue;
+    // Get range to check in spatial partition
+    int idxXBeg, idxYBeg, idxZBeg, idxXEnd, idxYEnd, idxZEnd;
+    Vec::Vec3<float> vecOffset(forceReach, forceReach, forceReach);
+    GetBucketIdx(Pos[k0] - vecOffset, idxXBeg, idxYBeg, idxZBeg);
+    GetBucketIdx(Pos[k0] + vecOffset, idxXEnd, idxYEnd, idxZEnd);
+    // Check range in spatial partition
     for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, nX - 1); x++) {
       for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, nY - 1); y++) {
         for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, nZ - 1); z++) {
           // Check candidate particles
-          for (int k1 : SpatialSort[x][y][z]) {
+          for (int k1 : Buckets[x][y][z]) {
             // Skip if invalid neighbor
             if (k0 == k1) continue;
+            if (BCVel[k0] != 0 && BCVel[k1] != 0) continue;
+            if (BCPos[k0] != 0 && BCPos[k1] != 0) continue;
             const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
             const float distSquared= distVec.normSquared();
             if (distSquared > forceReach * forceReach) continue;
@@ -677,7 +761,7 @@ void ParticForceLaw::ComputeForces() {
             // Get radial velocity of particle pair
             const float radialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
             // Apply inter-particle damping proportional to radial velocity
-            For[k0]-= D.UI[VelocityDamping_].F() * radialVel * surfArea * distVec / distVal;  // TODO make distance-dependant ?
+            For[k0]-= D.UI[RadialDamping___].F() * radialVel * surfArea * distVec / distVal;  // TODO make distance-dependant ?
           }
         }
       }
@@ -755,6 +839,8 @@ void ParticForceLaw::StepSimulation() {
         Pos[k]= Ref[k];                                        // Overwrite Position
         Vel[k]= Vec::Vec3<float>{0.0f, 0.0f, 0.0f};            // Overwrite Velocity
       }
+      if (D.UI[VelocityDamping_].B())
+        Vel[k]= (1.0f - D.UI[VelocityDamping_].F()) * Vel[k];  // Overwrite Velocity
     }
   }
   else {
@@ -767,6 +853,8 @@ void ParticForceLaw::StepSimulation() {
       else {
         Pos[k]+= dt * Vel[k] + 0.5f * dt * dt * Acc[k];  // xt+1 = xt + dt * vt + 0.5 * dt * dt * at
       }
+      if (D.UI[VelocityDamping_].B())
+        Vel[k]= (1.0f - D.UI[VelocityDamping_].F()) * Vel[k];  // Overwrite Velocity
     }
     // Evaluate net forces acting on particles
     ComputeForces();                                                                   // ft+1
@@ -788,6 +876,9 @@ void ParticForceLaw::StepSimulation() {
     }
   }
 
+  // Advance time
+  SimTime+= dt;
+
   // Set particle color with gradual decay
   for (int k= 0; k < (int)Pos.size(); k++) {
     float r= 0.5f, g= 0.5f, b= 0.5f;
@@ -804,12 +895,6 @@ void ParticForceLaw::StepSimulation() {
     if (D.UI[ColorMode_______].I() == 3) Colormap::RatioToJetBrightSmooth(For[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
     Col[k]= (1.0f - D.UI[ColorDecay______].F()) * Col[k] + D.UI[ColorDecay______].F() * Vec::Vec3<float>(r, g, b);
   }
-
-  // Write the status
-  SimTime+= dt;
-  if ((int)D.Status.size() < 2) D.Status.resize(2);
-  D.Status[0]= std::string{"NbParticles: "} + std::to_string((int)Pos.size());
-  D.Status[1]= std::string{"SimTime: "} + std::to_string(SimTime);
 
   // Scatter plot of sensor data
   if (D.Scatter.size() < 1) D.Scatter.resize(1);
