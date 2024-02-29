@@ -13,6 +13,7 @@
 #include "Draw/Colormap.hpp"
 #include "FileIO/FileInput.hpp"
 #include "Geom/BoxGrid.hpp"
+#include "Geom/MarchingCubes.hpp"
 #include "Geom/Sketch.hpp"
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
@@ -46,10 +47,11 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("Scenario2DID____", 0));
     D.UI.push_back(ParamUI("Scenario2DThick_", 0.5));
     D.UI.push_back(ParamUI("LatticePitch____", 0.04));
-    D.UI.push_back(ParamUI("LatticePattern__", 0));
+    D.UI.push_back(ParamUI("LatticePattern__", 2));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("ForceLawPreset__", 0));
-    D.UI.push_back(ParamUI("ForceLawNormali_", 1));
+    D.UI.push_back(ParamUI("ForceLawPreset0_", 0));
+    D.UI.push_back(ParamUI("ForceLawPreset1_", 0));
+    D.UI.push_back(ParamUI("ForceLawPreset2_", 0));
     D.UI.push_back(ParamUI("ForceLawScale___", 100.0));
     D.UI.push_back(ParamUI("ForceLawA_______", 1.0));
     D.UI.push_back(ParamUI("ForceLaw08______", 1.0));
@@ -73,20 +75,28 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("StepsPerDraw____", 1));
     D.UI.push_back(ParamUI("TimeStep________", 0.002));
     D.UI.push_back(ParamUI("MaterialDensity_", 200.0));
-    D.UI.push_back(ParamUI("RadialDamping___", 0.0));
-    D.UI.push_back(ParamUI("VelocityDamping_", 0.0));
+    D.UI.push_back(ParamUI("DampingRadRel___", 0.1));
+    D.UI.push_back(ParamUI("DampingVelRel___", 0.0));
     D.UI.push_back(ParamUI("BucketsCount____", 1000));
     D.UI.push_back(ParamUI("BucketsCapacity_", 40));
     D.UI.push_back(ParamUI("IntegType_______", 1));
     D.UI.push_back(ParamUI("UseForceControl_", 0));
     D.UI.push_back(ParamUI("BCPosCoeff______", 1.0));
     D.UI.push_back(ParamUI("BCVelCoeff______", 1.0));
+    D.UI.push_back(ParamUI("MetaballVoxSize_", 0.04));
+    D.UI.push_back(ParamUI("MetaballIsoval__", 0.5));
     D.UI.push_back(ParamUI("ColorMode_______", 3));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("ColorDecay______", 0.5));
     D.UI.push_back(ParamUI("VisuScale_______", 0.5));
     D.UI.push_back(ParamUI("VisuSimple______", 1));
-    D.UI.push_back(ParamUI("VisuHideOOB_____", 0));
+    D.UI.push_back(ParamUI("VisuShowOOB_____", 0));
+    D.UI.push_back(ParamUI("TestParam0______", 0));
+    D.UI.push_back(ParamUI("TestParam1______", 0));
+    D.UI.push_back(ParamUI("TestParam2______", 0));
+    D.UI.push_back(ParamUI("TestParam3______", 0));
+    D.UI.push_back(ParamUI("TestParam4______", 0));
+    D.UI.push_back(ParamUI("TestParam5______", 0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
@@ -119,8 +129,9 @@ bool ParticForceLaw::CheckAlloc() {
 
 // Check if parameter changes should trigger a refresh
 bool ParticForceLaw::CheckRefresh() {
-  if (D.UI[ForceLawPreset__].hasChanged()) isRefreshed= false;
-  if (D.UI[ForceLawNormali_].hasChanged()) isRefreshed= false;
+  if (D.UI[ForceLawPreset0_].hasChanged()) isRefreshed= false;
+  if (D.UI[ForceLawPreset1_].hasChanged()) isRefreshed= false;
+  if (D.UI[ForceLawPreset2_].hasChanged()) isRefreshed= false;
   if (D.UI[ForceLawScale___].hasChanged()) isRefreshed= false;
   for (int idxParam= ForceLawA_______; idxParam <= ForceLaw30______; idxParam++)
     if (D.UI[idxParam].hasChanged()) isRefreshed= false;
@@ -142,12 +153,16 @@ void ParticForceLaw::Allocate() {
   Acc.clear();
   For.clear();
   Col.clear();
+  Mat.clear();
   Sensor.clear();
   BCPos.clear();
   BCVel.clear();
   BCFor.clear();
   Buckets.clear();
   nX= nY= nZ= 0;
+  MetaballIsUpdated= false;
+  Verts.clear();
+  Tris.clear();
 
   // Get domain dimensions
   D.boxMin= {0.5 - 0.5 * D.UI[DomainX_________].D(), 0.5 - 0.5 * D.UI[DomainY_________].D(), 0.5 - 0.5 * D.UI[DomainZ_________].D()};
@@ -173,14 +188,16 @@ void ParticForceLaw::Refresh() {
   isRefreshed= true;
 
   // Generate the force law
-  BuildForceLaw();
+  BuildForceLaws();
 
   // Draw the force law in the plot
-  if (D.Plot.size() < 2) D.Plot.resize(2);
-  D.Plot[1].name= "ForceLaw";
-  D.Plot[1].val.resize(ForceLaw.size());
-  for (int k= 0; k < (int)ForceLaw.size(); k++)
-    D.Plot[1].val[k]= ForceLaw[k];
+  if (D.Plot.size() < 6) D.Plot.resize(6);
+  for (int idxMat= 0; idxMat < (int)ForceLaws.size(); idxMat++) {
+    D.Plot[3 + idxMat].name= "ForceLaw";
+    D.Plot[3 + idxMat].val.resize(ForceLaws[idxMat].size());
+    for (int k= 0; k < (int)ForceLaws[idxMat].size(); k++)
+      D.Plot[3 + idxMat].val[k]= ForceLaws[idxMat][k];
+  }
 }
 
 
@@ -201,20 +218,21 @@ void ParticForceLaw::Animate() {
   // Step forward simulation with explicit numerical integration
   for (int stepIdx= 0; stepIdx < D.UI[StepsPerDraw____].I(); stepIdx++) {
     StepSimulation();
+    MetaballIsUpdated= false;
   }
 
   // Plot data
-  if (D.Plot.size() < 4) D.Plot.resize(4);
-  D.Plot[2].name= "KE";
-  D.Plot[3].name= "ForceMag";
-  if (D.Plot[2].val.size() < 10000) {
+  if (D.Plot.size() < 3) D.Plot.resize(3);
+  D.Plot[1].name= "KE";
+  D.Plot[2].name= "ForceMag";
+  if (D.Plot[1].val.size() < 10000) {
+    D.Plot[1].val.reserve(10000);
     D.Plot[2].val.reserve(10000);
-    D.Plot[3].val.reserve(10000);
+    D.Plot[1].val.push_back(0.0f);
     D.Plot[2].val.push_back(0.0f);
-    D.Plot[3].val.push_back(0.0f);
     for (int k= 0; k < (int)Pos.size(); k++) {
-      D.Plot[2].val[D.Plot[2].val.size() - 1]+= Vel[k].normSquared();
-      D.Plot[3].val[D.Plot[3].val.size() - 1]+= For[k].norm();
+      D.Plot[1].val[D.Plot[1].val.size() - 1]+= Vel[k].normSquared();
+      D.Plot[2].val[D.Plot[2].val.size() - 1]+= For[k].norm();
     }
   }
 }
@@ -234,7 +252,7 @@ void ParticForceLaw::Draw() {
       glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
       glBegin(GL_POINTS);
       for (int k= 0; k < (int)Pos.size(); k++) {
-        if (D.UI[VisuHideOOB_____].B())
+        if (!D.UI[VisuShowOOB_____].B())
           if (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
               Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
               Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2]) continue;
@@ -246,7 +264,7 @@ void ParticForceLaw::Draw() {
     else {
       glEnable(GL_LIGHTING);
       for (int k= 0; k < (int)Pos.size(); k++) {
-        if (D.UI[VisuHideOOB_____].B())
+        if (!D.UI[VisuShowOOB_____].B())
           if (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
               Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
               Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2]) continue;
@@ -290,6 +308,37 @@ void ParticForceLaw::Draw() {
     glLineWidth(1.0f);
   }
 
+
+  // Draw triangles
+  if (!D.displayMode3) {
+    if (!MetaballIsUpdated)
+      ComputeMetaballs();
+    glEnable(GL_LIGHTING);
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_TRIANGLES);
+    for (int k= 0; k < (int)Tris.size(); k++) {
+      Vec::Vec3 v0(Verts[Tris[k][0]][0], Verts[Tris[k][0]][1], Verts[Tris[k][0]][2]);
+      Vec::Vec3 v1(Verts[Tris[k][1]][0], Verts[Tris[k][1]][1], Verts[Tris[k][1]][2]);
+      Vec::Vec3 v2(Verts[Tris[k][2]][0], Verts[Tris[k][2]][1], Verts[Tris[k][2]][2]);
+      Vec::Vec3 n0= (v1 - v0).cross(v2 - v0).normalized();
+      Vec::Vec3 n1= n0;
+      Vec::Vec3 n2= n0;
+      glNormal3f(n0[0], n0[1], n0[2]);
+      glVertex3f(v0[0], v0[1], v0[2]);
+      glNormal3f(n1[0], n1[1], n1[2]);
+      glVertex3f(v1[0], v1[1], v1[2]);
+      glNormal3f(n2[0], n2[1], n2[2]);
+      glVertex3f(v2[0], v2[1], v2[2]);
+    }
+    glEnd();
+    glDisable(GL_LIGHTING);
+  }
+  else {
+    MetaballIsUpdated= false;
+    Verts.clear();
+    Tris.clear();
+  }
+
   // Write the status
   if ((int)D.Status.size() < 3) D.Status.resize(3);
   D.Status[0]= std::string{" NbBuckets="} + std::to_string(nX * nY * nZ);
@@ -305,6 +354,9 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
 
   // Reset the base point cloud
   oPointCloud.clear();
+
+  // Check parameters
+  if (D.UI[LatticePitch____].F() <= 0.0f) return;
 
   // Regular lattice pattern
   if (D.UI[LatticePattern__].I() == 0 || D.UI[LatticePattern__].I() == 1 || D.UI[LatticePattern__].I() == 2) {
@@ -392,6 +444,11 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
 void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud) {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
+  // Check parameters
+  if (D.boxMax[0] <= D.boxMin[0]) return;
+  if (D.boxMax[1] <= D.boxMin[1]) return;
+  if (D.boxMax[2] <= D.boxMin[2]) return;
+
   // Calculate some helper variables for scenario setup
   const Vec::Vec3<float> BoxMin(D.boxMin[0], D.boxMin[1], D.boxMin[2]);
   const Vec::Vec3<float> BoxMax(D.boxMax[0], D.boxMax[1], D.boxMax[2]);
@@ -466,11 +523,13 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
       if ((RelPos - Vec::Vec3<float>(0.5f, 0.5f, 0.2f)).norm() < 0.15f) {
         Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
+        Mat.push_back(0);
       }
       else if (RelPos[0] > 0.1f && RelPos[0] < 0.9f &&
                RelPos[1] > 0.1f && RelPos[1] < 0.9f &&
                RelPos[2] > 0.45f && RelPos[2] < 0.55f) {
         Pos.push_back(iPointCloud[k]);
+        Mat.push_back(1);
       }
     }
     // Balls colliding
@@ -478,10 +537,12 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
       if ((RelPos - Vec::Vec3<float>(0.5f, 0.45f, 0.2f)).norm() < 0.15f) {
         Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(D.UI[BCVelX__________].F(), D.UI[BCVelY__________].F(), D.UI[BCVelZ__________].F()));
+        Mat.push_back(0);
       }
       else if ((RelPos - Vec::Vec3<float>(0.5f, 0.55f, 0.8f)).norm() < 0.15f) {
         Pos.push_back(iPointCloud[k]);
         Vel.push_back(Vec::Vec3<float>(-D.UI[BCVelX__________].F(), -D.UI[BCVelY__________].F(), -D.UI[BCVelZ__________].F()));
+        Mat.push_back(1);
       }
     }
     // Coupon stretch - Velocity or Force driven
@@ -543,6 +604,7 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
     }
 
     // Fill the missing default values
+    if (Mat.size() < Pos.size()) Mat.push_back(0);
     if (Sensor.size() < Pos.size()) Sensor.push_back(0);
     if (BCPos.size() < Pos.size()) BCPos.push_back(0);
     if (BCVel.size() < Pos.size()) BCVel.push_back(0);
@@ -561,96 +623,98 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
 }
 
 
-void ParticForceLaw::BuildForceLaw() {
+void ParticForceLaw::BuildForceLaws() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
   // Reset the force law
-  ForceLaw.clear();
+  ForceLaws.clear();
+  ForceLaws.resize(3);
+  ForceLawSteps.clear();
+  ForceLawSteps.resize(3);
+  ForceLawRanges.clear();
+  ForceLawRanges.resize(3);
 
-  // Custom force law
-  if (D.UI[ForceLawPreset__].I() == 0) {
-    // Create the force law as two a smooth polylines
-    std::vector<Vec::Vec3<double>> PolylineA;
-    PolylineA.push_back(Vec::Vec3<double>{0.0, 0.0, D.UI[ForceLawA_______].D()});
-    PolylineA.push_back(Vec::Vec3<double>{0.0, 0.8, D.UI[ForceLaw08______].D()});
-    PolylineA.push_back(Vec::Vec3<double>{0.0, 0.9, D.UI[ForceLaw09______].D()});
-    PolylineA.push_back(Vec::Vec3<double>{0.0, 1.0, D.UI[ForceLawB_______].D()});
-    std::vector<Vec::Vec3<double>> PolylineB;
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 1.0, D.UI[ForceLawB_______].D()});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 1.1, D.UI[ForceLaw11______].D()});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 1.2, D.UI[ForceLaw12______].D()});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 1.3, D.UI[ForceLaw13______].D()});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, std::sqrt(2), D.UI[ForceLawC_______].D()});
-    std::vector<Vec::Vec3<double>> PolylineC;
-    PolylineC.push_back(Vec::Vec3<double>{0.0, std::sqrt(2), D.UI[ForceLawC_______].D()});
-    PolylineC.push_back(Vec::Vec3<double>{0.0, 1.5, D.UI[ForceLaw15______].D()});
-    PolylineC.push_back(Vec::Vec3<double>{0.0, 2.0, D.UI[ForceLaw20______].D()});
-    PolylineC.push_back(Vec::Vec3<double>{0.0, 2.5, D.UI[ForceLaw25______].D()});
-    PolylineC.push_back(Vec::Vec3<double>{0.0, 3.0, D.UI[ForceLaw30______].D()});
-    Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineA);
-    Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineB);
-    Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineC);
-    std::vector<Vec::Vec3<double>> Polyline;
-    Polyline.insert(Polyline.end(), PolylineA.begin(), PolylineA.end());
-    Polyline.insert(Polyline.end(), PolylineB.begin(), PolylineB.end());
-    Polyline.insert(Polyline.end(), PolylineC.begin(), PolylineC.end());
-
-    // Sample the force value at fixed distance intervals
-    ForceLawStep= std::sqrt(2.0f) / 128.0f;
-    ForceLaw.resize((int)std::ceil(3.0f / ForceLawStep));
-    for (int k= 0; k < (int)ForceLaw.size(); k++) {
-      float dist= ForceLawStep * float(k);
-      int idxLow= 0, idxUpp= 0;
-      for (int idxVert= 0; idxVert < (int)Polyline.size() - 1; idxVert++) {
-        idxLow= idxVert;
-        idxUpp= std::min(idxVert + 1, (int)Polyline.size() - 1);
-        if (Polyline[idxLow][1] <= dist && Polyline[idxUpp][1] >= dist)
-          break;
+  for (int idxMat= 0; idxMat < (int)ForceLaws.size(); idxMat++) {
+    int presetID= -1;
+    if (idxMat == 0) presetID= D.UI[ForceLawPreset0_].I();
+    if (idxMat == 1) presetID= D.UI[ForceLawPreset1_].I();
+    if (idxMat == 2) presetID= D.UI[ForceLawPreset2_].I();
+    // Custom force law
+    if (presetID == 0) {
+      // Create the force law as two a smooth polylines
+      std::vector<Vec::Vec3<double>> PolylineA;
+      PolylineA.push_back(Vec::Vec3<double>{0.0, 0.0, D.UI[ForceLawA_______].D()});
+      PolylineA.push_back(Vec::Vec3<double>{0.0, 0.8, D.UI[ForceLaw08______].D()});
+      PolylineA.push_back(Vec::Vec3<double>{0.0, 0.9, D.UI[ForceLaw09______].D()});
+      PolylineA.push_back(Vec::Vec3<double>{0.0, 1.0, D.UI[ForceLawB_______].D()});
+      std::vector<Vec::Vec3<double>> PolylineB;
+      PolylineB.push_back(Vec::Vec3<double>{0.0, 1.0, D.UI[ForceLawB_______].D()});
+      PolylineB.push_back(Vec::Vec3<double>{0.0, 1.1, D.UI[ForceLaw11______].D()});
+      PolylineB.push_back(Vec::Vec3<double>{0.0, 1.2, D.UI[ForceLaw12______].D()});
+      PolylineB.push_back(Vec::Vec3<double>{0.0, 1.3, D.UI[ForceLaw13______].D()});
+      PolylineB.push_back(Vec::Vec3<double>{0.0, std::sqrt(2), D.UI[ForceLawC_______].D()});
+      std::vector<Vec::Vec3<double>> PolylineC;
+      PolylineC.push_back(Vec::Vec3<double>{0.0, std::sqrt(2), D.UI[ForceLawC_______].D()});
+      PolylineC.push_back(Vec::Vec3<double>{0.0, 1.5, D.UI[ForceLaw15______].D()});
+      PolylineC.push_back(Vec::Vec3<double>{0.0, 2.0, D.UI[ForceLaw20______].D()});
+      PolylineC.push_back(Vec::Vec3<double>{0.0, 2.5, D.UI[ForceLaw25______].D()});
+      PolylineC.push_back(Vec::Vec3<double>{0.0, 3.0, D.UI[ForceLaw30______].D()});
+      Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineA);
+      Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineB);
+      Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineC);
+      std::vector<Vec::Vec3<double>> Polyline;
+      Polyline.insert(Polyline.end(), PolylineA.begin(), PolylineA.end());
+      Polyline.insert(Polyline.end(), PolylineB.begin(), PolylineB.end());
+      Polyline.insert(Polyline.end(), PolylineC.begin(), PolylineC.end());
+      // Sample the force value at fixed distance intervals
+      ForceLawSteps[idxMat]= std::sqrt(2.0f) / 128.0f;
+      ForceLaws[idxMat].resize((int)std::ceil(3.0f / ForceLawSteps[idxMat]));
+      for (int k= 0; k < (int)ForceLaws[idxMat].size(); k++) {
+        float dist= ForceLawSteps[idxMat] * float(k);
+        int idxLow= 0, idxUpp= 0;
+        for (int idxVert= 0; idxVert < (int)Polyline.size() - 1; idxVert++) {
+          idxLow= idxVert;
+          idxUpp= std::min(idxVert + 1, (int)Polyline.size() - 1);
+          if (Polyline[idxLow][1] <= dist && Polyline[idxUpp][1] >= dist)
+            break;
+        }
+        double ratio= 0.0;
+        if (Polyline[idxUpp][1] - Polyline[idxLow][1] > 0.0)
+          ratio= (dist - Polyline[idxLow][1]) / (Polyline[idxUpp][1] - Polyline[idxLow][1]);
+        ForceLaws[idxMat][k]= (1.0 - ratio) * Polyline[idxLow][2] + ratio * Polyline[idxUpp][2];
       }
-      double ratio= 0.0;
-      if (Polyline[idxUpp][1] - Polyline[idxLow][1] > 0.0)
-        ratio= (dist - Polyline[idxLow][1]) / (Polyline[idxUpp][1] - Polyline[idxLow][1]);
-      ForceLaw[k]= (1.0 - ratio) * Polyline[idxLow][2] + ratio * Polyline[idxUpp][2];
     }
-  }
-  else {
-    ForceLawStep= 0.05f;
-    //                             00      05      10      15      20      25      30      35      40      45      50      55      60      65      70      75      80      85      90      95      0       05       10       15       20       25       30       35       40       45       50       55       60       65       70       75       80       85       90       95       00       05       10       15       20       25       30       35       40       45       50       55       60       65       70       75       80       85       90       95      00
-    if (D.UI[ForceLawPreset__].I() == 2)  // Elastic (fig 2 MIT paper)
-      ForceLaw= std::vector<float>{1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 0.5e6f, 0.0e6f, -0.5e6f, -1.0e6f, -0.5e6f, 0.0e6f, 0.5e6f, 1.0e6f, 0.5e6f, 0.0e6f};
-    else if (D.UI[ForceLawPreset__].I() == 3)  // Brittle (fig 3 MIT paper)
-      ForceLaw= std::vector<float>{1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 1.0e6f, 0.5e6f, 0.0e6f, -0.1e6f, 0.0e6f, 0.07e6f, 0.10e6f, 0.12e6f, 0.08e6f, 0.03e6f, 0.0e6f};
-    else if (D.UI[ForceLawPreset__].I() == 4)  // Viscous (fig 4 MIT paper)
-      ForceLaw= std::vector<float>{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 95.0, 88.0, 70.0, 50.0, 25.0, 0.0, -20.0, -28.0, -30.0, -28.0, -25.0, -20.0, -12.0, -7.0, -5.0, 0.0};
-    else if (D.UI[ForceLawPreset__].I() == 5)  // Steel AISI 4340 (fig 9 MIT paper)
-      ForceLaw= std::vector<float>{3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 3.0e10f, 2.0e10f, 0.0e10f, -2.0e10f, -2.5e10f, -2.0e10f, 0.0e10f, 2.0e10f, 2.5e10f, 2.0e10f, 0.0e10f};
-    else if (D.UI[ForceLawPreset__].I() == 6)  // Delrin
-      ForceLaw= std::vector<float>{88.e3f, 88.e3f, 88.e3f, 87.e3f, 87.e3f, 86.e3f, 85.e3f, 85.e3f, 83.e3f, 81.e3f, 78.e3f, 75.e3f, 72.e3f, 66.e3f, 60.e3f, 53.e3f, 45.e3f, 37.e3f, 29.e3f, 20.e3f, 0.e3f, -30.e3f, -32.e3f, -33.e3f, -33.e3f, -33.e3f, -32.e3f, -32.e3f, -31.e3f, -31.e3f, -30.e3f, -30.e3f, -30.e3f, -29.e3f, -29.e3f, -28.e3f, -28.e3f, -28.e3f, -28.e3f, -29.e3f, -29.e3f, -30.e3f, -30.e3f, -30.e3f, -31.e3f, -32.e3f, -33.e3f, -35.e3f, -36.e3f, -38.e3f, -40.e3f, -42.e3f, -43.e3f, -44.e3f, -44.e3f, -43.e3f, -41.e3f, -38.e3f, -32.e3f, -21.e3f, 0.e3f};
-    else  // Default force law (fig 1 MIT paper)
-      ForceLaw= std::vector<float>{1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.5e8f, 1.0e8f, 0.0e8f, -1.5e8f, -2.3e8f, -1.5e8f, 0.0e8f, 1.1e8f, 1.0e8f, 0.5e8f, 0.0e8f};
-  }
+    else {
+      ForceLawSteps[idxMat]= 0.05f;
+      ForceLaws[idxMat]= std::vector<float>{1.0f};
+      // Hard coded force laws from MIT paper
+      if (presetID == 1) ForceLaws[idxMat]= std::vector<float>{1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +5.00E+05, +0.00E+00, -5.00E+05, -1.00E+06, -5.00E+05, +0.00E+00, +5.00E+05, +1.00E+06, +5.00E+05, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00};
+      if (presetID == 2) ForceLaws[idxMat]= std::vector<float>{1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +1.00E+06, +5.00E+05, +0.00E+00, -1.00E+05, +0.00E+00, +7.00E+04, +1.00E+05, +1.20E+05, +8.00E+04, +3.00E+04, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00};
+      if (presetID == 3) ForceLaws[idxMat]= std::vector<float>{1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +1.00E+02, +9.50E+01, +8.80E+01, +7.00E+01, +5.00E+01, +2.50E+01, +0.00E+00, -2.00E+01, -2.80E+01, -3.00E+01, -2.80E+01, -2.50E+01, -2.00E+01, -1.20E+01, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00};
+      if (presetID == 4) ForceLaws[idxMat]= std::vector<float>{3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +3.00E+10, +2.00E+10, +0.00E+00, -2.00E+10, -2.50E+10, -2.00E+10, +0.00E+00, +2.00E+10, +2.50E+10, +2.00E+10, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00};
+      if (presetID == 5) ForceLaws[idxMat]= std::vector<float>{8.80E+04, +8.80E+04, +8.80E+04, +8.70E+04, +8.70E+04, +8.60E+04, +8.50E+04, +8.50E+04, +8.30E+04, +8.10E+04, +7.80E+04, +7.50E+04, +7.20E+04, +6.60E+04, +6.00E+04, +5.30E+04, +4.50E+04, +3.70E+04, +2.90E+04, +2.00E+04, +0.00E+00, -3.00E+04, -3.20E+04, -3.30E+04, -3.30E+04, -3.30E+04, -3.20E+04, -3.20E+04, -3.10E+04, -3.10E+04, -3.00E+04, -3.00E+04, -3.00E+04, -2.90E+04, -2.90E+04, -2.80E+04, -2.80E+04, -2.80E+04, -2.80E+04, -2.90E+04, -2.90E+04, -3.00E+04, -3.00E+04, -3.00E+04, -3.10E+04, -3.20E+04, -3.30E+04, -3.50E+04, -3.60E+04, -3.80E+04, -4.00E+04, -4.20E+04, -4.30E+04, -4.40E+04, -4.40E+04, -4.30E+04, -4.10E+04, -3.80E+04, -3.20E+04, -2.10E+04, +0.00E+00};
+      if (presetID == 6) ForceLaws[idxMat]= std::vector<float>{1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.50E+08, +1.00E+08, +0.00E+00, -1.50E+08, -2.30E+08, -1.50E+08, +0.00E+00, +1.10E+08, +1.00E+08, +5.00E+07, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00, +0.00E+00};
+    }
 
-  // Cutoff the zero tail of the force law
-  const float tailTol= 1.e-2;
-  for (int k= (int)ForceLaw.size() - 2; k >= 0; k--) {
-    if (std::abs(ForceLaw[k + 1]) < std::abs(tailTol * ForceLaw[0]) && std::abs(ForceLaw[k]) < std::abs(tailTol * ForceLaw[0]))
-      ForceLaw.pop_back();
-    else
-      break;
-  }
+    // Compute the effective range of the force law ignoring the zero tail
+    constexpr float tailTol= 1.e-2f;
+    int tailStartIdx= 0;
+    for (int k= 0; k < (int)ForceLaws[idxMat].size(); k++)
+      if (std::abs(ForceLaws[idxMat][k]) > std::abs(tailTol * ForceLaws[idxMat][0]))
+        tailStartIdx= k;
+    ForceLawRanges[idxMat]= ForceLawSteps[idxMat] * (float)(tailStartIdx + 1) * D.UI[LatticePitch____].F();
 
-  // Optionally normalize the force law
-  if (D.UI[ForceLawNormali_].B()) {
-    const float BaseVal= ForceLaw[0];
-    for (int k= 0; k < (int)ForceLaw.size(); k++)
-      ForceLaw[k]/= BaseVal;
+    // Normalize the force law
+    const float BaseVal= ForceLaws[idxMat][0];
+    for (int k= 0; k < (int)ForceLaws[idxMat].size(); k++)
+      ForceLaws[idxMat][k]/= BaseVal;
+
+    // Scale the force law
+    for (int k= 0; k < (int)ForceLaws[idxMat].size(); k++)
+      ForceLaws[idxMat][k]*= D.UI[ForceLawScale___].F();
   }
 
-  // Scale the force law
-  for (int k= 0; k < (int)ForceLaw.size(); k++)
-    ForceLaw[k]*= D.UI[ForceLawScale___].F();
-
-  if (D.UI[VerboseLevel____].I() >= 1) printf("ForceLawT %f\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ForceLawsT %f\n", Timer::PopTimer());
 }
 
 
@@ -662,11 +726,13 @@ void ParticForceLaw::ComputeBuckets() {
   const int bucketCapacity= std::max(D.UI[BucketsCapacity_].I(), 1);
 
   // Compute the appropriate voxel size and grid resolution
-  const float boxVolume= (D.boxMax[0] - D.boxMin[0]) * (D.boxMax[1] - D.boxMin[1]) * (D.boxMax[2] - D.boxMin[2]);
-  const float stepSize= std::pow(boxVolume, 1.0f / 3.0f) / std::pow((float)bucketCount, 1.0f / 3.0f);
-  nX= std::max(1, (int)std::round((D.boxMax[0] - D.boxMin[0]) / stepSize));
-  nY= std::max(1, (int)std::round((D.boxMax[1] - D.boxMin[1]) / stepSize));
-  nZ= std::max(1, (int)std::round((D.boxMax[2] - D.boxMin[2]) / stepSize));
+  const float boxDX= std::max((float)(D.boxMax[0] - D.boxMin[0]), D.UI[LatticePitch____].F());
+  const float boxDY= std::max((float)(D.boxMax[1] - D.boxMin[1]), D.UI[LatticePitch____].F());
+  const float boxDZ= std::max((float)(D.boxMax[2] - D.boxMin[2]), D.UI[LatticePitch____].F());
+  const float stepSize= std::pow(boxDX * boxDY * boxDZ, 1.0f / 3.0f) / std::pow((float)bucketCount, 1.0f / 3.0f);
+  nX= std::max(1, (int)std::round(boxDX / stepSize));
+  nY= std::max(1, (int)std::round(boxDY / stepSize));
+  nZ= std::max(1, (int)std::round(boxDZ / stepSize));
 
   // Allocate/initialize the spatial partition if needed
   int nXOld, nYOld, nZOld, nBOld;
@@ -712,15 +778,17 @@ void ParticForceLaw::GetBucketIdx(const Vec::Vec3<float>& iPos, int& oIdxX, int&
 void ParticForceLaw::ComputeForces() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
-  // Check validity of inputs
-  if ((int)ForceLaw.size() <= 1) return;
-
   // Reset forces
   std::fill(For.begin(), For.end(), Vec::Vec3<float>(0.0, 0.0, 0.0));
 
   // Precompute values
-  const float forceReach= ForceLawStep * (float)(ForceLaw.size() - 1) * D.UI[LatticePitch____].F();
   const float surfArea= 4.0f * std::numbers::pi * D.UI[LatticePitch____].F() * D.UI[LatticePitch____].F();
+  float maxForceLawRange= 0.0;
+  std::vector<float> ForceLawRangesSqr= ForceLawRanges;
+  for (int idxMat= 0; idxMat < (int)ForceLaws.size(); idxMat++) {
+    maxForceLawRange= std::max(maxForceLawRange, ForceLawRanges[idxMat]);
+    ForceLawRangesSqr[idxMat]= ForceLawRanges[idxMat] * ForceLawRanges[idxMat];
+  }
 
   // Compute the spatial partition for linear neighbor search
   ComputeBuckets();
@@ -733,7 +801,7 @@ void ParticForceLaw::ComputeForces() {
         Pos[k0][2] < D.boxMin[2] || Pos[k0][2] > D.boxMax[2]) continue;
     // Get range to check in spatial partition
     int idxXBeg, idxYBeg, idxZBeg, idxXEnd, idxYEnd, idxZEnd;
-    Vec::Vec3<float> vecOffset(forceReach, forceReach, forceReach);
+    Vec::Vec3<float> vecOffset(maxForceLawRange, maxForceLawRange, maxForceLawRange);
     GetBucketIdx(Pos[k0] - vecOffset, idxXBeg, idxYBeg, idxZBeg);
     GetBucketIdx(Pos[k0] + vecOffset, idxXEnd, idxYEnd, idxZEnd);
     // Check range in spatial partition
@@ -746,22 +814,30 @@ void ParticForceLaw::ComputeForces() {
             if (k0 == k1) continue;
             if (BCVel[k0] != 0 && BCVel[k1] != 0) continue;
             if (BCPos[k0] != 0 && BCPos[k1] != 0) continue;
+            // Precompute distances
             const Vec::Vec3<float> distVec= Pos[k0] - Pos[k1];
             const float distSquared= distVec.normSquared();
-            if (distSquared > forceReach * forceReach) continue;
+            if (distSquared > ForceLawRangesSqr[Mat[k0]] && distSquared > ForceLawRangesSqr[Mat[k1]]) continue;
             const float distVal= std::sqrt(distSquared);
-            // Get linear interpolation of force law for the given distance
-            const float valFloat= (float)(ForceLaw.size() - 1) * distVal / forceReach;
-            const int low= std::min(std::max((int)std::floor(valFloat), 0), (int)ForceLaw.size() - 1);
-            const int upp= std::min(std::max(low + 1, 0), (int)ForceLaw.size() - 1);
-            const float ratio= valFloat - (float)low;
-            const float forceVal= ((1.0 - ratio) * ForceLaw[low] + (ratio)*ForceLaw[upp]);
+            // Get linear interpolation of force laws for the given distance
+            float forceVal= 0.0f;
+            std::vector<int> matIndices(1, k0);
+            if (k0 != k1) matIndices.push_back(k1);
+            for (int k : matIndices) {
+              const float valFloat= distVal / (ForceLawSteps[Mat[k]] * D.UI[LatticePitch____].F());
+              const int low= std::min(std::max((int)std::floor(valFloat), 0), (int)ForceLaws[Mat[k]].size() - 1);
+              const int upp= std::min(std::max(low + 1, 0), (int)ForceLaws[Mat[k]].size() - 1);
+              const float ratio= valFloat - (float)low;
+              if (k0 == k1) forceVal= ((1.0f - ratio) * ForceLaws[Mat[k]][low] + (ratio)*ForceLaws[Mat[k]][upp]);
+              else forceVal+= 0.5f * ((1.0f - ratio) * ForceLaws[Mat[k]][low] + (ratio)*ForceLaws[Mat[k]][upp]);
+            }
             // Apply inter-particle force
             For[k0]+= forceVal * surfArea * distVec / distVal;
             // Get radial velocity of particle pair
             const float radialVel= (Vel[k0] - Vel[k1]).dot(distVec / distVal);
             // Apply inter-particle damping proportional to radial velocity
-            For[k0]-= D.UI[RadialDamping___].F() * radialVel * surfArea * distVec / distVal;  // TODO make distance-dependant ?
+            For[k0]-= (1.0f - distVal / maxForceLawRange) * D.UI[DampingRadRel___].F() * D.UI[ForceLawScale___].F() * radialVel * surfArea * distVec / distVal;
+            // TODO find better scaling method ? Current linear decrease up to forcereach means it depends on the furthest reaching material
           }
         }
       }
@@ -837,10 +913,10 @@ void ParticForceLaw::StepSimulation() {
       Pos[k]+= dt * Vel[k];                                    // xt+1 = xt + dt * vt+1
       if (!D.UI[UseForceControl_].B() && BCPos[k] != 0) {      // Boundary conditions check
         Pos[k]= Ref[k];                                        // Overwrite Position
-        Vel[k]= Vec::Vec3<float>{0.0f, 0.0f, 0.0f};            // Overwrite Velocity
+        Vel[k]= Vec::Vec3<float>{0.0f, 0.0f, 0.0f};            // Reset Velocity
       }
-      if (D.UI[VelocityDamping_].B())
-        Vel[k]= (1.0f - D.UI[VelocityDamping_].F()) * Vel[k];  // Overwrite Velocity
+      if (D.UI[DampingVelRel___].B())
+        Vel[k]= (1.0f - D.UI[DampingVelRel___].F()) * Vel[k];  // Dampen Velocity
     }
   }
   else {
@@ -848,13 +924,13 @@ void ParticForceLaw::StepSimulation() {
     for (int k= 0; k < (int)Pos.size(); k++) {
       if (!D.UI[UseForceControl_].B() && BCPos[k] != 0) {  // Boundary conditions check
         Pos[k]= Ref[k];                                    // Overwrite Position
-        Vel[k]= Vec::Vec3<float>{0.0f, 0.0f, 0.0f};        // Overwrite Velocity
+        Vel[k]= Vec::Vec3<float>{0.0f, 0.0f, 0.0f};        // Reset Velocity
       }
       else {
         Pos[k]+= dt * Vel[k] + 0.5f * dt * dt * Acc[k];  // xt+1 = xt + dt * vt + 0.5 * dt * dt * at
       }
-      if (D.UI[VelocityDamping_].B())
-        Vel[k]= (1.0f - D.UI[VelocityDamping_].F()) * Vel[k];  // Overwrite Velocity
+      if (D.UI[DampingVelRel___].B())
+        Vel[k]= (1.0f - D.UI[DampingVelRel___].F()) * Vel[k];  // Dampen Velocity
     }
     // Evaluate net forces acting on particles
     ComputeForces();                                                                   // ft+1
@@ -866,7 +942,7 @@ void ParticForceLaw::StepSimulation() {
     for (int k= 0; k < (int)Pos.size(); k++) {
       if (!D.UI[UseForceControl_].B() && BCVel[k] != 0) {      // Boundary conditions check
         Vel[k]= (BCVel[k] < 0) ? BCVelVecNega : BCVelVecPosi;  // Overwrite velocity
-        Acc[k]= 0.0f;                                          // Overwrite acceleration
+        Acc[k]= 0.0f;                                          // Reset acceleration
       }
       else {
         const Vec::Vec3<float> oldAcc= Acc[k];   // Store previous acceleration
@@ -882,6 +958,11 @@ void ParticForceLaw::StepSimulation() {
   // Set particle color with gradual decay
   for (int k= 0; k < (int)Pos.size(); k++) {
     float r= 0.5f, g= 0.5f, b= 0.5f;
+    if (D.UI[ColorMode_______].I() == 0) {
+      if (Mat[k] == 0) r= 1.0f;
+      if (Mat[k] == 1) g= 1.0f;
+      if (Mat[k] == 2) b= 1.0f;
+    }
     if (D.UI[ColorMode_______].I() == 1) {
       r= 0.5f + 0.3f * (float)BCPos[k];
       g= 0.5f + 0.3f * (float)BCVel[k];
@@ -912,4 +993,44 @@ void ParticForceLaw::StepSimulation() {
   D.Scatter[0].val.push_back(std::array<double, 2>{sumPos / (float)count, sumFor / (float)count});
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("StepT %f\n", Timer::PopTimer());
+}
+
+void ParticForceLaw::ComputeMetaballs() {
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+
+  MetaballIsUpdated= true;
+  Verts.clear();
+  Tris.clear();
+
+  if (D.UI[MetaballVoxSize_].F() <= 0.0f) return;
+
+  const float metaballSize= D.UI[LatticePitch____].F();
+  const int tmpNX= std::max((int)std::round((D.boxMax[0] - D.boxMin[0]) / D.UI[MetaballVoxSize_].D()), 1);
+  const int tmpNY= std::max((int)std::round((D.boxMax[1] - D.boxMin[1]) / D.UI[MetaballVoxSize_].D()), 1);
+  const int tmpNZ= std::max((int)std::round((D.boxMax[2] - D.boxMin[2]) / D.UI[MetaballVoxSize_].D()), 1);
+  std::vector<std::vector<std::vector<double>>> tmpField= Field::AllocField3D(tmpNX, tmpNY, tmpNZ, 0.0);
+  double stepX, stepY, stepZ;
+  BoxGrid::GetVoxelSizes(tmpNX, tmpNY, tmpNZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ);
+  for (int k= 0; k < (int)Pos.size(); k++) {
+    const int idxXBeg= (int)std::floor((float)tmpNX * (Pos[k][0] - 2.0 * metaballSize - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
+    const int idxYBeg= (int)std::floor((float)tmpNY * (Pos[k][1] - 2.0 * metaballSize - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
+    const int idxZBeg= (int)std::floor((float)tmpNZ * (Pos[k][2] - 2.0 * metaballSize - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
+    const int idxXEnd= (int)std::floor((float)tmpNX * (Pos[k][0] + 2.0 * metaballSize - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
+    const int idxYEnd= (int)std::floor((float)tmpNY * (Pos[k][1] + 2.0 * metaballSize - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
+    const int idxZEnd= (int)std::floor((float)tmpNZ * (Pos[k][2] + 2.0 * metaballSize - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
+    for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, tmpNX - 1); x++) {
+      for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, tmpNY - 1); y++) {
+        for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, tmpNZ - 1); z++) {
+          const Vec::Vec3<float> pos(D.boxMin[0] + (x + 0.5f) * stepX, D.boxMin[1] + (y + 0.5f) * stepY, D.boxMin[2] + (z + 0.5f) * stepZ);
+          if ((pos - Pos[k]).normSquared() < (2.0 * metaballSize) * (2.0 * metaballSize)) {
+            tmpField[x][y][z]+= std::max(0.0, 1.0 - (pos - Pos[k]).norm() / metaballSize);
+          }
+        }
+      }
+    }
+  }
+
+  MarchingCubes::ComputeMarchingCubes(D.UI[MetaballIsoval__].F(), D.boxMin, D.boxMax, tmpField, Verts, Tris);
+
+  if (D.UI[VerboseLevel____].I() >= 1) printf("MetaballT %f\n", Timer::PopTimer());
 }

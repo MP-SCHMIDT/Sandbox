@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard lib
+#include <array>
 #include <vector>
 
 // Algo headers
@@ -8,12 +9,15 @@
 
 
 // Particle-based physics simulation
-// - Memoryless Isotropic Point Particles (MIPP) defined only by position and velocity
-// - Different from DEM simulations because no history, no rotation, etc.
+// - Memoryless Isotropic Point Particles defined only by position and velocity
+// - Different from most DEM because no internal variables, history, rotations, etc.
 // - Base particle cloud as FCC lattice, Poisson sphere sampling, etc.
+// - Isotropic force law defining force vs distance (hard-coded presets or UI params)
 // - Explicit time integration with forward Euler or velocity Verlet
-// - Isotropic force law defining force vs distance
-// - Fast neighborhood search with spatial partition into buckets of fixed size
+// - O(n) neighborhood search with spatial partition into buckets of fixed size
+// - Multimaterial interaction by average of forces laws at material interfaces
+// - Isosurface visualization with metaball scalar field and marching cubes
+// - Expected performance: ~1M-5M particle updates per second on laptop CPU (Buckets 32k x 40)
 //
 // Reference article from MIT CBA group
 // Mesoscale material modeling with memoryless isotropic point particles
@@ -33,8 +37,9 @@ class ParticForceLaw
     LatticePitch____,
     LatticePattern__,
     ______________00,
-    ForceLawPreset__,
-    ForceLawNormali_,
+    ForceLawPreset0_,
+    ForceLawPreset1_,
+    ForceLawPreset2_,
     ForceLawScale___,
     ForceLawA_______,
     ForceLaw08______,
@@ -58,20 +63,28 @@ class ParticForceLaw
     StepsPerDraw____,
     TimeStep________,
     MaterialDensity_,
-    RadialDamping___,
-    VelocityDamping_,
+    DampingRadRel___,
+    DampingVelRel___,
     BucketsCount____,
     BucketsCapacity_,
     IntegType_______,
     UseForceControl_,
     BCPosCoeff______,
     BCVelCoeff______,
+    MetaballVoxSize_,
+    MetaballIsoval__,
     ColorMode_______,
     ColorFactor_____,
     ColorDecay______,
     VisuScale_______,
     VisuSimple______,
-    VisuHideOOB_____,
+    VisuShowOOB_____,
+    TestParam0______,
+    TestParam1______,
+    TestParam2______,
+    TestParam3______,
+    TestParam4______,
+    TestParam5______,
     VerboseLevel____,
   };
 
@@ -82,6 +95,7 @@ class ParticForceLaw
   std::vector<Vec::Vec3<float>> Acc;
   std::vector<Vec::Vec3<float>> For;
   std::vector<Vec::Vec3<float>> Col;
+  std::vector<int> Mat;
   std::vector<int> Sensor;
   std::vector<int> BCPos;
   std::vector<int> BCVel;
@@ -93,9 +107,15 @@ class ParticForceLaw
   int nY;
   int nZ;
 
+  // Metaball visualization
+  bool MetaballIsUpdated;
+  std::vector<std::array<double, 3>> Verts;
+  std::vector<std::array<int, 3>> Tris;
+
   // Force law
-  std::vector<float> ForceLaw;
-  float ForceLawStep;
+  std::vector<std::vector<float>> ForceLaws;
+  std::vector<float> ForceLawSteps;
+  std::vector<float> ForceLawRanges;
 
   // Misc
   float SimTime;
@@ -105,7 +125,7 @@ class ParticForceLaw
   void BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud);
 
   // Material properties functions
-  void BuildForceLaw();
+  void BuildForceLaws();
 
   // Spatial partition functions
   void ComputeBuckets();
@@ -115,6 +135,9 @@ class ParticForceLaw
   void ComputeForces();
   void ApplyBCForces();
   void StepSimulation();
+
+  // Visualization functions
+  void ComputeMetaballs();
 
   public:
   bool isActivProj;
