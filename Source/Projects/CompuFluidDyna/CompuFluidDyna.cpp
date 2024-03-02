@@ -39,15 +39,15 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("ResolutionY_____", 100));    // Eulerian mesh resolution
     D.UI.push_back(ParamUI("ResolutionZ_____", 100));    // Eulerian mesh resolution
     D.UI.push_back(ParamUI("VoxelSize_______", 1.e-2));  // Element size
-    D.UI.push_back(ParamUI("Scenario________", 8));      // Scenario ID, 0= load file, 1> hard coded scenarios
+    D.UI.push_back(ParamUI("Scenario________", 0));      // Scenario ID, 0= load file, 1> hard coded scenarios
     D.UI.push_back(ParamUI("InputFile_______", 0));      // BMP file to load
     D.UI.push_back(ParamUI("TimeStep________", 0.02));   // Simulation time step
     D.UI.push_back(ParamUI("Multithread_____", 0));      // Whether to enable multithreading (small gain because memory bound)
     D.UI.push_back(ParamUI("SolvMaxIter_____", 32));     // Max number of solver iterations
-    D.UI.push_back(ParamUI("SolvType________", 2));      // Flag to use Gauss Seidel (=0), Gradient Descent (=1), Conjugate Gradient (=2), Preconditioned Conjugate Gradient (=3)
-    D.UI.push_back(ParamUI("SolvTolRhs______", 0.0));    // Solver tolerance relative to RHS norm
-    D.UI.push_back(ParamUI("SolvTolRel______", 1.e-3));  // Solver tolerance relative to initial guess
-    D.UI.push_back(ParamUI("SolvTolAbs______", 0.0));    // Solver tolerance relative to absolute value of residual magnitude
+    D.UI.push_back(ParamUI("SolvType________", 1));      // Flag to use Gauss Seidel (=0), Gradient Descent (=1), Conjugate Gradient (=2), Preconditioned Conjugate Gradient (=3)
+    D.UI.push_back(ParamUI("SolvDriftReset__", 50));     // Recalculate the exact error every N iterations to reset solve drift
+    D.UI.push_back(ParamUI("SolvTolRelResid_", 1.e-3));  // Solver tolerance of residual relative to initial guess
+    D.UI.push_back(ParamUI("SolvTolChgPrev__", 1.e-7));  // Solver tolerance of solution change normalized by previous solution
     D.UI.push_back(ParamUI("CoeffGravi______", 0.0));    // Magnitude of gravity in Z- direction
     D.UI.push_back(ParamUI("CoeffAdvec______", 40));     // 0= no advection, 1= linear advection, >1 MacCormack correction iterations
     D.UI.push_back(ParamUI("CoeffAdvecTol___", 0.01));   // MacCormack correction tolerance relative to voxel size
@@ -56,7 +56,7 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("CoeffVorti______", 0.0));    // Vorticity confinement to avoid dissipation of energy in small scale vortices
     D.UI.push_back(ParamUI("CoeffProj_______", 1.0));    // Enable incompressibility projection
     D.UI.push_back(ParamUI("PorosSmoothIt___", 6));      // Iterations of smoothing on the porosity field for smoother boundary
-    D.UI.push_back(ParamUI("PorosMinThresh__", 0.01));   // Minimum porosity threshold for a voxel to be considered fluid
+    D.UI.push_back(ParamUI("PorosMinThresh__", 0.0));    // Minimum porosity threshold for a voxel to be considered fluid
     D.UI.push_back(ParamUI("PorosOffset_____", 0));      // Offset porosity field with erosion/dilation
     D.UI.push_back(ParamUI("DarcyMinResist__", 0.0));    // Lower bound for the Darcy resistance coefficient
     D.UI.push_back(ParamUI("DarcyMaxResist__", 1.e4));   // Upper bound for the Darcy resistance coefficient
@@ -72,7 +72,7 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("ObjectPosZ______", 0.5));    // Coordinates for objects in hard coded scenarios
     D.UI.push_back(ParamUI("ObjectSize0_____", 0.08));   // Size for objects in hard coded scenarios
     D.UI.push_back(ParamUI("ObjectSize1_____", 0.08));   // Size for objects in hard coded scenarios
-    D.UI.push_back(ParamUI("ParticCount_____", 400));    // Number of moving particles to visualize flow
+    D.UI.push_back(ParamUI("ParticCount_____", 500));    // Number of moving particles to visualize flow
     D.UI.push_back(ParamUI("ParticDuration__", 4.0));    // Lifetime of particles to visualize flow
     D.UI.push_back(ParamUI("ScaleFactor_____", 1.0));    // Scale factor for drawn geometry
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));    // Color factor for drawn geometry

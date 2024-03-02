@@ -225,12 +225,12 @@ void CompuFluidDyna::ProjectField(const int iMaxIter, const float iTimeStep,
       for (int z= 0; z < nZ; z++) {
         if (Solid[x][y][z] || VelBC[x][y][z]) continue;
         // Subtract pressure gradient to remove divergence
-        if (x - 1 >= 0 && !Solid[x - 1][y][z]) ioVelX[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x - 1][y][z]) / (2.0f * voxSize);
-        if (y - 1 >= 0 && !Solid[x][y - 1][z]) ioVelY[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y - 1][z]) / (2.0f * voxSize);
-        if (z - 1 >= 0 && !Solid[x][y][z - 1]) ioVelZ[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y][z - 1]) / (2.0f * voxSize);
-        if (x + 1 < nX && !Solid[x + 1][y][z]) ioVelX[x][y][z]-= iTimeStep / fluidDensity * (Pres[x + 1][y][z] - Pres[x][y][z]) / (2.0f * voxSize);
-        if (y + 1 < nY && !Solid[x][y + 1][z]) ioVelY[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y + 1][z] - Pres[x][y][z]) / (2.0f * voxSize);
-        if (z + 1 < nZ && !Solid[x][y][z + 1]) ioVelZ[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z + 1] - Pres[x][y][z]) / (2.0f * voxSize);
+        if (x - 1 >= 0 && !Solid[x - 1][y][z]) ioVelX[x][y][z]-= Poros[x - 1][y][z] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x - 1][y][z]) / (2.0f * voxSize);
+        if (y - 1 >= 0 && !Solid[x][y - 1][z]) ioVelY[x][y][z]-= Poros[x][y - 1][z] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y - 1][z]) / (2.0f * voxSize);
+        if (z - 1 >= 0 && !Solid[x][y][z - 1]) ioVelZ[x][y][z]-= Poros[x][y][z - 1] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y][z - 1]) / (2.0f * voxSize);
+        if (x + 1 < nX && !Solid[x + 1][y][z]) ioVelX[x][y][z]-= Poros[x + 1][y][z] * iTimeStep / fluidDensity * (Pres[x + 1][y][z] - Pres[x][y][z]) / (2.0f * voxSize);
+        if (y + 1 < nY && !Solid[x][y + 1][z]) ioVelY[x][y][z]-= Poros[x][y + 1][z] * iTimeStep / fluidDensity * (Pres[x][y + 1][z] - Pres[x][y][z]) / (2.0f * voxSize);
+        if (z + 1 < nZ && !Solid[x][y][z + 1]) ioVelZ[x][y][z]-= Poros[x][y][z + 1] * iTimeStep / fluidDensity * (Pres[x][y][z + 1] - Pres[x][y][z]) / (2.0f * voxSize);
       }
     }
   }

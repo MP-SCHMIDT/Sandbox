@@ -84,12 +84,12 @@ void CompuFluidDyna::ImplicitFieldLaplacianMatMult(const int iFieldID, const flo
           const float xBCVal= (iFieldID == FieldID::IDSmok || iFieldID == FieldID::IDPres) ? (iField[x][y][z]) : (iFieldID == FieldID::IDVelX ? -iField[x][y][z] : 0.0f);
           const float yBCVal= (iFieldID == FieldID::IDSmok || iFieldID == FieldID::IDPres) ? (iField[x][y][z]) : (iFieldID == FieldID::IDVelY ? -iField[x][y][z] : 0.0f);
           const float zBCVal= (iFieldID == FieldID::IDSmok || iFieldID == FieldID::IDPres) ? (iField[x][y][z]) : (iFieldID == FieldID::IDVelZ ? -iField[x][y][z] : 0.0f);
-          if (x - 1 >= 0) sum+= Solid[x - 1][y][z] ? xBCVal : iField[x - 1][y][z];
-          if (x + 1 < nX) sum+= Solid[x + 1][y][z] ? xBCVal : iField[x + 1][y][z];
-          if (y - 1 >= 0) sum+= Solid[x][y - 1][z] ? yBCVal : iField[x][y - 1][z];
-          if (y + 1 < nY) sum+= Solid[x][y + 1][z] ? yBCVal : iField[x][y + 1][z];
-          if (z - 1 >= 0) sum+= Solid[x][y][z - 1] ? zBCVal : iField[x][y][z - 1];
-          if (z + 1 < nZ) sum+= Solid[x][y][z + 1] ? zBCVal : iField[x][y][z + 1];
+          if (x - 1 >= 0) sum+= (1.0f - Poros[x - 1][y][z]) * xBCVal + Poros[x - 1][y][z] * iField[x - 1][y][z];
+          if (x + 1 < nX) sum+= (1.0f - Poros[x + 1][y][z]) * xBCVal + Poros[x + 1][y][z] * iField[x + 1][y][z];
+          if (y - 1 >= 0) sum+= (1.0f - Poros[x][y - 1][z]) * yBCVal + Poros[x][y - 1][z] * iField[x][y - 1][z];
+          if (y + 1 < nY) sum+= (1.0f - Poros[x][y + 1][z]) * yBCVal + Poros[x][y + 1][z] * iField[x][y + 1][z];
+          if (z - 1 >= 0) sum+= (1.0f - Poros[x][y][z - 1]) * zBCVal + Poros[x][y][z - 1] * iField[x][y][z - 1];
+          if (z + 1 < nZ) sum+= (1.0f - Poros[x][y][z + 1]) * zBCVal + Poros[x][y][z + 1] * iField[x][y][z + 1];
         }
         // Apply linear expression
         if (iFieldID == FieldID::IDPres) {
@@ -120,6 +120,16 @@ void CompuFluidDyna::ImplicitFieldLaplacianMatMult(const int iFieldID, const flo
 void CompuFluidDyna::LinearSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
                                  const std::vector<std::vector<std::vector<float>>>& iField,
                                  std::vector<std::vector<std::vector<float>>>& ioField) {
+  // Initialize convergence plot
+  if (D.UI[PlotSolve_______].B()) {
+    D.Plot.push_back(PlotUI());
+    if (iFieldID == FieldID::IDSmok) D.Plot[D.Plot.size() - 1].name= "Diffu S ";
+    if (iFieldID == FieldID::IDVelX) D.Plot[D.Plot.size() - 1].name= "Diffu VX";
+    if (iFieldID == FieldID::IDVelY) D.Plot[D.Plot.size() - 1].name= "Diffu VY";
+    if (iFieldID == FieldID::IDVelZ) D.Plot[D.Plot.size() - 1].name= "Diffu VZ";
+    if (iFieldID == FieldID::IDPres) D.Plot[D.Plot.size() - 1].name= "Proj  P ";
+  }
+  // Run the solver
   if (D.UI[SolvType________].I() == 0)
     GaussSeidelSolve(iFieldID, iMaxIter, iTimeStep, iDiffuCoeff, iField, ioField);
   else if (D.UI[SolvType________].I() == 1)
@@ -131,49 +141,43 @@ void CompuFluidDyna::LinearSolve(const int iFieldID, const int iMaxIter, const f
 }
 
 
-// Solve linear system with Conjugate Gradient approach
-// References for linear solvers and particularily PCG
-// https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-// https://services.math.duke.edu/~holee/math361-2020/lectures/Conjugate_gradients.pdf
-// https://www3.nd.edu/~zxu2/acms60212-40212-S12/final_project/Linear_solvers_GPU.pdf
-// https://github.com/awesson/stable-fluids/tree/master
+// Solve linear system with Jacobi Preconditioned Conjugate Gradient approach
+// Page 51 https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
+// https://github.com/awesson/stable-fluids/blob/master/linearSolver.cpp
 // https://en.wikipedia.org/wiki/Conjugate_gradient_method
 void CompuFluidDyna::PreconditionedConjugateGradientSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
                                                           const std::vector<std::vector<std::vector<float>>>& iField,
                                                           std::vector<std::vector<std::vector<float>>>& ioField) {
   // Allocate fields
+  std::vector<std::vector<std::vector<float>>> t0Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> t1Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> rField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> qField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> dField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> sField= Field::AllocField3D(nX, nY, nZ, 0.0f);
-  std::vector<std::vector<std::vector<float>>> t0Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
-  std::vector<std::vector<std::vector<float>>> t1Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  // Precompute values
+  float normSqrOld= 0.0f, normSqrChg= 0.0f;
   // Compute residual error magnitude    r = b - A x    errNew = r · r
   ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
   ApplyBC(iFieldID, t0Field);
   ImplicitFieldSub(iField, t0Field, rField);
   ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, true, rField, dField);
   const float errBeg= ImplicitFieldDotProd(rField, dField);
-  const float normRHS= ImplicitFieldDotProd(iField, iField);
   float errNew= errBeg;
   // Error plot
   if (D.UI[PlotSolve_______].B()) {
-    D.Plot.push_back(PlotUI());
-    D.Plot[D.Plot.size() - 1].isLog= true;
-    if (iFieldID == FieldID::IDSmok) D.Plot[D.Plot.size() - 1].name= "Diffu S ";
-    if (iFieldID == FieldID::IDVelX) D.Plot[D.Plot.size() - 1].name= "Diffu VX";
-    if (iFieldID == FieldID::IDVelY) D.Plot[D.Plot.size() - 1].name= "Diffu VY";
-    if (iFieldID == FieldID::IDVelZ) D.Plot[D.Plot.size() - 1].name= "Diffu VZ";
-    if (iFieldID == FieldID::IDPres) D.Plot[D.Plot.size() - 1].name= "Proj  P ";
-    D.Plot[D.Plot.size() - 1].val.push_back(errNew);
+    ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
+    ApplyBC(iFieldID, t0Field);
+    ImplicitFieldSub(iField, t0Field, t1Field);
+    const float errTmp= ImplicitFieldDotProd(t1Field, t1Field);
+    D.Plot[D.Plot.size() - 1].val.push_back(errTmp);
   }
   // Iterate to solve
   for (int idxIter= 0; idxIter < iMaxIter; idxIter++) {
     // Check exit conditions
     if (errNew <= 0.0f) break;
-    if (errNew <= D.UI[SolvTolAbs______].F()) break;
-    if (errNew / normRHS <= D.UI[SolvTolRhs______].F()) break;
-    if (errNew / errBeg <= D.UI[SolvTolRel______].F()) break;
+    if (errNew / errBeg <= D.UI[SolvTolRelResid_].F()) break;
+    if (normSqrOld > 0.0f && normSqrChg / normSqrOld <= D.UI[SolvTolChgPrev__].F()) break;
     // q = A d
     ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, dField, qField);
     // alpha = errNew / (d^T q)
@@ -183,20 +187,40 @@ void CompuFluidDyna::PreconditionedConjugateGradientSolve(const int iFieldID, co
     // x = x + alpha d
     ImplicitFieldScale(alpha, dField, t0Field);
     ImplicitFieldAdd(ioField, t0Field, t1Field);
+    if (D.UI[SolvTolChgPrev__].F() > 0.0f) {
+      ImplicitFieldSub(ioField, t1Field, t0Field);
+      normSqrOld= ImplicitFieldDotProd(ioField, ioField);
+      normSqrChg= ImplicitFieldDotProd(t0Field, t0Field);
+    }
     ioField= t1Field;
     ApplyBC(iFieldID, ioField);
-    // r = r - alpha q
-    ImplicitFieldScale(alpha, qField, t0Field);
-    ImplicitFieldSub(rField, t0Field, t1Field);
-    rField= t1Field;
+    // Compute residual field
+    if ((idxIter + 1) % std::max(D.UI[SolvDriftReset__].I(), 1) == 0) {
+      // r = b - A x
+      ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
+      ApplyBC(iFieldID, t0Field);
+      ImplicitFieldSub(iField, t0Field, rField);
+    }
+    else {
+      // r = r - alpha q
+      ImplicitFieldScale(alpha, qField, t0Field);
+      ImplicitFieldSub(rField, t0Field, t1Field);
+      rField= t1Field;
+    }
+    // s= M-1 r
     ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, true, rField, sField);
     // errNew = r^T r
     const float errOld= errNew;
     errNew= ImplicitFieldDotProd(rField, sField);
     // Error plot
-    if (D.UI[PlotSolve_______].B())
-      D.Plot[D.Plot.size() - 1].val.push_back(errNew);
-    // d = r + (errNew / errOld) * d
+    if (D.UI[PlotSolve_______].B()) {
+      ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
+      ApplyBC(iFieldID, t0Field);
+      ImplicitFieldSub(iField, t0Field, t1Field);
+      const float errTmp= ImplicitFieldDotProd(t1Field, t1Field);
+      D.Plot[D.Plot.size() - 1].val.push_back(errTmp);
+    }
+    // d = s + (errNew / errOld) * d
     ImplicitFieldScale(errNew / errOld, dField, t0Field);
     ImplicitFieldAdd(sField, t0Field, dField);
   }
@@ -207,47 +231,36 @@ void CompuFluidDyna::PreconditionedConjugateGradientSolve(const int iFieldID, co
 
 
 // Solve linear system with Conjugate Gradient approach
-// References for linear solvers and particularily PCG
-// https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-// https://services.math.duke.edu/~holee/math361-2020/lectures/Conjugate_gradients.pdf
-// https://www3.nd.edu/~zxu2/acms60212-40212-S12/final_project/Linear_solvers_GPU.pdf
-// https://github.com/awesson/stable-fluids/tree/master
+// Page 50 https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
+// https://github.com/awesson/stable-fluids/blob/master/linearSolver.cpp
 // https://en.wikipedia.org/wiki/Conjugate_gradient_method
 void CompuFluidDyna::ConjugateGradientSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
                                             const std::vector<std::vector<std::vector<float>>>& iField,
                                             std::vector<std::vector<std::vector<float>>>& ioField) {
   // Allocate fields
+  std::vector<std::vector<std::vector<float>>> t0Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> t1Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> rField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> qField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> dField= Field::AllocField3D(nX, nY, nZ, 0.0f);
-  std::vector<std::vector<std::vector<float>>> t0Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
-  std::vector<std::vector<std::vector<float>>> t1Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  // Precompute values
+  float normSqrOld= 0.0f, normSqrChg= 0.0f;
   // Compute residual error magnitude    r = b - A x    errNew = r · r
   ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
   ApplyBC(iFieldID, t0Field);
   ImplicitFieldSub(iField, t0Field, rField);
   dField= rField;
   const float errBeg= ImplicitFieldDotProd(rField, rField);
-  const float normRHS= ImplicitFieldDotProd(iField, iField);
   float errNew= errBeg;
   // Error plot
-  if (D.UI[PlotSolve_______].B()) {
-    D.Plot.push_back(PlotUI());
-    D.Plot[D.Plot.size() - 1].isLog= true;
-    if (iFieldID == FieldID::IDSmok) D.Plot[D.Plot.size() - 1].name= "Diffu S ";
-    if (iFieldID == FieldID::IDVelX) D.Plot[D.Plot.size() - 1].name= "Diffu VX";
-    if (iFieldID == FieldID::IDVelY) D.Plot[D.Plot.size() - 1].name= "Diffu VY";
-    if (iFieldID == FieldID::IDVelZ) D.Plot[D.Plot.size() - 1].name= "Diffu VZ";
-    if (iFieldID == FieldID::IDPres) D.Plot[D.Plot.size() - 1].name= "Proj  P ";
+  if (D.UI[PlotSolve_______].B())
     D.Plot[D.Plot.size() - 1].val.push_back(errNew);
-  }
   // Iterate to solve
   for (int idxIter= 0; idxIter < iMaxIter; idxIter++) {
     // Check exit conditions
     if (errNew <= 0.0f) break;
-    if (errNew <= D.UI[SolvTolAbs______].F()) break;
-    if (errNew / normRHS <= D.UI[SolvTolRhs______].F()) break;
-    if (errNew / errBeg <= D.UI[SolvTolRel______].F()) break;
+    if (errNew / errBeg <= D.UI[SolvTolRelResid_].F()) break;
+    if (normSqrOld > 0.0f && normSqrChg / normSqrOld <= D.UI[SolvTolChgPrev__].F()) break;
     // q = A d
     ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, dField, qField);
     // alpha = errNew / (d^T q)
@@ -257,12 +270,26 @@ void CompuFluidDyna::ConjugateGradientSolve(const int iFieldID, const int iMaxIt
     // x = x + alpha d
     ImplicitFieldScale(alpha, dField, t0Field);
     ImplicitFieldAdd(ioField, t0Field, t1Field);
+    if (D.UI[SolvTolChgPrev__].F() > 0.0f) {
+      ImplicitFieldSub(ioField, t1Field, t0Field);
+      normSqrOld= ImplicitFieldDotProd(ioField, ioField);
+      normSqrChg= ImplicitFieldDotProd(t0Field, t0Field);
+    }
     ioField= t1Field;
     ApplyBC(iFieldID, ioField);
-    // r = r - alpha q
-    ImplicitFieldScale(alpha, qField, t0Field);
-    ImplicitFieldSub(rField, t0Field, t1Field);
-    rField= t1Field;
+    // Compute residual field
+    if ((idxIter + 1) % std::max(D.UI[SolvDriftReset__].I(), 1) == 0) {
+      // r = b - A x
+      ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
+      ApplyBC(iFieldID, t0Field);
+      ImplicitFieldSub(iField, t0Field, rField);
+    }
+    else {
+      // r = r - alpha q
+      ImplicitFieldScale(alpha, qField, t0Field);
+      ImplicitFieldSub(rField, t0Field, t1Field);
+      rField= t1Field;
+    }
     // errNew = r^T r
     const float errOld= errNew;
     errNew= ImplicitFieldDotProd(rField, rField);
@@ -280,40 +307,32 @@ void CompuFluidDyna::ConjugateGradientSolve(const int iFieldID, const int iMaxIt
 
 
 // Solve linear system with Gradient descent approach
-// Reference on page 55 of https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
+// Page 49 https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
 void CompuFluidDyna::GradientDescentSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
                                           const std::vector<std::vector<std::vector<float>>>& iField,
                                           std::vector<std::vector<std::vector<float>>>& ioField) {
   // Allocate fields
-  std::vector<std::vector<std::vector<float>>> rField= Field::AllocField3D(nX, nY, nZ, 0.0f);
-  std::vector<std::vector<std::vector<float>>> qField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> t0Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> t1Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> rField= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> qField= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  // Precompute values
+  float normSqrOld= 0.0f, normSqrChg= 0.0f;
   // Compute residual error magnitude    r = b - A x    errNew = r · r
   ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
   ApplyBC(iFieldID, t0Field);
   ImplicitFieldSub(iField, t0Field, rField);
   const float errBeg= ImplicitFieldDotProd(rField, rField);
-  const float normRHS= ImplicitFieldDotProd(iField, iField);
   float errNew= errBeg;
   // Error plot
-  if (D.UI[PlotSolve_______].B()) {
-    D.Plot.push_back(PlotUI());
-    D.Plot[D.Plot.size() - 1].isLog= true;
-    if (iFieldID == FieldID::IDSmok) D.Plot[D.Plot.size() - 1].name= "Diffu S ";
-    if (iFieldID == FieldID::IDVelX) D.Plot[D.Plot.size() - 1].name= "Diffu VX";
-    if (iFieldID == FieldID::IDVelY) D.Plot[D.Plot.size() - 1].name= "Diffu VY";
-    if (iFieldID == FieldID::IDVelZ) D.Plot[D.Plot.size() - 1].name= "Diffu VZ";
-    if (iFieldID == FieldID::IDPres) D.Plot[D.Plot.size() - 1].name= "Proj  P ";
+  if (D.UI[PlotSolve_______].B())
     D.Plot[D.Plot.size() - 1].val.push_back(errNew);
-  }
   // Iterate to solve
   for (int idxIter= 0; idxIter < iMaxIter; idxIter++) {
     // Check exit conditions
     if (errNew <= 0.0f) break;
-    if (errNew <= D.UI[SolvTolAbs______].F()) break;
-    if (errNew / normRHS <= D.UI[SolvTolRhs______].F()) break;
-    if (errNew / errBeg <= D.UI[SolvTolRel______].F()) break;
+    if (errNew / errBeg <= D.UI[SolvTolRelResid_].F()) break;
+    if (normSqrOld > 0.0f && normSqrChg / normSqrOld <= D.UI[SolvTolChgPrev__].F()) break;
     // q = A r
     ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, rField, qField);
     // alpha = errNew / (r^T q)
@@ -323,12 +342,26 @@ void CompuFluidDyna::GradientDescentSolve(const int iFieldID, const int iMaxIter
     // x = x + alpha r
     ImplicitFieldScale(alpha, rField, t0Field);
     ImplicitFieldAdd(ioField, t0Field, t1Field);
+    if (D.UI[SolvTolChgPrev__].F() > 0.0f) {
+      ImplicitFieldSub(ioField, t1Field, t0Field);
+      normSqrOld= ImplicitFieldDotProd(ioField, ioField);
+      normSqrChg= ImplicitFieldDotProd(t0Field, t0Field);
+    }
     ioField= t1Field;
     ApplyBC(iFieldID, ioField);
-    // r = r - alpha q
-    ImplicitFieldScale(alpha, qField, t0Field);
-    ImplicitFieldSub(rField, t0Field, t1Field);
-    rField= t1Field;
+    // Compute residual field
+    if ((idxIter + 1) % std::max(D.UI[SolvDriftReset__].I(), 1) == 0) {
+      // r = b - A x
+      ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
+      ApplyBC(iFieldID, t0Field);
+      ImplicitFieldSub(iField, t0Field, rField);
+    }
+    else {
+      // r = r - alpha q
+      ImplicitFieldScale(alpha, qField, t0Field);
+      ImplicitFieldSub(rField, t0Field, t1Field);
+      rField= t1Field;
+    }
     // errNew = r^T r
     errNew= ImplicitFieldDotProd(rField, rField);
     // Error plot
@@ -348,38 +381,31 @@ void CompuFluidDyna::GradientDescentSolve(const int iFieldID, const int iMaxIter
 void CompuFluidDyna::GaussSeidelSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,
                                       const std::vector<std::vector<std::vector<float>>>& iField,
                                       std::vector<std::vector<std::vector<float>>>& ioField) {
+  // TODO Fix Gauss Seidel behavior with porosity field
   // Allocate fields
-  std::vector<std::vector<std::vector<float>>> rField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<float>>> t0Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> t1Field= Field::AllocField3D(nX, nY, nZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> rField= Field::AllocField3D(nX, nY, nZ, 0.0f);
   std::vector<std::vector<std::vector<std::vector<float>>>> FieldT(2);
+  // Precompute values
+  float normSqrOld= 0.0f, normSqrChg= 0.0f;
+  const float diffuVal= iDiffuCoeff * iTimeStep / (voxSize * voxSize);
+  const float coeffOverrelax= 1.8f;
   // Compute residual error magnitude    r = b - A x    errNew = r · r
   ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
   ApplyBC(iFieldID, t0Field);
   ImplicitFieldSub(iField, t0Field, rField);
   const float errBeg= ImplicitFieldDotProd(rField, rField);
-  const float normRHS= ImplicitFieldDotProd(iField, iField);
   float errNew= errBeg;
   // Error plot
-  if (D.UI[PlotSolve_______].B()) {
-    D.Plot.push_back(PlotUI());
-    D.Plot[D.Plot.size() - 1].isLog= true;
-    if (iFieldID == FieldID::IDSmok) D.Plot[D.Plot.size() - 1].name= "Diffu S ";
-    if (iFieldID == FieldID::IDVelX) D.Plot[D.Plot.size() - 1].name= "Diffu VX";
-    if (iFieldID == FieldID::IDVelY) D.Plot[D.Plot.size() - 1].name= "Diffu VY";
-    if (iFieldID == FieldID::IDVelZ) D.Plot[D.Plot.size() - 1].name= "Diffu VZ";
-    if (iFieldID == FieldID::IDPres) D.Plot[D.Plot.size() - 1].name= "Proj  P ";
+  if (D.UI[PlotSolve_______].B())
     D.Plot[D.Plot.size() - 1].val.push_back(errNew);
-  }
-  // Precompute values
-  const float diffuVal= iDiffuCoeff * iTimeStep / (voxSize * voxSize);
-  const float coeffOverrelax= 1.8f;
-  // Iterate to solve with Gauss-Seidel scheme
+  // Iterate to solve
   for (int idxIter= 0; idxIter < iMaxIter; idxIter++) {
     // Check exit conditions
     if (errNew <= 0.0f) break;
-    if (errNew <= D.UI[SolvTolAbs______].F()) break;
-    if (errNew / normRHS <= D.UI[SolvTolRhs______].F()) break;
-    if (errNew / errBeg <= D.UI[SolvTolRel______].F()) break;
+    if (errNew / errBeg <= D.UI[SolvTolRelResid_].F()) break;
+    if (normSqrOld > 0.0f && normSqrChg / normSqrOld <= D.UI[SolvTolChgPrev__].F()) break;
     // Initialize fields for forward and backward passes
     FieldT[0]= ioField;
     FieldT[1]= ioField;
@@ -411,12 +437,12 @@ void CompuFluidDyna::GaussSeidelSolve(const int iFieldID, const int iMaxIter, co
             const float xBCVal= (iFieldID == FieldID::IDSmok || iFieldID == FieldID::IDPres) ? (FieldT[k][x][y][z]) : (iFieldID == FieldID::IDVelX ? -FieldT[k][x][y][z] : 0.0f);
             const float yBCVal= (iFieldID == FieldID::IDSmok || iFieldID == FieldID::IDPres) ? (FieldT[k][x][y][z]) : (iFieldID == FieldID::IDVelY ? -FieldT[k][x][y][z] : 0.0f);
             const float zBCVal= (iFieldID == FieldID::IDSmok || iFieldID == FieldID::IDPres) ? (FieldT[k][x][y][z]) : (iFieldID == FieldID::IDVelZ ? -FieldT[k][x][y][z] : 0.0f);
-            if (x - 1 >= 0) sum+= Solid[x - 1][y][z] ? xBCVal : FieldT[k][x - 1][y][z];
-            if (x + 1 < nX) sum+= Solid[x + 1][y][z] ? xBCVal : FieldT[k][x + 1][y][z];
-            if (y - 1 >= 0) sum+= Solid[x][y - 1][z] ? yBCVal : FieldT[k][x][y - 1][z];
-            if (y + 1 < nY) sum+= Solid[x][y + 1][z] ? yBCVal : FieldT[k][x][y + 1][z];
-            if (z - 1 >= 0) sum+= Solid[x][y][z - 1] ? zBCVal : FieldT[k][x][y][z - 1];
-            if (z + 1 < nZ) sum+= Solid[x][y][z + 1] ? zBCVal : FieldT[k][x][y][z + 1];
+            if (x - 1 >= 0) sum+= (1.0f - Poros[x - 1][y][z]) * xBCVal + Poros[x - 1][y][z] * FieldT[k][x - 1][y][z];
+            if (x + 1 < nX) sum+= (1.0f - Poros[x + 1][y][z]) * xBCVal + Poros[x + 1][y][z] * FieldT[k][x + 1][y][z];
+            if (y - 1 >= 0) sum+= (1.0f - Poros[x][y - 1][z]) * yBCVal + Poros[x][y - 1][z] * FieldT[k][x][y - 1][z];
+            if (y + 1 < nY) sum+= (1.0f - Poros[x][y + 1][z]) * yBCVal + Poros[x][y + 1][z] * FieldT[k][x][y + 1][z];
+            if (z - 1 >= 0) sum+= (1.0f - Poros[x][y][z - 1]) * zBCVal + Poros[x][y][z - 1] * FieldT[k][x][y][z - 1];
+            if (z + 1 < nZ) sum+= (1.0f - Poros[x][y][z + 1]) * zBCVal + Poros[x][y][z + 1] * FieldT[k][x][y][z + 1];
             // Set new value according to coefficients and flags
             if (count > 0) {
               const float prevVal= FieldT[k][x][y][z];
@@ -434,7 +460,13 @@ void CompuFluidDyna::GaussSeidelSolve(const int iFieldID, const int iMaxIter, co
     for (int x= 0; x < nX; x++)
       for (int y= 0; y < nY; y++)
         for (int z= 0; z < nZ; z++)
-          ioField[x][y][z]= (FieldT[0][x][y][z] + FieldT[1][x][y][z]) / 2.0f;
+          t1Field[x][y][z]= (FieldT[0][x][y][z] + FieldT[1][x][y][z]) / 2.0f;
+    if (D.UI[SolvTolChgPrev__].F() > 0.0f) {
+      ImplicitFieldSub(ioField, t1Field, t0Field);
+      normSqrOld= ImplicitFieldDotProd(ioField, ioField);
+      normSqrChg= ImplicitFieldDotProd(t0Field, t0Field);
+    }
+    ioField= t1Field;
     // Compute residual error magnitude    r = b - A x    errNew = r · r
     ImplicitFieldLaplacianMatMult(iFieldID, iTimeStep, iDiffuCoeff, false, ioField, t0Field);
     ApplyBC(iFieldID, t0Field);
