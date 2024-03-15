@@ -7,6 +7,7 @@
 
 // Algo headers
 #include "Math/Field.hpp"
+#include "Math/Functions.hpp"
 #include "Math/Vec.hpp"
 #include "Util/Random.hpp"
 #include "Util/Timer.hpp"
@@ -47,10 +48,14 @@ void CompuFluidDyna::RunSimulationStep() {
   ExternalDarcyForce();
   if (D.UI[VerboseLevel____].I() >= 1) printf("ExternF %f ", Timer::PopTimer());
 
-  // Advection step
+  // Advection step with MacCormack backtracking
   if (D.UI[CoeffAdvec______].B()) {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+    // Smoke advection
+    // smo ⇐ smo - Δt (vel · ∇) smo
     AdvectField(FieldID::IDSmok, timestep, VelX, VelY, VelZ, Smok);
+    // Non linear velocity self-advection
+    // vel ⇐ vel - Δt (vel · ∇) vel
     std::vector<std::vector<std::vector<float>>> oldVelX= VelX;
     std::vector<std::vector<std::vector<float>>> oldVelY= VelY;
     std::vector<std::vector<std::vector<float>>> oldVelZ= VelZ;
@@ -60,18 +65,18 @@ void CompuFluidDyna::RunSimulationStep() {
     if (D.UI[VerboseLevel____].I() >= 1) printf("Advect %f ", Timer::PopTimer());
   }
 
-  // Diffusion step
+  // Smoke diffusion step
+  // Implicit solve    (Id - diffu Δt ∇²) smo = smo
   if (D.UI[CoeffDiffuS_____].B()) {
-    // (Id - diffu Δt ∇²) smo = smo
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
     const std::vector<std::vector<std::vector<float>>> oldSmoke= Smok;
     LinearSolve(FieldID::IDSmok, maxIter, timestep, coeffDiffu, oldSmoke, Smok);
     if (D.UI[VerboseLevel____].I() >= 1) printf("DiffuS %f ", Timer::PopTimer());
   }
 
-  // Viscosity step
+  // Velocity viscosity step
+  // Implicit solve    (Id - visco Δt ∇²) vel = vel
   if (D.UI[CoeffDiffuV_____].B()) {
-    // (Id - visco Δt ∇²) vel = vel
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
     const std::vector<std::vector<std::vector<float>>> oldVelX= VelX;
     const std::vector<std::vector<std::vector<float>>> oldVelY= VelY;
@@ -115,14 +120,10 @@ void CompuFluidDyna::RunSimulationStep() {
 
 // Update Solid boolean field based on continuous porosity value
 void CompuFluidDyna::UpdateSolidFieldFromPoros() {
-  for (int x= 0; x < nX; x++) {
-    for (int y= 0; y < nY; y++) {
-      for (int z= 0; z < nZ; z++) {
-        if (Poros[x][y][z] < D.UI[PorosMinThresh__].F()) Solid[x][y][z]= true;
-        else Solid[x][y][z]= false;
-      }
-    }
-  }
+  for (int x= 0; x < nX; x++)
+    for (int y= 0; y < nY; y++)
+      for (int z= 0; z < nZ; z++)
+        Solid[x][y][z]= (Poros[x][y][z] < D.UI[PorosMinThresh__].F());
 }
 
 
@@ -152,11 +153,13 @@ void CompuFluidDyna::ApplyBC(const int iFieldID, std::vector<std::vector<std::ve
 // Add external gravity/buoyancy forces to velocity field
 // vel ⇐ vel + g * smo * Δt / ρ
 void CompuFluidDyna::ExternalGravityForce() {
-  for (int x= 0; x < nX; x++) {
-    for (int y= 0; y < nY; y++) {
-      for (int z= 0; z < nZ; z++) {
-        if (Solid[x][y][z] || VelBC[x][y][z]) continue;
-        VelZ[x][y][z]+= D.UI[CoeffGravi______].F() * Smok[x][y][z] * D.UI[TimeStep________].F() / fluidDensity;
+  if (D.UI[CoeffGravi______].F() != 0.0) {
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          if (Solid[x][y][z] || VelBC[x][y][z]) continue;
+          VelZ[x][y][z]+= D.UI[CoeffGravi______].F() * Smok[x][y][z] * D.UI[TimeStep________].F() / fluidDensity;
+        }
       }
     }
   }
@@ -164,22 +167,26 @@ void CompuFluidDyna::ExternalGravityForce() {
 
 
 // Add Darcy penalization forces from design shape to velocity field
-// Implicit scheme : vel ⇐ vel / (1 + RAMP(poros) * Δt / ρ)
-// Explicit scheme : vel ⇐ vel - vel * RAMP(poros) * Δt / ρ
+// Implicit scheme: vel ⇐ vel / (1 + PenalInterpo(poros) * Δt / ρ)
 void CompuFluidDyna::ExternalDarcyForce() {
-  for (int x= 0; x < nX; x++) {
-    for (int y= 0; y < nY; y++) {
-      for (int z= 0; z < nZ; z++) {
-        if (Solid[x][y][z] || VelBC[x][y][z]) continue;
-        const double resistCoeff= D.UI[DarcyMinResist__].F() + (D.UI[DarcyMaxResist__].F() - D.UI[DarcyMinResist__].F()) * (1.0 - Poros[x][y][z]) / (1.0 + D.UI[DarcyPenal______].F() * Poros[x][y][z]);
-        // Apply flow resistance force with implicit scheme
-        VelX[x][y][z]/= 1.0 + resistCoeff * D.UI[TimeStep________].F() / fluidDensity;
-        VelY[x][y][z]/= 1.0 + resistCoeff * D.UI[TimeStep________].F() / fluidDensity;
-        VelZ[x][y][z]/= 1.0 + resistCoeff * D.UI[TimeStep________].F() / fluidDensity;
-        // // Apply flow resistance force with explicit scheme
-        // VelX[x][y][z]-= VelX[x][y][z] * resistCoeff * D.UI[TimeStep________].F() / fluidDensity;
-        // VelY[x][y][z]-= VelY[x][y][z] * resistCoeff * D.UI[TimeStep________].F() / fluidDensity;
-        // VelZ[x][y][z]-= VelZ[x][y][z] * resistCoeff * D.UI[TimeStep________].F() / fluidDensity;
+  if (D.UI[DarcyMaxResist__].F() - D.UI[DarcyMinResist__].F() > 0.0f) {
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          if (Solid[x][y][z] || VelBC[x][y][z]) continue;
+          const float penalVal= Functions::PenalInterpo(Poros[x][y][z], D.UI[DarcyPenal______].F(), false);
+          const float resistVal= D.UI[DarcyMinResist__].F() + (D.UI[DarcyMaxResist__].F() - D.UI[DarcyMinResist__].F()) * (1.0f - penalVal);
+          // Apply flow resistance force with implicit scheme
+          // vel ⇐ vel / (1 + PenalInterpo(poros) * Δt / ρ)
+          VelX[x][y][z]/= 1.0 + resistVal * D.UI[TimeStep________].F() / fluidDensity;
+          VelY[x][y][z]/= 1.0 + resistVal * D.UI[TimeStep________].F() / fluidDensity;
+          VelZ[x][y][z]/= 1.0 + resistVal * D.UI[TimeStep________].F() / fluidDensity;
+          // // Apply flow resistance force with explicit scheme
+          // // vel ⇐ vel - vel * PenalInterpo(poros) * Δt / ρ
+          // VelX[x][y][z]-= VelX[x][y][z] * resistVal * D.UI[TimeStep________].F() / fluidDensity;
+          // VelY[x][y][z]-= VelY[x][y][z] * resistVal * D.UI[TimeStep________].F() / fluidDensity;
+          // VelZ[x][y][z]-= VelZ[x][y][z] * resistVal * D.UI[TimeStep________].F() / fluidDensity;
+        }
       }
     }
   }
@@ -187,7 +194,7 @@ void CompuFluidDyna::ExternalDarcyForce() {
 
 
 // Project velocity field into a solenoidal/divergence-free field
-// Solve for pressure in pressure Poisson equation (negative laplacian for positive diagonal in solve)
+// Solve for pressure in pressure Poisson equation (negative Laplacian for positive diagonal in solve)
 // (-∇²) press = -(ρ / Δt) ∇ · vel
 // Update velocity field by subtracting gradient of pressure
 // vel ⇐ vel - (Δt / ρ) × ∇ press
@@ -204,6 +211,12 @@ void CompuFluidDyna::ProjectField(const int iMaxIter, const float iTimeStep,
   // Compute the RHS using the divergence of velocity
   std::vector<std::vector<std::vector<float>>> RHS= Field::AllocField3D(nX, nY, nZ, 0.0f);
   ComputeVectorFieldDivergence(VelX, VelY, VelZ, RHS);
+  if (D.UI[TestPoroDiv_____].I() == 1) {
+    for (int x= 0; x < nX; x++)
+      for (int y= 0; y < nY; y++)
+        for (int z= 0; z < nZ; z++)
+          RHS[x][y][z]*= Poros[x][y][z];
+  }
   for (int x= 0; x < nX; x++)
     for (int y= 0; y < nY; y++)
       for (int z= 0; z < nZ; z++)
@@ -225,12 +238,22 @@ void CompuFluidDyna::ProjectField(const int iMaxIter, const float iTimeStep,
       for (int z= 0; z < nZ; z++) {
         if (Solid[x][y][z] || VelBC[x][y][z]) continue;
         // Subtract pressure gradient to remove divergence
-        if (x - 1 >= 0 && !Solid[x - 1][y][z]) ioVelX[x][y][z]-= Poros[x - 1][y][z] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x - 1][y][z]) / (2.0f * voxSize);
-        if (y - 1 >= 0 && !Solid[x][y - 1][z]) ioVelY[x][y][z]-= Poros[x][y - 1][z] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y - 1][z]) / (2.0f * voxSize);
-        if (z - 1 >= 0 && !Solid[x][y][z - 1]) ioVelZ[x][y][z]-= Poros[x][y][z - 1] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y][z - 1]) / (2.0f * voxSize);
-        if (x + 1 < nX && !Solid[x + 1][y][z]) ioVelX[x][y][z]-= Poros[x + 1][y][z] * iTimeStep / fluidDensity * (Pres[x + 1][y][z] - Pres[x][y][z]) / (2.0f * voxSize);
-        if (y + 1 < nY && !Solid[x][y + 1][z]) ioVelY[x][y][z]-= Poros[x][y + 1][z] * iTimeStep / fluidDensity * (Pres[x][y + 1][z] - Pres[x][y][z]) / (2.0f * voxSize);
-        if (z + 1 < nZ && !Solid[x][y][z + 1]) ioVelZ[x][y][z]-= Poros[x][y][z + 1] * iTimeStep / fluidDensity * (Pres[x][y][z + 1] - Pres[x][y][z]) / (2.0f * voxSize);
+        if (D.UI[TestPoroProj____].I() == 1) {
+          if (x - 1 >= 0 && !Solid[x - 1][y][z]) ioVelX[x][y][z]-= Poros[x - 1][y][z] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x - 1][y][z]) / (2.0f * voxSize);
+          if (y - 1 >= 0 && !Solid[x][y - 1][z]) ioVelY[x][y][z]-= Poros[x][y - 1][z] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y - 1][z]) / (2.0f * voxSize);
+          if (z - 1 >= 0 && !Solid[x][y][z - 1]) ioVelZ[x][y][z]-= Poros[x][y][z - 1] * iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y][z - 1]) / (2.0f * voxSize);
+          if (x + 1 < nX && !Solid[x + 1][y][z]) ioVelX[x][y][z]-= Poros[x + 1][y][z] * iTimeStep / fluidDensity * (Pres[x + 1][y][z] - Pres[x][y][z]) / (2.0f * voxSize);
+          if (y + 1 < nY && !Solid[x][y + 1][z]) ioVelY[x][y][z]-= Poros[x][y + 1][z] * iTimeStep / fluidDensity * (Pres[x][y + 1][z] - Pres[x][y][z]) / (2.0f * voxSize);
+          if (z + 1 < nZ && !Solid[x][y][z + 1]) ioVelZ[x][y][z]-= Poros[x][y][z + 1] * iTimeStep / fluidDensity * (Pres[x][y][z + 1] - Pres[x][y][z]) / (2.0f * voxSize);
+        }
+        else {
+          if (x - 1 >= 0 && !Solid[x - 1][y][z]) ioVelX[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x - 1][y][z]) / (2.0f * voxSize);
+          if (y - 1 >= 0 && !Solid[x][y - 1][z]) ioVelY[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y - 1][z]) / (2.0f * voxSize);
+          if (z - 1 >= 0 && !Solid[x][y][z - 1]) ioVelZ[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z] - Pres[x][y][z - 1]) / (2.0f * voxSize);
+          if (x + 1 < nX && !Solid[x + 1][y][z]) ioVelX[x][y][z]-= iTimeStep / fluidDensity * (Pres[x + 1][y][z] - Pres[x][y][z]) / (2.0f * voxSize);
+          if (y + 1 < nY && !Solid[x][y + 1][z]) ioVelY[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y + 1][z] - Pres[x][y][z]) / (2.0f * voxSize);
+          if (z + 1 < nZ && !Solid[x][y][z + 1]) ioVelZ[x][y][z]-= iTimeStep / fluidDensity * (Pres[x][y][z + 1] - Pres[x][y][z]) / (2.0f * voxSize);
+        }
       }
     }
   }
@@ -383,7 +406,7 @@ void CompuFluidDyna::ComputeParticlesMovement() {
   // Allocate particles if needed
   ParticlesPos.resize(D.UI[ParticCount_____].I());
   ParticlesAge.resize(D.UI[ParticCount_____].I(), -1.0f);
-  // Reeinitialized expired particles
+  // Reinitialize expired particles
   for (int k= 0; k < (int)ParticlesPos.size(); k++) {
     if (ParticlesAge[k] >= D.UI[ParticDuration__].F() ||
         ParticlesPos[k][0] < D.boxMin[0] || ParticlesPos[k][0] > D.boxMax[0] ||
@@ -401,11 +424,11 @@ void CompuFluidDyna::ComputeParticlesMovement() {
     const float particleRelPosX= (float)nX * (ParticlesPos[k][0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]);
     const float particleRelPosY= (float)nY * (ParticlesPos[k][1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]);
     const float particleRelPosZ= (float)nZ * (ParticlesPos[k][2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]);
-    const float particleVelX= TrilinearInterpolation(particleRelPosX, particleRelPosY, particleRelPosZ, VelX);
-    const float particleVelY= TrilinearInterpolation(particleRelPosX, particleRelPosY, particleRelPosZ, VelY);
-    const float particleVelZ= TrilinearInterpolation(particleRelPosX, particleRelPosY, particleRelPosZ, VelZ);
-    ParticlesPos[k]+= D.UI[TimeStep________].F() * Vec::Vec3<float>(particleVelX, particleVelY, particleVelZ);
-    ParticlesAge[k]+= D.UI[TimeStep________].F();
+    const int x= std::min(std::max(int(std::floor(particleRelPosX)), 0), nX - 1);
+    const int y= std::min(std::max(int(std::floor(particleRelPosY)), 0), nY - 1);
+    const int z= std::min(std::max(int(std::floor(particleRelPosZ)), 0), nZ - 1);
+    ParticlesPos[k]+= 1.0f / 60.0f * Vec::Vec3<float>(VelX[x][y][z], VelY[x][y][z], VelZ[x][y][z]);
+    ParticlesAge[k]+= 1.0f / 60.0f;
   }
 }
 

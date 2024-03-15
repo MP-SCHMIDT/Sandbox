@@ -32,7 +32,7 @@
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
-// #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
+#define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "NonLinMMABench/NonLinMMABench.hpp"
 #include "StructGenOptim/StructGenOptim.hpp"
@@ -121,6 +121,7 @@ enum ProjectID
 void project_ForceHardInit() {
   D.Plot.clear();
   D.Scatter.clear();
+  D.Status.clear();
 
   if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj) myAgentSwarmBoid= AgentSwarmBoid();
   if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
@@ -458,10 +459,18 @@ void callback_display() {
       if (k0 == 0 || !D.Plot[k0].isSameRange) {
         valMin= std::numeric_limits<double>::max();
         valMax= std::numeric_limits<double>::lowest();
-      }
-      for (double valCur : D.Plot[k0].val) {
-        if (valMin > valCur) valMin= valCur;
-        if (valMax < valCur) valMax= valCur;
+        // Also check following plots if using the same range
+        for (int k1= k0; k1 < (int)D.Plot.size(); k1++) {
+          if (k1 > k0 && !D.Plot[k1].isSameRange) break;
+          for (double valCur : D.Plot[k1].val) {
+            if (valMin > valCur) valMin= valCur;
+            if (valMax < valCur) valMax= valCur;
+          }
+          if (D.Plot[k1].isSymmetric) {
+            valMax= std::max(std::abs(valMin), std::abs(valMax));
+            valMin= -valMax;
+          }
+        }
       }
 
       // Draw the text for legend and min max values
@@ -505,7 +514,7 @@ void callback_display() {
       // Draw the plot curves and markers
       glLineWidth(2.0f);
       glPointSize(3.0f);
-      for (int mode= 0; mode < 2; mode++) {
+      for (int mode= 0; mode < (D.Plot[k0].showPoints ? 2 : 1); mode++) {
         if (mode == 0) glBegin(GL_LINE_STRIP);
         if (mode == 1) glBegin(GL_POINTS);
         for (int k1= 0; k1 < (int)D.Plot[k0].val.size(); k1++) {
@@ -664,10 +673,14 @@ void callback_keyboard(unsigned char key, int x, int y) {
   (void)x;  // Disable warning unused variable
   (void)y;  // Disable warning unused variable
 
+  // // Display pressed key code
+  // printf("%c  %d\n", key, key);
+
   if (key == 27) {
     glutDestroyWindow(windowID);
     exit(EXIT_SUCCESS);
   }
+  else if (key == '\\') glutPositionWindow(0, 0);
   else if (key == ' ') D.playAnimation= !D.playAnimation;
   else if (key == '.') D.stepAnimation= !D.stepAnimation;
   else if (key == '\b') {
@@ -688,6 +701,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if (key == '=') {
     D.Plot.clear();
     D.Scatter.clear();
+    D.Status.clear();
   }
   else if (key == ',') project_ForceHardInit();
   else if (key == '/') project_QueueSoftRefresh();

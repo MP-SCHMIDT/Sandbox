@@ -7,9 +7,11 @@ Sandbox environment with various personal experimentation and a subset of resear
 ![Screenshot](Docs/Anim_FraclElevMapZoom.gif)
 ![Screenshot](Docs/Anim_FractCurvDev.gif)
 ![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)\
+![Screenshot](Docs/Anim_SandiaCrash.gif)
+![Screenshot](Docs/Anim_StringArtOptim.gif)
+![Screenshot](Docs/Anim_ParticMultimat.gif)
 ![Screenshot](Docs/Anim_FieldOrientedLattice.gif)
 ![Screenshot](Docs/Anim_ParticleLifeOrga.gif)
-![Screenshot](Docs/Anim_StringArtOptim.gif)
 ![Screenshot](Docs/Anim_TerrainErosion.gif)
 ![Screenshot](Docs/Anim_ParticleCollisionConvectionSystem.gif)
 ![Screenshot](Docs/Anim_AlbertSpaceTimeCurvature.gif)

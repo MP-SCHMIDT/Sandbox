@@ -14,11 +14,14 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
+#include "FileIO/FileOutput.hpp"
 #include "Geom/BoxGrid.hpp"
 #include "Geom/MarchingCubes.hpp"
+#include "Geom/MergeVertices.hpp"
 #include "Geom/PrimitiveCSG.hpp"
 #include "Geom/Sketch.hpp"
 #include "Math/Field.hpp"
+#include "Math/Functions.hpp"
 #include "Math/Vec.hpp"
 
 // Global headers
@@ -41,26 +44,26 @@ AlgoTestEnviro::AlgoTestEnviro() {
 void AlgoTestEnviro::SetActiveProject() {
   if (!isActivProj) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("TestParam00_____", 0.9));
-    D.UI.push_back(ParamUI("TestParam01_____", 0.1));
-    D.UI.push_back(ParamUI("TestParam02_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam03_____", 64.0));
-    D.UI.push_back(ParamUI("TestParam04_____", 64.0));
-    D.UI.push_back(ParamUI("TestParam05_____", 64.0));
-    D.UI.push_back(ParamUI("TestParam06_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam07_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam08_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam09_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam10_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam11_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam12_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam13_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam14_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam15_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam16_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam17_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam18_____", 0.0));
-    D.UI.push_back(ParamUI("TestParam19_____", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_00_", 0.9));
+    D.UI.push_back(ParamUI("TestParamALG_01_", 0.1));
+    D.UI.push_back(ParamUI("TestParamALG_02_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_03_", 64.0));
+    D.UI.push_back(ParamUI("TestParamALG_04_", 64.0));
+    D.UI.push_back(ParamUI("TestParamALG_05_", 64.0));
+    D.UI.push_back(ParamUI("TestParamALG_06_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_07_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_08_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_09_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_10_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_11_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_12_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_13_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_14_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_15_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_16_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_17_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_18_", 0.0));
+    D.UI.push_back(ParamUI("TestParamALG_19_", 0.0));
     D.UI.push_back(ParamUI("Isocut__________", 0.0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
@@ -123,7 +126,7 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
 
   // Testing basis computation
   if (key == 'T') {
-    Vec::Vec3<float> U(D.UI[TestParam00_____].D(), D.UI[TestParam01_____].D(), D.UI[TestParam02_____].D());
+    Vec::Vec3<float> U(D.UI[TestParamALG_00_].D(), D.UI[TestParamALG_01_].D(), D.UI[TestParamALG_02_].D());
     Vec::Vec3<float> V, W;
     U.normalize();
     U.computeBasis(V, W);
@@ -151,7 +154,7 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
 
   // Testing CSG field
   if (key == 'F') {
-    ScalarField= Field::AllocField3D(D.UI[TestParam03_____].I(), D.UI[TestParam04_____].I(), D.UI[TestParam05_____].I(), std::numeric_limits<double>::max());
+    ScalarField= Field::AllocField3D(D.UI[TestParamALG_03_].I(), D.UI[TestParamALG_04_].I(), D.UI[TestParamALG_05_].I(), std::numeric_limits<double>::max());
     std::array<double, 3> P0({0.1, 0.2, 0.3});
     std::array<double, 3> P1({0.8, 0.6, 0.7});
     PrimitiveCSG::ConeRound(P0, P1, 0.1, 0.2, PrimitiveCSG::BooleanMode::Union, D.boxMin, D.boxMax, ScalarField);
@@ -176,12 +179,35 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
     }
   }
 
-
+  // Testing Marching Cubes and vertex merge
   if (key == 'M') {
     Verts.clear();
     Bars.clear();
     Tris.clear();
     MarchingCubes::ComputeMarchingCubes(0.0, D.boxMin, D.boxMax, ScalarField, Verts, Tris);
+    if (D.UI[TestParamALG_06_].B())
+      MergeVertices::QuadraticMerge(D.UI[TestParamALG_07_].D(), Verts, Tris);
+  }
+
+  // Testing OBJ file output
+  if (key == 'O') {
+    std::vector<std::array<double, 3>> VertsCol;
+    std::vector<std::array<int, 4>> Quads;
+    FileOutput::SaveMeshOBJFile("FileOutput/test.obj", Verts, VertsCol, Tris, Quads, D.UI[VerboseLevel____].I());
+  }
+
+  // Testing Penal function
+  if (key == 'P') {
+    Verts.clear();
+    for (int k= 0; k < 1000; k++) {
+      const double ratio= double(k) / double(1000 - 1);
+      Verts.push_back(std::array<double, 3>{D.boxMin[0] + (D.boxMax[0] - D.boxMin[0]) * 0.5,
+                                            D.boxMin[1] + (D.boxMax[1] - D.boxMin[1]) * ratio,
+                                            D.boxMin[2] + (D.boxMax[2] - D.boxMin[2]) * Functions::PenalInterpo(ratio, D.UI[TestParamALG_08_].D(), false)});
+      Verts.push_back(std::array<double, 3>{D.boxMin[0] + (D.boxMax[0] - D.boxMin[0]) * 0.5,
+                                            D.boxMin[1] + (D.boxMax[1] - D.boxMin[1]) * ratio,
+                                            D.boxMin[2] + (D.boxMax[2] - D.boxMin[2]) * Functions::PenalInterpo(ratio, D.UI[TestParamALG_08_].D(), true)});
+    }
   }
 }
 

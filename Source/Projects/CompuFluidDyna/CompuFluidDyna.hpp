@@ -42,17 +42,19 @@
 // https://github.com/AIT-LKR/SEROS
 //
 // TODO switch to continusous Solid field and implement Brinkman penalization ?
+// TOP webinar : Fluid topology optimization thematic session with educational paper run through.
+// https://www.youtube.com/watch?v=QJ81XwLcXys
 // On the Calculation of the Brinkman Penalization Term in Density-Based Topology Optimization of Fluid-Dependent Problems - Mohamed Abdelhamid, Aleksander Czekanski
 // https://arxiv.org/pdf/2302.14156.pdf
 // Towards improved porous models for solid/fluid topology optimization - Maarten J. B. Theulings, Matthijs Langelaar, Fred van Keulen & Robert Maas
-// https://link.springer.com/article/10.1007/s00158-023-03570-4
+// https://pure.tudelft.nl/ws/portalfiles/portal/153488654/s00158_023_03570_4.pdf
 //
 // TODO Evaluate feasibility of adjoint analysis to get gradients for optim
 // Topology optimization of unsteady flow problems using the lattice Boltzmann method - Sebastian Arlund Nørgaard, Ole Sigmund, Boyan S Lazarov
 // https://www.researchgate.net/publication/287621818_Topology_optimization_of_unsteady_flow_problems_using_the_lattice_Boltzmann_method
 // https://github.com/northgaard/LBM-TopOpt
 // A detailed introduction to density‑based topology optimisation of fluid flow problems with implementation in MATLAB - Joe Alexandersen
-// https://link.springer.com/article/10.1007/s00158-022-03420-9
+// https://arxiv.org/abs/2207.13695
 // https://github.com/sdu-multiphysics/topflow
 class CompuFluidDyna
 {
@@ -73,6 +75,7 @@ class CompuFluidDyna
     SolvDriftReset__,
     SolvTolRelResid_,
     SolvTolChgPrev__,
+    SolvTolStagna___,
     CoeffGravi______,
     CoeffAdvec______,
     CoeffAdvecTol___,
@@ -110,6 +113,15 @@ class CompuFluidDyna
     PlotSolve_______,
     PlotMFR0Offset__,
     PlotMFR1Offset__,
+    TestPoroDiv_____,
+    TestPoroLapla___,
+    TestPoroProj____,
+    TestParamCFD_0__,
+    TestParamCFD_1__,
+    TestParamCFD_2__,
+    TestParamCFD_3__,
+    TestParamCFD_4__,
+    TestParamCFD_5__,
     VerboseLevel____,
   };
 
@@ -224,9 +236,12 @@ class CompuFluidDyna
                           std::vector<std::vector<std::vector<float>>>& oField);
   float ImplicitFieldDotProd(const std::vector<std::vector<std::vector<float>>>& iFieldA,
                              const std::vector<std::vector<std::vector<float>>>& iFieldB);
-  void ImplicitFieldLaplacianMatMult(const int iFieldID, const float iTimeStep, const float iDiffuCoeff, const bool iPrecondMode,
+  void ImplicitFieldLaplacianMatMult(const int iFieldID, const float iTimeStep, const float iDiffuCoeff,
                                      const std::vector<std::vector<std::vector<float>>>& iField,
                                      std::vector<std::vector<std::vector<float>>>& oField);
+  void ImplicitFieldLaplacianDiagPrecond(const int iFieldID, const float iTimeStep, const float iDiffuCoeff,
+                                         const std::vector<std::vector<std::vector<float>>>& iField,
+                                         std::vector<std::vector<std::vector<float>>>& oField);
 
   // Linear solver functions
   void LinearSolve(const int iFieldID, const int iMaxIter, const float iTimeStep, const float iDiffuCoeff,

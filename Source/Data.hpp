@@ -46,12 +46,16 @@ class PlotUI
   std::string name;
   bool isLog;
   bool isSameRange;
+  bool isSymmetric;
+  bool showPoints;
 
   PlotUI() {
     val.clear();
     name= "<name>";
     isLog= false;
     isSameRange= false;
+    isSymmetric= false;
+    showPoints= false;
   }
 };
 

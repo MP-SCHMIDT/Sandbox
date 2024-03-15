@@ -39,15 +39,16 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("ResolutionY_____", 100));    // Eulerian mesh resolution
     D.UI.push_back(ParamUI("ResolutionZ_____", 100));    // Eulerian mesh resolution
     D.UI.push_back(ParamUI("VoxelSize_______", 1.e-2));  // Element size
-    D.UI.push_back(ParamUI("Scenario________", 0));      // Scenario ID, 0= load file, 1> hard coded scenarios
+    D.UI.push_back(ParamUI("Scenario________", 0));      // Scenario choice, 0 load file, 1+ hard coded scenarios
     D.UI.push_back(ParamUI("InputFile_______", 0));      // BMP file to load
     D.UI.push_back(ParamUI("TimeStep________", 0.02));   // Simulation time step
     D.UI.push_back(ParamUI("Multithread_____", 0));      // Whether to enable multithreading (small gain because memory bound)
-    D.UI.push_back(ParamUI("SolvMaxIter_____", 32));     // Max number of solver iterations
-    D.UI.push_back(ParamUI("SolvType________", 1));      // Flag to use Gauss Seidel (=0), Gradient Descent (=1), Conjugate Gradient (=2), Preconditioned Conjugate Gradient (=3)
-    D.UI.push_back(ParamUI("SolvDriftReset__", 50));     // Recalculate the exact error every N iterations to reset solve drift
+    D.UI.push_back(ParamUI("SolvMaxIter_____", 128));    // Max number of solver iterations
+    D.UI.push_back(ParamUI("SolvType________", 2));      // Flag to use Gauss Seidel (=0), Gradient Descent (=1), Conjugate Gradient (=2), Preconditioned Conjugate Gradient (=3)
+    D.UI.push_back(ParamUI("SolvDriftReset__", 32));     // Recalculate the exact error every N iterations to reset solve drift
     D.UI.push_back(ParamUI("SolvTolRelResid_", 1.e-3));  // Solver tolerance of residual relative to initial guess
-    D.UI.push_back(ParamUI("SolvTolChgPrev__", 1.e-7));  // Solver tolerance of solution change normalized by previous solution
+    D.UI.push_back(ParamUI("SolvTolChgPrev__", 1.e-9));  // Solver tolerance of solution change normalized by previous solution
+    D.UI.push_back(ParamUI("SolvTolStagna___", 5));      // Number of iteration of solution stagnation allowed before break
     D.UI.push_back(ParamUI("CoeffGravi______", 0.0));    // Magnitude of gravity in Z- direction
     D.UI.push_back(ParamUI("CoeffAdvec______", 40));     // 0= no advection, 1= linear advection, >1 MacCormack correction iterations
     D.UI.push_back(ParamUI("CoeffAdvecTol___", 0.01));   // MacCormack correction tolerance relative to voxel size
@@ -59,8 +60,8 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("PorosMinThresh__", 0.0));    // Minimum porosity threshold for a voxel to be considered fluid
     D.UI.push_back(ParamUI("PorosOffset_____", 0));      // Offset porosity field with erosion/dilation
     D.UI.push_back(ParamUI("DarcyMinResist__", 0.0));    // Lower bound for the Darcy resistance coefficient
-    D.UI.push_back(ParamUI("DarcyMaxResist__", 1.e4));   // Upper bound for the Darcy resistance coefficient
-    D.UI.push_back(ParamUI("DarcyPenal______", 10));     // RAMP penalization coefficient to interpolate Darcy resistance
+    D.UI.push_back(ParamUI("DarcyMaxResist__", 1.e3));   // Upper bound for the Darcy resistance coefficient
+    D.UI.push_back(ParamUI("DarcyPenal______", 0));      // RAMP penalization coefficient to interpolate Darcy resistance
     D.UI.push_back(ParamUI("BCVelX__________", 0.0));    // Velocity value for voxels with enforced velocity
     D.UI.push_back(ParamUI("BCVelY__________", 1.0));    // Velocity value for voxels with enforced velocity
     D.UI.push_back(ParamUI("BCVelZ__________", 0.0));    // Velocity value for voxels with enforced velocity
@@ -85,6 +86,15 @@ void CompuFluidDyna::SetActiveProject() {
     D.UI.push_back(ParamUI("PlotSolve_______", 0));      // Enable plot of residual and pick ID of resid field to store for display
     D.UI.push_back(ParamUI("PlotMFR0Offset__", 0.25));   // Enable plot mass flow rate through the XZ-plane offset along Y
     D.UI.push_back(ParamUI("PlotMFR1Offset__", 0.75));   // Enable plot mass flow rate through the XZ-plane offset along Y
+    D.UI.push_back(ParamUI("TestPoroDiv_____", 1));      // Enable porosity contribution to velocity divergence RHS
+    D.UI.push_back(ParamUI("TestPoroLapla___", 1));      // Enable porosity contribution to pression Laplacian
+    D.UI.push_back(ParamUI("TestPoroProj____", 1));      // Enable porosity contribution to velocity correction
+    D.UI.push_back(ParamUI("TestParamCFD_0__", 0.0));    // Test parameter
+    D.UI.push_back(ParamUI("TestParamCFD_1__", 0.0));    // Test parameter
+    D.UI.push_back(ParamUI("TestParamCFD_2__", 0.0));    // Test parameter
+    D.UI.push_back(ParamUI("TestParamCFD_3__", 0.0));    // Test parameter
+    D.UI.push_back(ParamUI("TestParamCFD_4__", 0.0));    // Test parameter
+    D.UI.push_back(ParamUI("TestParamCFD_5__", 0.0));    // Test parameter
     D.UI.push_back(ParamUI("VerboseLevel____", 0));      // Verbose mode
   }
 
@@ -106,6 +116,8 @@ bool CompuFluidDyna::CheckAlloc() {
   if (D.UI[ResolutionX_____].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionY_____].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionZ_____].hasChanged()) isAllocated= false;
+  if (D.UI[Scenario________].hasChanged()) isAllocated= false;
+  if (D.UI[InputFile_______].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -113,8 +125,6 @@ bool CompuFluidDyna::CheckAlloc() {
 // Check if parameter changes should trigger a refresh
 bool CompuFluidDyna::CheckRefresh() {
   if (D.UI[VoxelSize_______].hasChanged()) isRefreshed= false;
-  if (D.UI[Scenario________].hasChanged()) isRefreshed= false;
-  if (D.UI[InputFile_______].hasChanged()) isRefreshed= false;
   if (D.UI[PorosSmoothIt___].hasChanged()) isRefreshed= false;
   if (D.UI[PorosMinThresh__].hasChanged()) isRefreshed= false;
   if (D.UI[PorosOffset_____].hasChanged()) isRefreshed= false;
@@ -145,6 +155,7 @@ void CompuFluidDyna::Allocate() {
   nZ= std::max(D.UI[ResolutionZ_____].I(), 1);
 
   fluidDensity= 1.0f;
+  simTime= 0;
 
   // Allocate data
   Solid= Field::AllocField3D(nX, nY, nZ, false);
@@ -186,7 +197,6 @@ void CompuFluidDyna::Refresh() {
   isRefreshed= true;
 
   // Initialize scenario values
-  simTime= 0;
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
@@ -602,29 +612,26 @@ void CompuFluidDyna::UpdateUIData() {
     D.Plot[4].name= "Vorti";
     D.Plot[5].name= "MFR0";
     D.Plot[6].name= "MFR1";
-    if (D.Plot[0].val.size() < 10000) {
-      for (int k= 0; k < (int)D.Plot.size(); k++) {
-        D.Plot[0].val.reserve(10000);
-        D.Plot[k].val.push_back(0.0f);
-      }
-      for (int x= 0; x < nX; x++) {
-        for (int y= 0; y < nY; y++) {
-          for (int z= 0; z < nZ; z++) {
-            D.Plot[0].val[D.Plot[0].val.size() - 1]+= std::sqrt(VelX[x][y][z] * VelX[x][y][z] + VelY[x][y][z] * VelY[x][y][z] + VelZ[x][y][z] * VelZ[x][y][z]);
-            D.Plot[1].val[D.Plot[1].val.size() - 1]+= Smok[x][y][z];
-            D.Plot[2].val[D.Plot[2].val.size() - 1]+= Pres[x][y][z];
-            D.Plot[3].val[D.Plot[3].val.size() - 1]+= std::abs(Dive[x][y][z]);
-            D.Plot[4].val[D.Plot[4].val.size() - 1]+= Vort[x][y][z];
-            if (y == (int)std::round(D.UI[PlotMFR0Offset__].F() * (float)(nY - 1))) D.Plot[5].val[D.Plot[5].val.size() - 1]+= VelY[x][y][z];
-            if (y == (int)std::round(D.UI[PlotMFR1Offset__].F() * (float)(nY - 1))) D.Plot[6].val[D.Plot[6].val.size() - 1]+= VelY[x][y][z];
-          }
+    D.Plot[6].isSameRange= true;
+    for (int k= 0; k < (int)D.Plot.size(); k++)
+      D.Plot[k].val.push_back(0.0f);
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          D.Plot[0].val[D.Plot[0].val.size() - 1]+= Vec::Vec3<float>(VelX[x][y][z], VelY[x][y][z], VelZ[x][y][z]).norm();
+          D.Plot[1].val[D.Plot[1].val.size() - 1]+= Smok[x][y][z];
+          D.Plot[2].val[D.Plot[2].val.size() - 1]+= Pres[x][y][z];
+          D.Plot[3].val[D.Plot[3].val.size() - 1]+= std::abs(Dive[x][y][z]);
+          D.Plot[4].val[D.Plot[4].val.size() - 1]+= Vort[x][y][z];
+          if (y == (int)std::round(D.UI[PlotMFR0Offset__].F() * (float)(nY - 1))) D.Plot[5].val[D.Plot[5].val.size() - 1]+= VelY[x][y][z];
+          if (y == (int)std::round(D.UI[PlotMFR1Offset__].F() * (float)(nY - 1))) D.Plot[6].val[D.Plot[6].val.size() - 1]+= VelY[x][y][z];
         }
       }
     }
   }
 
   // Write the status
-  if ((int)D.Status.size() < 1) D.Status.resize(1);
+  if ((int)D.Status.size() != 1) D.Status.resize(1);
   D.Status[0]= std::string{"SimTime: "} + std::to_string(simTime);
 }
 
@@ -633,16 +640,18 @@ void CompuFluidDyna::InitializeScenario() {
   // Get scenario ID and optionally load bitmap file
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
   if (D.UI[Scenario________].I() == 0) {
-    if (D.UI[InputFile_______].I() == 0) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/DeLavalPreBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 1) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/DeLavalVelBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 2) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/NACAPreBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 3) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/NACAVelBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 4) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeUBendPreBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 5) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeUBendVelBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 6) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeZigZagPreBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 7) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeZigZagVelBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 8) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/TeslaValvePreBC.bmp", imageRGBA, false);
-    if (D.UI[InputFile_______].I() == 9) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/TeslaValveVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 0) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/DeLavalVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 1) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/DeLavalPreBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 2) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/NACAVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 3) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/NACAPreBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 4) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeUBendVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 5) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeUBendPreBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 6) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeZigZagVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 7) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/PipeZigZagPreBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 8) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/TeslaValveVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 9) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/TeslaValvePreBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 10) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/BoxHollowVelBC.bmp", imageRGBA, false);
+    if (D.UI[InputFile_______].I() == 11) FileInput::LoadImageBMPFile("./FileInput/FluidScenarios/BoxHollowPreBC.bmp", imageRGBA, false);
   }
 
   // Set scenario values
