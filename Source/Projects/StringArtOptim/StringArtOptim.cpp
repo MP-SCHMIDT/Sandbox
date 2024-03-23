@@ -46,9 +46,12 @@ void StringArtOptim::SetActiveProject() {
     D.UI.push_back(ParamUI("ColorsSub_______", 0));
     D.UI.push_back(ParamUI("ColorsNormalize_", 0));
     D.UI.push_back(ParamUI("StepCount_______", 1));
-    D.UI.push_back(ParamUI("SingleLine______", -0.5));
-    D.UI.push_back(ParamUI("BlendMode_______", -0.5));
-    D.UI.push_back(ParamUI("CoeffColor______", 0.1));
+    D.UI.push_back(ParamUI("SingleLine______", 0));
+    D.UI.push_back(ParamUI("BlendMode_______", 0));
+    D.UI.push_back(ParamUI("WeightOver______", 2.0));
+    D.UI.push_back(ParamUI("WeightUnder_____", 1.0));
+    D.UI.push_back(ParamUI("CoeffColor______", 0.2));
+    D.UI.push_back(ParamUI("MinRelChange____", -1.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
@@ -367,9 +370,12 @@ bool StringArtOptim::AddLineStep() {
         else
           newVal= ImCur[w][h] + D.UI[CoeffColor______].F() * Colors[idxCol];
         for (int k= 0; k < 3; k++) newVal[k]= std::min(std::max(newVal[k], 0.0f), 1.0f);
-        const Vec::Vec3<float> curErr= ImRef[w][h] - ImCur[w][h];
-        const Vec::Vec3<float> newErr= ImRef[w][h] - newVal;
-        chgErr+= newErr.normSquared() - curErr.normSquared();
+        const Vec::Vec3<float> curErr= ImCur[w][h] - ImRef[w][h];
+        const Vec::Vec3<float> newErr= newVal - ImRef[w][h];
+        for (int k= 0; k < 3; k++) {
+          chgErr+= ((newErr[k] > 0.0) ? D.UI[WeightOver______].F() : D.UI[WeightUnder_____].F()) * newErr[k] * newErr[k];
+          chgErr-= ((curErr[k] > 0.0) ? D.UI[WeightOver______].F() : D.UI[WeightUnder_____].F()) * curErr[k] * curErr[k];
+        }
       }
       if (bestPeg[idxCol] < 0 || bestErr[idxCol] > chgErr) {
         bestErr[idxCol]= chgErr;
@@ -381,22 +387,18 @@ bool StringArtOptim::AddLineStep() {
   // Optionally keep only the best color
   if (D.UI[SingleLine______].B()) {
     int idxBestCol= 0;
-    for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
-      if (bestErr[idxBestCol] > bestErr[idxCol]) {
+    for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++)
+      if (bestErr[idxBestCol] > bestErr[idxCol])
         idxBestCol= idxCol;
-      }
-    }
-    for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
-      if (idxCol != idxBestCol) {
+    for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++)
+      if (idxCol != idxBestCol)
         bestPeg[idxCol]= -1;
-      }
-    }
   }
 
   // Update the lines
   bool lineWasAdded= false;
   for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
-    if (bestPeg[idxCol] >= 0 && bestErr[idxCol] < 0.0f) {
+    if (bestPeg[idxCol] >= 0 && bestErr[idxCol] < D.UI[MinRelChange____].F()) {
       Lines[idxCol].push_back(bestPeg[idxCol]);
       PegsCount[bestPeg[idxCol]]++;
       lineWasAdded= true;

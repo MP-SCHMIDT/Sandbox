@@ -28,7 +28,10 @@ class StringArtOptim
     StepCount_______,
     SingleLine______,
     BlendMode_______,
+    WeightOver______,
+    WeightUnder_____,
     CoeffColor______,
+    MinRelChange____,
     VerboseLevel____,
   };
 
