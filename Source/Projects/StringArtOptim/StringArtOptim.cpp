@@ -279,14 +279,9 @@ void StringArtOptim::Draw() {
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (D.displayMode1 && !D.displayMode2) {
-          glColor3fv(ImRef[w][h].array());
-          glRectf(float(w) / float(nW), float(h) / float(nH), float(w + 1) / float(nW), float(h + 1) / float(nH));
-        }
-        if (D.displayMode2) {
-          glColor3fv(ImCur[w][h].array());
-          glRectf(float(w) / float(nW), float(h) / float(nH), float(w + 1) / float(nW), float(h + 1) / float(nH));
-        }
+        if (D.displayMode1) glColor3fv(ImCur[w][h].array());
+        else if (D.displayMode2) glColor3fv(ImRef[w][h].array());
+        glRectf(float(w) / float(nW), float(h) / float(nH), float(w + 1) / float(nW), float(h + 1) / float(nH));
       }
     }
     glPopMatrix();
@@ -312,7 +307,7 @@ void StringArtOptim::Draw() {
   }
 
   // Draw the string
-  if (D.displayMode4) {
+  if (!D.displayMode4) {
     for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
       if (Lines[idxCol].size() >= 2) {
         glLineWidth(2.0f);
@@ -328,6 +323,25 @@ void StringArtOptim::Draw() {
         glLineWidth(1.0f);
       }
     }
+  }
+
+  // Draw the chosen string colors
+  if (D.displayMode5) {
+    glPushMatrix();
+    glTranslatef(0.5f, 0.0f, 0.0f);
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+    for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
+      if (Colors[idxCol].sum() > 0.0) {
+        glColor3fv(Colors[idxCol].array());
+        glRectf(1.0f + 0.02f, float(idxCol) * 0.1f + 0.02f, 1.0f + 0.08f, float(idxCol) * 0.1f + 0.08f);
+      }
+      else {
+        glColor3fv((Vec::Vec3<float>(1.0f, 1.0f, 1.0f) + Colors[idxCol]).array());
+        glRectf(1.1f + 0.02f, float(idxCol) * 0.1f + 0.02f, 1.1f + 0.08f, float(idxCol) * 0.1f + 0.08f);
+      }
+    }
+    glPopMatrix();
   }
 }
 
