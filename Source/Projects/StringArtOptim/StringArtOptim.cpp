@@ -42,8 +42,9 @@ void StringArtOptim::SetActiveProject() {
     D.UI.push_back(ParamUI("ImageSizeH______", 256));
     D.UI.push_back(ParamUI("PegLayout_______", 1));
     D.UI.push_back(ParamUI("PegNumber_______", 256));
-    D.UI.push_back(ParamUI("ColorsAdd_______", 1));
-    D.UI.push_back(ParamUI("ColorsSub_______", 1));
+    D.UI.push_back(ParamUI("ColorsAdd_______", 2));
+    D.UI.push_back(ParamUI("ColorsSub_______", 0));
+    D.UI.push_back(ParamUI("ColorsNormalize_", 0));
     D.UI.push_back(ParamUI("StepCount_______", 1));
     D.UI.push_back(ParamUI("SingleLine______", -0.5));
     D.UI.push_back(ParamUI("BlendMode_______", -0.5));
@@ -73,6 +74,7 @@ bool StringArtOptim::CheckAlloc() {
   if (D.UI[PegNumber_______].hasChanged()) isAllocated= false;
   if (D.UI[ColorsAdd_______].hasChanged()) isAllocated= false;
   if (D.UI[ColorsSub_______].hasChanged()) isAllocated= false;
+  if (D.UI[ColorsNormalize_].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -148,34 +150,54 @@ void StringArtOptim::Refresh() {
 
   // Initialize colors
   Colors.clear();
-  if (D.UI[ColorsAdd_______].I() >= 1) {
+  if (D.UI[ColorsAdd_______].I() == 1) {
+    Colors.push_back(Vec::Vec3<float>(1.0f, 1.0f, 1.0f));
+  }
+  if (D.UI[ColorsAdd_______].I() == 2) {
     Colors.push_back(Vec::Vec3<float>(1.0f, 0.0f, 0.0f));
     Colors.push_back(Vec::Vec3<float>(0.0f, 1.0f, 0.0f));
     Colors.push_back(Vec::Vec3<float>(0.0f, 0.0f, 1.0f));
   }
-  if (D.UI[ColorsAdd_______].I() >= 2) {
+  if (D.UI[ColorsAdd_______].I() == 3) {
     Colors.push_back(Vec::Vec3<float>(0.0f, 1.0f, 1.0f));
     Colors.push_back(Vec::Vec3<float>(1.0f, 0.0f, 1.0f));
     Colors.push_back(Vec::Vec3<float>(1.0f, 1.0f, 0.0f));
   }
-  if (D.UI[ColorsAdd_______].I() >= 3) {
+  if (D.UI[ColorsAdd_______].I() == 4) {
     Colors.push_back(Vec::Vec3<float>(1.0f, 1.0f, 1.0f));
+    Colors.push_back(Vec::Vec3<float>(1.0f, 0.0f, 0.0f));
+    Colors.push_back(Vec::Vec3<float>(0.0f, 1.0f, 0.0f));
+    Colors.push_back(Vec::Vec3<float>(0.0f, 0.0f, 1.0f));
+    Colors.push_back(Vec::Vec3<float>(0.0f, 1.0f, 1.0f));
+    Colors.push_back(Vec::Vec3<float>(1.0f, 0.0f, 1.0f));
+    Colors.push_back(Vec::Vec3<float>(1.0f, 1.0f, 0.0f));
   }
-  if (D.UI[ColorsSub_______].I() >= 1) {
+  if (D.UI[ColorsSub_______].I() == 1) {
+    Colors.push_back(Vec::Vec3<float>(-1.0f, -1.0f, -1.0f));
+  }
+  if (D.UI[ColorsSub_______].I() == 2) {
     Colors.push_back(Vec::Vec3<float>(-1.0f, 0.0f, 0.0f));
     Colors.push_back(Vec::Vec3<float>(0.0f, -1.0f, 0.0f));
     Colors.push_back(Vec::Vec3<float>(0.0f, 0.0f, -1.0f));
   }
-  if (D.UI[ColorsSub_______].I() >= 2) {
+  if (D.UI[ColorsSub_______].I() == 3) {
     Colors.push_back(Vec::Vec3<float>(0.0f, -1.0f, -1.0f));
     Colors.push_back(Vec::Vec3<float>(-1.0f, 0.0f, -1.0f));
     Colors.push_back(Vec::Vec3<float>(-1.0f, -1.0f, 0.0f));
   }
-  if (D.UI[ColorsSub_______].I() >= 3) {
+  if (D.UI[ColorsSub_______].I() == 4) {
     Colors.push_back(Vec::Vec3<float>(-1.0f, -1.0f, -1.0f));
+    Colors.push_back(Vec::Vec3<float>(-1.0f, 0.0f, 0.0f));
+    Colors.push_back(Vec::Vec3<float>(0.0f, -1.0f, 0.0f));
+    Colors.push_back(Vec::Vec3<float>(0.0f, 0.0f, -1.0f));
+    Colors.push_back(Vec::Vec3<float>(0.0f, -1.0f, -1.0f));
+    Colors.push_back(Vec::Vec3<float>(-1.0f, 0.0f, -1.0f));
+    Colors.push_back(Vec::Vec3<float>(-1.0f, -1.0f, 0.0f));
   }
-  for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++)
-    Colors[idxCol].normalize();
+
+  if (D.UI[ColorsNormalize_].B())
+    for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++)
+      Colors[idxCol].normalize();
 
   // Initialize lines
   Lines.clear();

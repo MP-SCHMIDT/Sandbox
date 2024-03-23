@@ -24,6 +24,7 @@ class StringArtOptim
     PegNumber_______,
     ColorsAdd_______,
     ColorsSub_______,
+    ColorsNormalize_,
     StepCount_______,
     SingleLine______,
     BlendMode_______,
