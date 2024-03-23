@@ -117,6 +117,7 @@ void StringArtOptim::Refresh() {
   if (D.UI[ImageID_________].I() == 3) FileInput::LoadImageBMPFile("./FileInput/Images/Butterfly.bmp", imageRGBA, false);
   if (D.UI[ImageID_________].I() == 4) FileInput::LoadImageBMPFile("./FileInput/Images/AlbertArt.bmp", imageRGBA, false);
   if (D.UI[ImageID_________].I() == 5) FileInput::LoadImageBMPFile("./FileInput/Images/DeepField.bmp", imageRGBA, false);
+  if (D.UI[ImageID_________].I() == 6) FileInput::LoadImageBMPFile("./FileInput/Images/Eye.bmp", imageRGBA, false);
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
       if (!imageRGBA.empty()) {
