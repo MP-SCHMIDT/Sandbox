@@ -35,7 +35,7 @@ StringArtOptim::StringArtOptim() {
 
 // Initialize Project UI parameters
 void StringArtOptim::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("ImageID_________", 2));
     D.UI.push_back(ParamUI("ImageSizeW______", 256));

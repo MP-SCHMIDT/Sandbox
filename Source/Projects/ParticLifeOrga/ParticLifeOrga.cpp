@@ -32,7 +32,7 @@ ParticLifeOrga::ParticLifeOrga() {
 
 // Initialize Project UI parameters
 void ParticLifeOrga::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("NbTypes_________", 6));
     D.UI.push_back(ParamUI("NbPartic________", 800));

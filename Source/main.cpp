@@ -845,6 +845,7 @@ void callback_menu(int num) {
   // Reset or activate the selected project
   if (num > ProjectID::AaaaaaaaaaaaaaID && num < ProjectID::ZzzzzzzzzzzzzzID) {
     currentProjectID= num;
+    D.UI.clear();
     project_ForceHardInit();
   }
   if (num <= -1 && num >= -6) {

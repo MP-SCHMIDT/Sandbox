@@ -36,7 +36,7 @@ ImageExtruMesh::ImageExtruMesh() {
 
 // Initialize Project UI parameters
 void ImageExtruMesh::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("ResolutionX_____", 100));
     D.UI.push_back(ParamUI("ResolutionY_____", 100));

@@ -32,7 +32,7 @@ MassSpringSyst::MassSpringSyst() {
 
 // Initialize Project UI parameters
 void MassSpringSyst::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("Scenario________", 1));
     D.UI.push_back(ParamUI("InputFile_______", 0));

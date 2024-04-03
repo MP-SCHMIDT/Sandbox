@@ -26,7 +26,7 @@ SkeletonFolder::SkeletonFolder() {
 
 // Initialize Project UI parameters
 void SkeletonFolder::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("AllocTrigger____", 0.0));
     D.UI.push_back(ParamUI("RefreshTrigger__", 0.0));

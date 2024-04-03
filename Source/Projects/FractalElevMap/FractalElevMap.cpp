@@ -30,7 +30,7 @@ FractalElevMap::FractalElevMap() {
 
 // Initialize Project UI parameters
 void FractalElevMap::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("ResolutionX_____", 1000.0));       // Resolution of 2.5D height map
     D.UI.push_back(ParamUI("ResolutionY_____", 1000.0));       // Resolution of 2.5D height map

@@ -30,7 +30,7 @@ AgentSwarmBoid::AgentSwarmBoid() {
 
 // Initialize Project UI parameters
 void AgentSwarmBoid::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("Constrain2D_____", 0));
     D.UI.push_back(ParamUI("PopSize_________", 300));

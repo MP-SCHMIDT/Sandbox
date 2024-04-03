@@ -77,7 +77,7 @@ SpaceTimeWorld::SpaceTimeWorld() {
 
 // Initialize Project UI parameters
 void SpaceTimeWorld::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("WorldNbT________", 16));
     D.UI.push_back(ParamUI("WorldNbX________", 50));

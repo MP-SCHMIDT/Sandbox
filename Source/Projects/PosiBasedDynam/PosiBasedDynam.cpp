@@ -32,7 +32,7 @@ PosiBasedDynam::PosiBasedDynam() {
 
 // Initialize Project UI parameters
 void PosiBasedDynam::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("NumParticl______", 1000));
     D.UI.push_back(ParamUI("RadParticl______", 0.02));

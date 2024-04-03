@@ -33,7 +33,7 @@ CompuFluidDyna::CompuFluidDyna() {
 
 // Initialize Project UI parameters
 void CompuFluidDyna::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("ResolutionX_____", 1));      // Eulerian mesh resolution
     D.UI.push_back(ParamUI("ResolutionY_____", 100));    // Eulerian mesh resolution

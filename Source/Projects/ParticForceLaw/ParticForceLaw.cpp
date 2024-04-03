@@ -38,7 +38,7 @@ ParticForceLaw::ParticForceLaw() {
 
 // Initialize Project UI parameters
 void ParticForceLaw::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("DomainX_________", 1.0));    // Simulation domain size
     D.UI.push_back(ParamUI("DomainY_________", 1.0));    // Simulation domain size

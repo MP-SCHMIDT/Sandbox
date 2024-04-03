@@ -42,7 +42,7 @@ AlgoTestEnviro::AlgoTestEnviro() {
 
 // Initialize Project UI parameters
 void AlgoTestEnviro::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("TestParamALG_00_", 0.9));
     D.UI.push_back(ParamUI("TestParamALG_01_", 0.1));

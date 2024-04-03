@@ -33,7 +33,7 @@ MarkovProcGene::MarkovProcGene() {
 
 // Initialize Project UI parameters
 void MarkovProcGene::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("Scenario________", 0));
     D.UI.push_back(ParamUI("ResolutionX_____", 1));

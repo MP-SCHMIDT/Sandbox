@@ -32,7 +32,7 @@ FractalCurvDev::FractalCurvDev() {
 
 // Initialize Project UI parameters
 void FractalCurvDev::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("FractalMode_____", 0));
     D.UI.push_back(ParamUI("MaxDepth________", 5));

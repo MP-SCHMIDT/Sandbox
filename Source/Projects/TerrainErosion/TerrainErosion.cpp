@@ -33,7 +33,7 @@ TerrainErosion::TerrainErosion() {
 
 // Initialize Project UI parameters
 void TerrainErosion::SetActiveProject() {
-  if (!isActivProj) {
+  if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("TerrainNbX______", 128));
     D.UI.push_back(ParamUI("TerrainNbY______", 128));
