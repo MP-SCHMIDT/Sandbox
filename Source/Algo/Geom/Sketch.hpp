@@ -1,10 +1,8 @@
 #pragma once
 
 // Standard lib
+#include <array>
 #include <vector>
-
-// Algo headers
-#include "Math/Vec.hpp"
 
 
 class Sketch
@@ -14,5 +12,5 @@ class Sketch
       bool const iIsOpenPolyline,
       int const iNbNewNodesPerSegment,
       int const iNbSmoothingSteps,
-      std::vector<Vec::Vec3<double>>& ioPolyline);
+      std::vector<std::array<double, 3>>& ioPolyline);
 };

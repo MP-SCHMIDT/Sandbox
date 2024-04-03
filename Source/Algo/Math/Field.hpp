@@ -75,6 +75,70 @@ namespace Field {
       }
     }
   }
+
+  // Check if two fields share the same dimensions
+  template <typename element_type>
+  inline bool CheckSameDimensions(std::vector<std::vector<element_type>> const& iFieldA,
+                                  std::vector<std::vector<element_type>> const& iFieldB) {
+    if (iFieldA.size() == iFieldB.size()) {
+      if (iFieldA.empty()) return true;
+      if (iFieldA[0].size() == iFieldB[0].size()) {
+        return true;
+      }
+    }
+    return false;
+  }
+  template <typename element_type>
+  inline bool CheckSameDimensions(std::vector<std::vector<std::vector<element_type>>> const& iFieldA,
+                                  std::vector<std::vector<std::vector<element_type>>> const& iFieldB) {
+    if (iFieldA.size() == iFieldB.size()) {
+      if (iFieldA.empty()) return true;
+      if (iFieldA[0].size() == iFieldB[0].size()) {
+        if (iFieldA[0].empty()) return true;
+        if (iFieldA[0][0].size() == iFieldB[0][0].size()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  template <typename element_type>
+  inline bool CheckSameDimensions(std::vector<std::vector<std::vector<std::vector<element_type>>>> const& iFieldA,
+                                  std::vector<std::vector<std::vector<std::vector<element_type>>>> const& iFieldB) {
+    if (iFieldA.size() == iFieldB.size()) {
+      if (iFieldA.empty()) return true;
+      if (iFieldA[0].size() == iFieldB[0].size()) {
+        if (iFieldA[0].empty()) return true;
+        if (iFieldA[0][0].size() == iFieldB[0][0].size()) {
+          if (iFieldA[0][0].empty()) return true;
+          if (iFieldA[0][0][0].size() == iFieldB[0][0][0].size()) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  template <typename element_type>
+  inline bool CheckSameDimensions(std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> const& iFieldA,
+                                  std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> const& iFieldB) {
+    if (iFieldA.size() == iFieldB.size()) {
+      if (iFieldA.empty()) return true;
+      if (iFieldA[0].size() == iFieldB[0].size()) {
+        if (iFieldA[0].empty()) return true;
+        if (iFieldA[0][0].size() == iFieldB[0][0].size()) {
+          if (iFieldA[0][0].empty()) return true;
+          if (iFieldA[0][0][0].size() == iFieldB[0][0][0].size()) {
+            if (iFieldA[0][0][0].empty()) return true;
+            if (iFieldA[0][0][0][0].size() == iFieldB[0][0][0][0].size()) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
 }  // namespace Field
 
 

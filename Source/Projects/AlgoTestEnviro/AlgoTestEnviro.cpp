@@ -162,19 +162,18 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
 
   // Testing sketch smoothing
   if (key == 'S') {
-    std::vector<Vec::Vec3<double>> polylineRef;
-    std::vector<Vec::Vec3<double>> polylineNew;
-    polylineRef.push_back(Vec::Vec3<double>(0.0, 0.0, 0.0));
-    polylineRef.push_back(Vec::Vec3<double>(0.5, 0.5, 0.5));
-    polylineRef.push_back(Vec::Vec3<double>(1.0, -0.5, -0.5));
-    polylineNew= polylineRef;
+    std::vector<std::array<double, 3>> polylineRef;
+    polylineRef.push_back(std::array<double, 3>({0.0, 0.0, 0.0}));
+    polylineRef.push_back(std::array<double, 3>({0.5, 0.5, 0.5}));
+    polylineRef.push_back(std::array<double, 3>({1.0, -0.5, -0.5}));
+    std::vector<std::array<double, 3>> polylineNew= polylineRef;
     Sketch::PolylineSubdivideAndSmooth(false, 3, 2, polylineNew);
 
     Verts.clear();
     Bars.clear();
     Tris.clear();
     for (int k= 0; k < (int)polylineNew.size(); k++) {
-      Verts.push_back(std::array<double, 3>{polylineNew[k][0], polylineNew[k][1], polylineNew[k][2]});
+      Verts.push_back(polylineNew[k]);
       Bars.push_back(std::array<int, 2>{k, (k + 1) % (int)polylineNew.size()});
     }
   }

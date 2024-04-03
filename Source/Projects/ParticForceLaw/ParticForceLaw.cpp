@@ -107,11 +107,12 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("MetaballIsoval__", 0.5));    // Isovalue for Marching Cubes
     D.UI.push_back(ParamUI("ColorMode_______", 3));      // Display
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));    // Color factor for modes supporting it
-    D.UI.push_back(ParamUI("ColorDecay______", 0.1));    // Color temporal decay for modes supporting it
+    D.UI.push_back(ParamUI("ColorDecay______", 1.0));    // Color temporal decay for modes supporting it
     D.UI.push_back(ParamUI("VisuScale_______", 0.5));    // Size scaling of display elements
     D.UI.push_back(ParamUI("VisuSimple______", 1));      // Toggle for simplified draw mode
-    D.UI.push_back(ParamUI("VisuShowOOB_____", 0));      // Enable draw of particles out of bounds
-    D.UI.push_back(ParamUI("VisuMinNeighbor_", 1));      // Hide particles with tpoo few neighbors
+    D.UI.push_back(ParamUI("VisuHideOOB_____", 0));      // Enable draw of particles out of bounds
+    D.UI.push_back(ParamUI("VisuMinNeighbor_", 0));      // Hide particles with too few neighbors
+    D.UI.push_back(ParamUI("______________06", NAN));    //
     D.UI.push_back(ParamUI("TestParamMIP_0__", 0));      // Generic param for testing purposes
     D.UI.push_back(ParamUI("TestParamMIP_1__", 0));      // Generic param for testing purposes
     D.UI.push_back(ParamUI("TestParamMIP_2__", 0));      // Generic param for testing purposes
@@ -125,8 +126,7 @@ void ParticForceLaw::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
+  RunID= 0;
 
   isActivProj= true;
   isAllocated= false;
@@ -187,8 +187,12 @@ void ParticForceLaw::Allocate() {
   Tris.clear();
 
   // Get domain dimensions
-  D.boxMin= {0.5 - 0.5 * D.UI[DomainX_________].D(), 0.5 - 0.5 * D.UI[DomainY_________].D(), 0.5 - 0.5 * D.UI[DomainZ_________].D()};
-  D.boxMax= {0.5 + 0.5 * D.UI[DomainX_________].D(), 0.5 + 0.5 * D.UI[DomainY_________].D(), 0.5 + 0.5 * D.UI[DomainZ_________].D()};
+  D.boxMin= {0.5 - 0.5 * std::max(D.UI[DomainX_________].D(), D.UI[LatticePitch____].D()),
+             0.5 - 0.5 * std::max(D.UI[DomainY_________].D(), D.UI[LatticePitch____].D()),
+             0.5 - 0.5 * std::max(D.UI[DomainZ_________].D(), D.UI[LatticePitch____].D())};
+  D.boxMax= {0.5 + 0.5 * std::max(D.UI[DomainX_________].D(), D.UI[LatticePitch____].D()),
+             0.5 + 0.5 * std::max(D.UI[DomainY_________].D(), D.UI[LatticePitch____].D()),
+             0.5 + 0.5 * std::max(D.UI[DomainZ_________].D(), D.UI[LatticePitch____].D())};
 
   // Generate the full point cloud over the domain
   std::vector<Vec::Vec3<float>> pointCloud;
@@ -276,7 +280,7 @@ void ParticForceLaw::Draw() {
       glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
       glBegin(GL_POINTS);
       for (int k= 0; k < (int)Pos.size(); k++) {
-        if (!D.UI[VisuShowOOB_____].B() &&
+        if (D.UI[VisuHideOOB_____].B() &&
             (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
              Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
              Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2])) continue;
@@ -289,7 +293,7 @@ void ParticForceLaw::Draw() {
     else {
       glEnable(GL_LIGHTING);
       for (int k= 0; k < (int)Pos.size(); k++) {
-        if (!D.UI[VisuShowOOB_____].B() &&
+        if (D.UI[VisuHideOOB_____].B() &&
             (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
              Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
              Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2])) continue;
@@ -385,7 +389,7 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
   // Check parameters
   if (D.UI[LatticePitch____].F() <= 0.0f) return;
 
-  // Regular lattice pattern
+  // Regular cubic lattice patterns
   if (D.UI[LatticePattern__].I() == 0 || D.UI[LatticePattern__].I() == 1 || D.UI[LatticePattern__].I() == 2) {
     float minDist= 0.0f;
     if (D.UI[LatticePattern__].I() == 0) minDist= 1.0f;                                    // SCC pattern
@@ -410,15 +414,57 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
       }
     }
   }
-  // Poisson sphere sampling
+  // HCP pattern with layers along X
   else if (D.UI[LatticePattern__].I() == 3) {
+    const int cellNbX= (int)std::ceil(float(D.boxMax[0] - D.boxMin[0]) / (D.UI[LatticePitch____].F() * std::sqrt(6.0f) / 3.0f));
+    const int cellNbY= (int)std::ceil(float(D.boxMax[1] - D.boxMin[1]) / (D.UI[LatticePitch____].F()));
+    const int cellNbZ= (int)std::ceil(float(D.boxMax[2] - D.boxMin[2]) / (D.UI[LatticePitch____].F() * 0.5f * std::sqrt(3.0f)));
+    for (int x= 0; x < cellNbX + 1; x++)
+      for (int y= 0; y < cellNbY; y++)
+        for (int z= 0; z < cellNbZ; z++)
+          oPointCloud.push_back(0.5f * D.UI[LatticePitch____].F() *
+                                Vec::Vec3<float>(float(x) * 2.0f * std::sqrt(6.0f) / 3.0f,
+                                                 2.0f * float(y) + float((z + x) % 2),
+                                                 std::sqrt(3.0f) * (float(z) + float(x % 2) / 3.0f)));
+  }
+  // HCP pattern with layers along Y
+  else if (D.UI[LatticePattern__].I() == 4) {
+    const int cellNbX= (int)std::ceil(float(D.boxMax[0] - D.boxMin[0]) / (D.UI[LatticePitch____].F() * 0.5f * std::sqrt(3.0f)));
+    const int cellNbY= (int)std::ceil(float(D.boxMax[1] - D.boxMin[1]) / (D.UI[LatticePitch____].F() * std::sqrt(6.0f) / 3.0f));
+    const int cellNbZ= (int)std::ceil(float(D.boxMax[2] - D.boxMin[2]) / (D.UI[LatticePitch____].F()));
+    for (int x= 0; x < cellNbX; x++)
+      for (int y= 0; y < cellNbY + 1; y++)
+        for (int z= 0; z < cellNbZ; z++)
+          oPointCloud.push_back(0.5f * D.UI[LatticePitch____].F() *
+                                Vec::Vec3<float>(std::sqrt(3.0f) * (float(x) + float(y % 2) / 3.0f),
+                                                 float(y) * 2.0f * std::sqrt(6.0f) / 3.0f,
+                                                 2.0f * float(z) + float((x + y) % 2)));
+  }
+  // HCP pattern with layers along Z
+  else if (D.UI[LatticePattern__].I() == 5) {
+    const int cellNbX= (int)std::ceil(float(D.boxMax[0] - D.boxMin[0]) / (D.UI[LatticePitch____].F()));
+    const int cellNbY= (int)std::ceil(float(D.boxMax[1] - D.boxMin[1]) / (D.UI[LatticePitch____].F() * 0.5f * std::sqrt(3.0f)));
+    const int cellNbZ= (int)std::ceil(float(D.boxMax[2] - D.boxMin[2]) / (D.UI[LatticePitch____].F() * std::sqrt(6.0f) / 3.0f));
+    for (int x= 0; x < cellNbX; x++)
+      for (int y= 0; y < cellNbY; y++)
+        for (int z= 0; z < cellNbZ + 1; z++)
+          oPointCloud.push_back(0.5f * D.UI[LatticePitch____].F() *
+                                Vec::Vec3<float>(2.0f * float(x) + float((y + z) % 2),
+                                                 std::sqrt(3.0f) * (float(y) + float(z % 2) / 3.0f),
+                                                 float(z) * 2.0f * std::sqrt(6.0f) / 3.0f));
+  }
+  // Poisson sphere sampling
+  else if (D.UI[LatticePattern__].I() == 6) {
     ComputeBuckets();
     const int bucketCapacity= std::max(D.UI[BucketCapacity__].I(), 1);
     int failStreak= 0;
     const int maxAttempts= 1000;
     const float relMinDist= 0.9f;
     while (failStreak < maxAttempts) {
-      const Vec::Vec3<float> candidate(Random::Val(D.boxMin[0], D.boxMax[0]), Random::Val(D.boxMin[1], D.boxMax[1]), Random::Val(D.boxMin[2], D.boxMax[2]));
+      Vec::Vec3<float> candidate(Random::Val(D.boxMin[0], D.boxMax[0]), Random::Val(D.boxMin[1], D.boxMax[1]), Random::Val(D.boxMin[2], D.boxMax[2]));
+      if (D.UI[ConstrainDim2D__].I() == 1) candidate[0]= D.boxMin[0] + 0.5 * (D.boxMax[0] - D.boxMin[0]);
+      if (D.UI[ConstrainDim2D__].I() == 2) candidate[1]= D.boxMin[1] + 0.5 * (D.boxMax[1] - D.boxMin[1]);
+      if (D.UI[ConstrainDim2D__].I() == 3) candidate[2]= D.boxMin[2] + 0.5 * (D.boxMax[2] - D.boxMin[2]);
       bool keep= true;
       // Get range to check in spatial partition
       int idxXBeg, idxYBeg, idxZBeg, idxXEnd, idxYEnd, idxZEnd;
@@ -471,11 +517,6 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
 void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCloud) {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
-  // Check parameters
-  if (D.boxMax[0] <= D.boxMin[0]) return;
-  if (D.boxMax[1] <= D.boxMin[1]) return;
-  if (D.boxMax[2] <= D.boxMin[2]) return;
-
   // Calculate some helper variables for scenario setup
   const Vec::Vec3<float> BoxMin(D.boxMin[0], D.boxMin[1], D.boxMin[2]);
   const Vec::Vec3<float> BoxMax(D.boxMax[0], D.boxMax[1], D.boxMax[2]);
@@ -492,6 +533,7 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
     if (D.UI[Scenario2DID____].I() == 1) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/SandiaFracture.bmp", imageRGBA, false);
     if (D.UI[Scenario2DID____].I() == 2) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/KalthoffFracture.bmp", imageRGBA, false);
     if (D.UI[Scenario2DID____].I() == 3) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/Auxetic.bmp", imageRGBA, false);
+    if (D.UI[Scenario2DID____].I() == 4) FileInput::LoadImageBMPFile("./FileInput/StrucScenarios/Logo.bmp", imageRGBA, false);
   }
 
   // Load the 3D scenario file if needed
@@ -663,6 +705,7 @@ void ParticForceLaw::BuildScenario(const std::vector<Vec::Vec3<float>>& iPointCl
   }
 
   SimTime= 0.0f;
+  RunID++;
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("ScenarioT %f\n", Timer::PopTimer());
 }
@@ -744,27 +787,27 @@ void ParticForceLaw::BuildForceLawPolyline(const double v0_00, const double v0_8
                                            const double v1_30, const double v1_40, const double v1_50, const double v2_00,
                                            const double v2_50, const double v3_00, const int iIdxMat) {
   // Create the force law as a smoothed polyline
-  std::vector<Vec::Vec3<double>> PolylineA;
-  PolylineA.push_back(Vec::Vec3<double>{0.0, 0.00, v0_00});
-  PolylineA.push_back(Vec::Vec3<double>{0.0, 0.80, v0_80});
-  PolylineA.push_back(Vec::Vec3<double>{0.0, 0.90, v0_90});
-  PolylineA.push_back(Vec::Vec3<double>{0.0, 0.95, v0_95});
-  PolylineA.push_back(Vec::Vec3<double>{0.0, 1.00, v1_00});
-  std::vector<Vec::Vec3<double>> PolylineB;
-  PolylineB.push_back(Vec::Vec3<double>{0.0, 1.05, v1_05});
-  PolylineB.push_back(Vec::Vec3<double>{0.0, 1.10, v1_10});
-  PolylineB.push_back(Vec::Vec3<double>{0.0, 1.20, v1_20});
-  PolylineB.push_back(Vec::Vec3<double>{0.0, 1.30, v1_30});
-  PolylineB.push_back(Vec::Vec3<double>{0.0, std::sqrt(2), v1_40});
+  std::vector<std::array<double, 3>> PolylineA;
+  PolylineA.push_back(std::array<double, 3>{0.0, 0.00, v0_00});
+  PolylineA.push_back(std::array<double, 3>{0.0, 0.80, v0_80});
+  PolylineA.push_back(std::array<double, 3>{0.0, 0.90, v0_90});
+  PolylineA.push_back(std::array<double, 3>{0.0, 0.95, v0_95});
+  PolylineA.push_back(std::array<double, 3>{0.0, 1.00, v1_00});
+  std::vector<std::array<double, 3>> PolylineB;
+  PolylineB.push_back(std::array<double, 3>{0.0, 1.05, v1_05});
+  PolylineB.push_back(std::array<double, 3>{0.0, 1.10, v1_10});
+  PolylineB.push_back(std::array<double, 3>{0.0, 1.20, v1_20});
+  PolylineB.push_back(std::array<double, 3>{0.0, 1.30, v1_30});
+  PolylineB.push_back(std::array<double, 3>{0.0, std::sqrt(2), v1_40});
   if (v1_40 != 0.0 || v1_50 != 0.0 || v2_00 != 0.0 || v2_50 != 0.0 || v3_00 != 0.0) {
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 1.50, v1_50});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 2.00, v2_00});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 2.50, v2_50});
-    PolylineB.push_back(Vec::Vec3<double>{0.0, 3.00, v3_00});
+    PolylineB.push_back(std::array<double, 3>{0.0, 1.50, v1_50});
+    PolylineB.push_back(std::array<double, 3>{0.0, 2.00, v2_00});
+    PolylineB.push_back(std::array<double, 3>{0.0, 2.50, v2_50});
+    PolylineB.push_back(std::array<double, 3>{0.0, 3.00, v3_00});
   }
   Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineA);
   Sketch::PolylineSubdivideAndSmooth(true, 5, 5, PolylineB);
-  std::vector<Vec::Vec3<double>> Polyline;
+  std::vector<std::array<double, 3>> Polyline;
   Polyline.insert(Polyline.end(), PolylineA.begin(), PolylineA.end());
   Polyline.insert(Polyline.end(), PolylineB.begin(), PolylineB.end());
 
@@ -793,24 +836,19 @@ void ParticForceLaw::BuildForceLawPolyline(const double v0_00, const double v0_8
 void ParticForceLaw::ComputeBuckets() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
-  // Get param
+  // Compute appropriate bucket grid resolution
   const int bucketCapacity= std::max(D.UI[BucketCapacity__].I(), 1);
-  const float spaceFillingEfficiency= D.UI[BucketFillCoeff_].F();
-  const float particleDensity= spaceFillingEfficiency / std::pow(D.UI[LatticePitch____].F(), 3.0f);
-  const float targetBucketCount= (float)particleDensity / (float)bucketCapacity;
-
-  // Compute the appropriate voxel size and grid resolution
-  // TODO tweak bucket grid computation for better use in non cubic domains
-  const float boxDX= std::max((float)(D.boxMax[0] - D.boxMin[0]), D.UI[LatticePitch____].F());
-  const float boxDY= std::max((float)(D.boxMax[1] - D.boxMin[1]), D.UI[LatticePitch____].F());
-  const float boxDZ= std::max((float)(D.boxMax[2] - D.boxMin[2]), D.UI[LatticePitch____].F());
-  const float stepSize= std::pow(boxDX * boxDY * boxDZ, 1.0f / 3.0f) / std::pow(targetBucketCount, 1.0f / 3.0f);
-  // const float stepSize= std::pow(boxDX * boxDY * boxDZ, 1.0f / 3.0f) / std::pow((float)bucketCount, 1.0f / 3.0f);
+  const float particleDensity= D.UI[BucketFillCoeff_].F() / std::pow(D.UI[LatticePitch____].F(), 3.0f);
+  const float boxDX= (float)(D.boxMax[0] - D.boxMin[0]);
+  const float boxDY= (float)(D.boxMax[1] - D.boxMin[1]);
+  const float boxDZ= (float)(D.boxMax[2] - D.boxMin[2]);
+  const float theoryBucketCount= particleDensity * boxDX * boxDY * boxDZ / (float)bucketCapacity;
+  const float stepSize= std::pow(boxDX * boxDY * boxDZ, 1.0f / 3.0f) / std::pow(theoryBucketCount, 1.0f / 3.0f);
   nX= std::max(1, (int)std::round(boxDX / stepSize));
   nY= std::max(1, (int)std::round(boxDY / stepSize));
   nZ= std::max(1, (int)std::round(boxDZ / stepSize));
 
-  // Allocate/initialize the spatial partition if needed
+  // Allocate and initialize the spatial partition if needed
   int nXOld, nYOld, nZOld, nBOld;
   Field::GetFieldDimensions(Buckets, nXOld, nYOld, nZOld, nBOld);
   if (nXOld != nX || nYOld != nY || nZOld != nZ || (int)Buckets[0][0][0].capacity() != bucketCapacity)
@@ -915,10 +953,11 @@ void ParticForceLaw::ComputeForces() {
               else forceVal+= 0.5f * ((1.0f - ratio) * ForceLaw[Mat[k]][low] + (ratio)*ForceLaw[Mat[k]][upp]);
             }
             // Apply inter-particle force
+            ForceMag[k0]+= std::abs(forceVal) * surfArea;
             For[k0]+= forceVal * surfArea * distVecUnit;
-            ForceMag[k0]+= forceVal * surfArea;
             // Apply inter-particle damping proportional to radial velocity
             const float radialVel= (Vel[k0] - Vel[k1]).dot(distVecUnit);
+            ForceMag[k0]+= (1.0f - distVal / maxForceLawRange) * D.UI[DampingRadRel___].F() * ForceLaw[Mat[k0]][0] * std::abs(radialVel) * surfArea;
             For[k0]-= (1.0f - distVal / maxForceLawRange) * D.UI[DampingRadRel___].F() * ForceLaw[Mat[k0]][0] * radialVel * surfArea * distVecUnit;
             // Increment neighbor count for display
             Neighbors[k0]++;
@@ -1034,7 +1073,7 @@ void ParticForceLaw::StepSimulation() {
       b= D.UI[ColorFactor_____].F() * Vel[k][2] + 0.5f;
     }
     if (D.UI[ColorMode_______].I() == 3) {
-      Colormap::RatioToJetBrightSmooth(ForceMag[k] / std::max((float)Neighbors[k], 1.0f) * D.UI[ColorFactor_____].F(), r, g, b);
+      Colormap::RatioToJetBrightSmooth(ForceMag[k] * D.UI[ColorFactor_____].F(), r, g, b);
     }
     if (D.UI[ColorMode_______].I() == 4) {
       Colormap::RatioToBlackBody(Vel[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
@@ -1043,8 +1082,8 @@ void ParticForceLaw::StepSimulation() {
   }
 
   // Scatter plot of sensor data
-  if (D.Scatter.size() < 1) D.Scatter.resize(1);
-  D.Scatter[0].name= "ForceDisp";
+  if ((int)D.Scatter.size() < RunID) D.Scatter.resize(RunID);
+  D.Scatter[RunID - 1].name= "ForceDisp";
   float sumPos= 0.0f;
   float sumFor= 0.0f;
   int count= 0;
@@ -1055,7 +1094,7 @@ void ParticForceLaw::StepSimulation() {
       sumFor+= For[k].norm();
     }
   }
-  D.Scatter[0].val.push_back(std::array<double, 2>{sumPos / (float)count, sumFor / (float)count});
+  D.Scatter[RunID - 1].val.push_back(std::array<double, 2>{sumPos / (float)count, sumFor / (float)count});
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("StepT %f\n", Timer::PopTimer());
 }

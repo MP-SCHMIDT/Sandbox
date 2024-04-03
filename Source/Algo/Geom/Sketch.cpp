@@ -12,7 +12,7 @@ void Sketch::PolylineSubdivideAndSmooth(
     bool const iIsOpenPolyline,
     int const iNbNewNodesPerSegment,
     int const iNbSmoothingSteps,
-    std::vector<Vec::Vec3<double>>& ioPolyline) {
+    std::vector<std::array<double, 3>>& ioPolyline) {
   // Create a new list of vertices
   std::vector<Vec::Vec3<double>> vertices;
 
@@ -22,7 +22,7 @@ void Sketch::PolylineSubdivideAndSmooth(
       vertices.push_back(ioPolyline[k0]);
       for (int k1= 0; k1 < iNbNewNodesPerSegment; k1++) {
         double ratio= double(k1 + 1) / double(iNbNewNodesPerSegment + 1);
-        vertices.push_back((1.0 - ratio) * ioPolyline[k0] + ratio * ioPolyline[k0 + 1]);
+        vertices.push_back((1.0 - ratio) * Vec::Vec3<double>(ioPolyline[k0]) + ratio * Vec::Vec3<double>(ioPolyline[k0 + 1]));
       }
     }
     vertices.push_back(ioPolyline[int(ioPolyline.size()) - 1]);
@@ -32,7 +32,7 @@ void Sketch::PolylineSubdivideAndSmooth(
       vertices.push_back(ioPolyline[k0]);
       for (int k1= 0; k1 < iNbNewNodesPerSegment; k1++) {
         double ratio= double(k1 + 1) / double(iNbNewNodesPerSegment + 1);
-        vertices.push_back((1.0 - ratio) * ioPolyline[k0] + ratio * ioPolyline[(k0 + 1) % int(ioPolyline.size())]);
+        vertices.push_back((1.0 - ratio) * Vec::Vec3<double>(ioPolyline[k0]) + ratio * Vec::Vec3<double>(ioPolyline[(k0 + 1) % int(ioPolyline.size())]));
       }
     }
   }
@@ -49,5 +49,8 @@ void Sketch::PolylineSubdivideAndSmooth(
         vertices[k]= (verticesOld[(k - 1 + N) % N] + verticesOld[k] + verticesOld[(k + 1) % N]) / 3.0;
   }
 
-  ioPolyline= vertices;
+  // Output the new polyline
+  ioPolyline.clear();
+  for (int k0= 0; k0 < int(vertices.size()); k0++)
+    ioPolyline.push_back({vertices[k0][0], vertices[k0][1], vertices[k0][2]});
 }

@@ -790,23 +790,27 @@ void callback_mouse_click(int button, int state, int x, int y) {
 
   if (state == GLUT_UP && (button == 3 || button == 4)) {
     if (!D.UI.empty()) {
-      if (button == 3) {  // Mouse wheel up
-        if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
-        if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
-          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
-        if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
-          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
-      }
-      if (button == 4) {  // Mouse wheel down
-        if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
-        if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
-          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
-        if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
-          D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
-      }
+      if (x > (paramLabelNbChar + paramSpaceNbChar) * charWidth) {
+        if (x < (paramLabelNbChar + paramSpaceNbChar + paramValNbChar) * charWidth) {
+          if (button == 3) {  // Mouse wheel up
+            if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
+            if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
+              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
+            if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
+              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+          }
+          if (button == 4) {  // Mouse wheel down
+            if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
+            if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
+              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
+            if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
+              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+          }
 
-      // Compute refresh
-      project_Refresh();
+          // Compute refresh
+          project_Refresh();
+        }
+      }
     }
   }
 

@@ -99,8 +99,9 @@ class ParticForceLaw
     ColorDecay______,
     VisuScale_______,
     VisuSimple______,
-    VisuShowOOB_____,
+    VisuHideOOB_____,
     VisuMinNeighbor_,
+    ______________06,
     TestParamMIP_0__,
     TestParamMIP_1__,
     TestParamMIP_2__,
@@ -143,6 +144,7 @@ class ParticForceLaw
 
   // Misc
   float SimTime;
+  int RunID;
 
   // Scenario functions
   void BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud);
