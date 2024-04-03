@@ -19,7 +19,6 @@
 // Project classes
 #include "AgentSwarmBoid/AgentSwarmBoid.hpp"
 #include "AlgoTestEnviro/AlgoTestEnviro.hpp"
-#include "CompuFluidDyna/CompuFluidDyna.hpp"
 #include "FractalCurvDev/FractalCurvDev.hpp"
 #include "FractalElevMap/FractalElevMap.hpp"
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
@@ -34,6 +33,7 @@
 #include "TerrainErosion/TerrainErosion.hpp"
 // #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+#include "CompuFluidDyna/CompuFluidDyna.hpp"
 #include "NonLinMMABench/NonLinMMABench.hpp"
 #include "StructGenOptim/StructGenOptim.hpp"
 #endif
@@ -75,7 +75,6 @@ constexpr int textBoxH= charHeight;
 Data D;
 AgentSwarmBoid myAgentSwarmBoid;
 AlgoTestEnviro myAlgoTestEnviro;
-CompuFluidDyna myCompuFluidDyna;
 FractalCurvDev myFractalCurvDev;
 FractalElevMap myFractalElevMap;
 ImageExtruMesh myImageExtruMesh;
@@ -89,6 +88,7 @@ SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+CompuFluidDyna myCompuFluidDyna;
 NonLinMMABench myNonLinMMABench;
 StructGenOptim myStructGenOptim;
 #endif
@@ -98,7 +98,6 @@ enum ProjectID
   AaaaaaaaaaaaaaID,
   AgentSwarmBoidID,
   AlgoTestEnviroID,
-  CompuFluidDynaID,
   FractalCurvDevID,
   FractalElevMapID,
   ImageExtruMeshID,
@@ -112,6 +111,7 @@ enum ProjectID
   StringArtOptimID,
   TerrainErosionID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  CompuFluidDynaID,
   NonLinMMABenchID,
   StructGenOptimID,
 #endif
@@ -125,7 +125,6 @@ void project_ForceHardInit() {
 
   if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj) myAgentSwarmBoid= AgentSwarmBoid();
   if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
-  if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj) myCompuFluidDyna= CompuFluidDyna();
   if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
   if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj) myFractalElevMap= FractalElevMap();
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj) myImageExtruMesh= ImageExtruMesh();
@@ -139,13 +138,13 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj) myCompuFluidDyna= CompuFluidDyna();
   if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj) myNonLinMMABench= NonLinMMABench();
   if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj) myStructGenOptim= StructGenOptim();
 #endif
 
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.SetActiveProject();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.SetActiveProject();
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.SetActiveProject();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.SetActiveProject();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
@@ -159,6 +158,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
 #endif
@@ -168,7 +168,6 @@ void project_ForceHardInit() {
 void project_Refresh() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Refresh();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Refresh();
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Refresh();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Refresh();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
@@ -182,6 +181,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Refresh();
 #endif
@@ -191,7 +191,6 @@ void project_Refresh() {
 void project_Animate() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Animate();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Animate();
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Animate();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Animate();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
@@ -205,6 +204,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Animate();
 #endif
@@ -214,7 +214,6 @@ void project_Animate() {
 void project_Draw() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Draw();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Draw();
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Draw();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Draw();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
@@ -228,6 +227,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Draw();
 #endif
@@ -237,7 +237,6 @@ void project_Draw() {
 void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.isRefreshed= false;
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.isRefreshed= false;
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.isRefreshed= false;
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
@@ -251,6 +250,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.isRefreshed= false;
 #endif
@@ -709,7 +709,6 @@ void callback_keyboard(unsigned char key, int x, int y) {
     const unsigned char keyUpperCase= (key >= 'a' && key <= 'z') ? (key - ('a' - 'A')) : (key);
     if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(keyUpperCase);
@@ -723,6 +722,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(keyUpperCase);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+    if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress(keyUpperCase);
 #endif
@@ -915,7 +915,6 @@ void init_menu() {
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
-  glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
   glutAddMenuEntry("FractalCurvDev", ProjectID::FractalCurvDevID);
   glutAddMenuEntry("FractalElevMap", ProjectID::FractalElevMapID);
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
@@ -929,6 +928,7 @@ void init_menu() {
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
   glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);
   glutAddMenuEntry("StructGenOptim", ProjectID::StructGenOptimID);
 #endif
