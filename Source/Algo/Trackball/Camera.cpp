@@ -17,17 +17,17 @@ Camera::Camera(float eyex, float eyey, float eyez, float centerx, float centery,
 }
 
 void Camera::initConstants() {
-  currentMode_ = IDLE;
-  zoomSpeed_ = 0.005f;
-  windowWidth_ = 200;
-  windowHeight_ = 200;
+  currentMode_= IDLE;
+  zoomSpeed_= 0.005f;
+  windowWidth_= 200;
+  windowHeight_= 200;
 }
 
 // When explicitly setting the center the global eye position should stay the
 // same. Therefore this method first computes the global eye position, then
 // moves the center and in the end recomputes the relative eye direction.
 void Camera::setCenter(float x, float y, float z) {
-  tbmath::vec3 eye = center_ - eyeDir_;
+  tbmath::vec3 eye= center_ - eyeDir_;
   center_.set(x, y, z);
   eyeDir_.set(center_[0] - eye[0], center_[1] - eye[1], center_[2] - eye[2]);
   updateViewMatrix();
@@ -45,14 +45,14 @@ void Camera::setEye(float x, float y, float z) {
 void Camera::setCurrentMousePos(float x, float y) {
   arcBall_.set_cur(x, y);
 
-  y = windowHeight_ - y;
+  y= windowHeight_ - y;
 
-  lastMousePos_ = currentMousePos_;
+  lastMousePos_= currentMousePos_;
   currentMousePos_.set(x, y);
 
   if (currentMode_ != IDLE) {
     // Compute delta
-    tbmath::vec2 mouseDelta = currentMousePos_ - lastMousePos_;
+    tbmath::vec2 mouseDelta= currentMousePos_ - lastMousePos_;
 
     switch (currentMode_) {
       case PANNING:
@@ -64,7 +64,8 @@ void Camera::setCurrentMousePos(float x, float y) {
       default:
         break;
     }
-  } else {
+  }
+  else {
     updateViewMatrix();
   }
 }
@@ -73,8 +74,8 @@ void Camera::setCurrentMousePos(float x, float y) {
 void Camera::setWindowSize(float w, float h) {
   arcBall_.set_win_size(w, h);
 
-  windowWidth_ = w;
-  windowHeight_ = h;
+  windowWidth_= w;
+  windowHeight_= h;
 }
 
 // ========================= CAMERA MOVEMENT =============================
@@ -91,42 +92,42 @@ void Camera::endRotate() {
 
 // Begins the panning mode
 void Camera::beginPan() {
-  currentMode_ = PANNING;
+  currentMode_= PANNING;
 }
 
 // Ends the panning mode
 void Camera::endPan() {
-  currentMode_ = IDLE;
+  currentMode_= IDLE;
 }
 
 // Begins the zooming mode
 void Camera::beginZoom() {
-  currentMode_ = ZOOMING;
+  currentMode_= ZOOMING;
 }
 
 // Ends the zooming mode
 void Camera::endZoom() {
-  currentMode_ = IDLE;
+  currentMode_= IDLE;
 }
 
 // Moves the center and eye in the viewplane directions
 void Camera::pan(float x, float y) {
-  x = x / windowWidth_;
-  y = y / windowHeight_;
+  x= x / windowWidth_;
+  y= y / windowHeight_;
 
-  float length = 2 * eyeDir_.length() * tan(30 * std::numbers::pi / 180.0f);
+  float length= 2 * eyeDir_.length() * tan(30 * std::numbers::pi / 180.0f);
 
-  tbmath::vec3 deltax = currentRight() * -x * (length * (windowWidth_ / windowHeight_));
-  tbmath::vec3 deltay = currentUp() * -y * length;
+  tbmath::vec3 deltax= currentRight() * -x * (length * (windowWidth_ / windowHeight_));
+  tbmath::vec3 deltay= currentUp() * -y * length;
 
-  center_ += deltax + deltay;
+  center_+= deltax + deltay;
   updateViewMatrix();
 }
 
 // Moves the camera towards or away from the center with a speed relative
 // to the distance from the center.
 void Camera::zoom(float deltaz) {
-  eyeDir_ += eyeDir_ * zoomSpeed_ * (-deltaz);
+  eyeDir_+= eyeDir_ * zoomSpeed_ * (-deltaz);
   updateViewMatrix();
 }
 
@@ -149,7 +150,7 @@ const float* Camera::getViewMatrix() {
 //      rotate with the arcball rotation
 //      translate back out
 void Camera::updateViewMatrix() {
-  tbmath::vec3 eye = center_ - eyeDir_;
+  tbmath::vec3 eye= center_ - eyeDir_;
 
   // Get the lookat matrices
   // tbmath::mat4 lookatRot(center_, eye, tbmath::vec3(0, 1, 0));  // BACKUP TESTING ROTATION MATRIX
@@ -160,29 +161,29 @@ void Camera::updateViewMatrix() {
                                  0, 0, 0, 1);
 
   // Create the translation matrices into and out of the view center
-  tbmath::mat4 translation = tbmath::mat4(1, 0, 0, 0,
-                                          0, 1, 0, 0,
-                                          0, 0, 1, eyeDir_.length(),
-                                          0, 0, 0, 1);
+  tbmath::mat4 translation= tbmath::mat4(1, 0, 0, 0,
+                                         0, 1, 0, 0,
+                                         0, 0, 1, eyeDir_.length(),
+                                         0, 0, 0, 1);
 
-  tbmath::mat4 invtranslation = tbmath::mat4(1, 0, 0, 0,
-                                             0, 1, 0, 0,
-                                             0, 0, 1, -eyeDir_.length(),
-                                             0, 0, 0, 1);
+  tbmath::mat4 invtranslation= tbmath::mat4(1, 0, 0, 0,
+                                            0, 1, 0, 0,
+                                            0, 0, 1, -eyeDir_.length(),
+                                            0, 0, 0, 1);
 
-  tbmath::mat4 arcRot = arcBall_.get_mat();
+  tbmath::mat4 arcRot= arcBall_.get_mat();
 
-  viewMatrix_ = (invtranslation * arcRot.transpose() * translation * lookatRot * lookAtTranslation).transpose();
+  viewMatrix_= (invtranslation * arcRot.transpose() * translation * lookatRot * lookAtTranslation).transpose();
 }
 
 // Gets the up vector of the current view plane
 tbmath::vec3 Camera::currentUp() {
-  tbmath::vec4 up = viewMatrix_.colvec(1);
+  tbmath::vec4 up= viewMatrix_.colvec(1);
   return tbmath::vec3(up[0], up[1], up[2]);
 }
 
 // Gets the right vector of the current view plane
 tbmath::vec3 Camera::currentRight() {
-  tbmath::vec4 right = viewMatrix_.colvec(0);
+  tbmath::vec4 right= viewMatrix_.colvec(0);
   return tbmath::vec3(right[0], right[1], right[2]);
 }
