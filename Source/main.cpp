@@ -46,6 +46,7 @@ static int winPosW, winPosH;
 static int currentProjectID;
 static bool isDarkMode;
 static bool isSmoothDraw;
+static bool isCursorDraw;
 Camera *cam;
 
 // Global constants used by the display
@@ -354,6 +355,48 @@ void draw_text(const int w, const int h, const char *text) {
 }
 
 
+void ComputeMouseIn3D(int x, int y) {
+  // Set the camera transformation matrix for the scene
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluPerspective(45.0, double(winW) / double(winH), 0.1, 1000.0);
+
+  // Set the world transformation matrix for the scene
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  cam->setWindowSize(float(winW), float(winH));
+  glMultMatrixf(cam->getViewMatrix());
+
+  // Unproject the mouse to near and far 3D positions
+  double matModelView[16], matProjection[16];
+  int viewport[4];
+  glGetDoublev(GL_MODELVIEW_MATRIX, matModelView);
+  glGetDoublev(GL_PROJECTION_MATRIX, matProjection);
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  double winX= (double)x;
+  double winY= viewport[3] - (double)y;
+  gluUnProject(winX, winY, 0.0, matModelView, matProjection, viewport, &D.mouseNear[0], &D.mouseNear[1], &D.mouseNear[2]);
+  gluUnProject(winX, winY, 1.0, matModelView, matProjection, viewport, &D.mouseFar[0], &D.mouseFar[1], &D.mouseFar[2]);
+
+  // Project mouse to X Y and Z planes
+  const double midX= 0.5 * (D.boxMax[0] + D.boxMin[0]);
+  const double midY= 0.5 * (D.boxMax[1] + D.boxMin[1]);
+  const double midZ= 0.5 * (D.boxMax[2] + D.boxMin[2]);
+
+  D.mouseProjX[0]= midX;
+  D.mouseProjX[1]= D.mouseNear[1] + (D.mouseFar[1] - D.mouseNear[1]) * (midX - D.mouseNear[0]) / (D.mouseFar[0] - D.mouseNear[0]);
+  D.mouseProjX[2]= D.mouseNear[2] + (D.mouseFar[2] - D.mouseNear[2]) * (midX - D.mouseNear[0]) / (D.mouseFar[0] - D.mouseNear[0]);
+
+  D.mouseProjY[0]= D.mouseNear[0] + (D.mouseFar[0] - D.mouseNear[0]) * (midY - D.mouseNear[1]) / (D.mouseFar[1] - D.mouseNear[1]);
+  D.mouseProjY[1]= midY;
+  D.mouseProjY[2]= D.mouseNear[2] + (D.mouseFar[2] - D.mouseNear[2]) * (midY - D.mouseNear[1]) / (D.mouseFar[1] - D.mouseNear[1]);
+
+  D.mouseProjZ[0]= D.mouseNear[0] + (D.mouseFar[0] - D.mouseNear[0]) * (midZ - D.mouseNear[2]) / (D.mouseFar[2] - D.mouseNear[2]);
+  D.mouseProjZ[1]= D.mouseNear[1] + (D.mouseFar[1] - D.mouseNear[1]) * (midZ - D.mouseNear[2]) / (D.mouseFar[2] - D.mouseNear[2]);
+  D.mouseProjZ[2]= midZ;
+}
+
+
 // Display callback
 void callback_display() {
   // Set and clear viewport
@@ -408,6 +451,33 @@ void callback_display() {
     glTranslatef(0.5f, 0.5f, 0.5f);
     glutWireCube(1.0);
     glPopMatrix();
+  }
+
+  // Draw the projected mouse cursor
+  if (isCursorDraw) {
+    const double cursorSize= 0.05 * std::sqrt((D.boxMax[0] - D.boxMin[0]) * (D.boxMax[0] - D.boxMin[0]) +
+                                              (D.boxMax[1] - D.boxMin[1]) * (D.boxMax[1] - D.boxMin[1]) +
+                                              (D.boxMax[2] - D.boxMin[2]) * (D.boxMax[2] - D.boxMin[2]));
+
+    glEnable(GL_LIGHTING);
+    glColor3f(0.7f, 0.2f, 0.2f);
+    glPushMatrix();
+    glTranslatef(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
+    glutWireCube(cursorSize);
+    glPopMatrix();
+
+    glColor3f(0.2f, 0.7f, 0.2f);
+    glPushMatrix();
+    glTranslatef(D.mouseProjY[0], D.mouseProjY[1], D.mouseProjY[2]);
+    glutWireCube(cursorSize);
+    glPopMatrix();
+
+    glColor3f(0.2f, 0.2f, 0.7f);
+    glPushMatrix();
+    glTranslatef(D.mouseProjZ[0], D.mouseProjZ[1], D.mouseProjZ[2]);
+    glutWireCube(cursorSize);
+    glPopMatrix();
+    glDisable(GL_LIGHTING);
   }
 
   // Draw stuff in the scene
@@ -822,6 +892,8 @@ void callback_mouse_click(int button, int state, int x, int y) {
 void callback_mouse_motion(int x, int y) {
   cam->setCurrentMousePos(float(x), float(y));
 
+  ComputeMouseIn3D(x, y);
+
   glutPostRedisplay();
 }
 
@@ -839,7 +911,9 @@ void callback_passive_mouse_motion(int x, int y) {
     }
   }
 
-  if (D.idxParamUI != prevParamIdx || D.idxCursorUI != prevCursorIdx)
+  ComputeMouseIn3D(x, y);
+
+  if (D.idxParamUI != prevParamIdx || D.idxCursorUI != prevCursorIdx || isCursorDraw)
     glutPostRedisplay();
 }
 
@@ -883,6 +957,10 @@ void callback_menu(int num) {
       glDisable(GL_LINE_SMOOTH);
     }
   }
+  // Toggle cursor drawing
+  if (num == -12) {
+    isCursorDraw= !isCursorDraw;
+  }
   // Save sandbox settings
   if (num == -20) {
     winPosW= glutGet((GLenum)GLUT_WINDOW_X);
@@ -912,6 +990,7 @@ void init_menu() {
   glutAddMenuEntry("View Z-", -6);
   glutAddMenuEntry("Dark mode", -10);
   glutAddMenuEntry("Smooth draw", -11);
+  glutAddMenuEntry("Cursor draw", -12);
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
@@ -947,8 +1026,11 @@ void init_menu() {
 
 // OpenGL initialization
 void init_GL() {
-  // Set background color
   isDarkMode= true;
+  isSmoothDraw= true;
+  isCursorDraw= false;
+
+  // Set background color
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
   // Define light properties
@@ -987,7 +1069,6 @@ void init_GL() {
   glEnable(GL_LIGHT0);
   glEnable(GL_POINT_SMOOTH);
   glEnable(GL_LINE_SMOOTH);
-  isSmoothDraw= true;
 }
 
 
