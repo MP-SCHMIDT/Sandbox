@@ -382,8 +382,8 @@ void ComputeMouseIn3D(int x, int y) {
   glGetDoublev(GL_MODELVIEW_MATRIX, matModelView);
   glGetDoublev(GL_PROJECTION_MATRIX, matProjection);
   glGetIntegerv(GL_VIEWPORT, viewport);
-  double winX= (double)x;
-  double winY= viewport[3] - (double)y;
+  const double winX= (double)x;
+  const double winY= viewport[3] - (double)y;
   gluUnProject(winX, winY, 0.0, matModelView, matProjection, viewport, &D.mouseNear[0], &D.mouseNear[1], &D.mouseNear[2]);
   gluUnProject(winX, winY, 1.0, matModelView, matProjection, viewport, &D.mouseFar[0], &D.mouseFar[1], &D.mouseFar[2]);
 
@@ -391,15 +391,12 @@ void ComputeMouseIn3D(int x, int y) {
   const double midX= 0.5 * (D.boxMax[0] + D.boxMin[0]);
   const double midY= 0.5 * (D.boxMax[1] + D.boxMin[1]);
   const double midZ= 0.5 * (D.boxMax[2] + D.boxMin[2]);
-
   D.mouseProjX[0]= midX;
   D.mouseProjX[1]= D.mouseNear[1] + (D.mouseFar[1] - D.mouseNear[1]) * (midX - D.mouseNear[0]) / (D.mouseFar[0] - D.mouseNear[0]);
   D.mouseProjX[2]= D.mouseNear[2] + (D.mouseFar[2] - D.mouseNear[2]) * (midX - D.mouseNear[0]) / (D.mouseFar[0] - D.mouseNear[0]);
-
   D.mouseProjY[0]= D.mouseNear[0] + (D.mouseFar[0] - D.mouseNear[0]) * (midY - D.mouseNear[1]) / (D.mouseFar[1] - D.mouseNear[1]);
   D.mouseProjY[1]= midY;
   D.mouseProjY[2]= D.mouseNear[2] + (D.mouseFar[2] - D.mouseNear[2]) * (midY - D.mouseNear[1]) / (D.mouseFar[1] - D.mouseNear[1]);
-
   D.mouseProjZ[0]= D.mouseNear[0] + (D.mouseFar[0] - D.mouseNear[0]) * (midZ - D.mouseNear[2]) / (D.mouseFar[2] - D.mouseNear[2]);
   D.mouseProjZ[1]= D.mouseNear[1] + (D.mouseFar[1] - D.mouseNear[1]) * (midZ - D.mouseNear[2]) / (D.mouseFar[2] - D.mouseNear[2]);
   D.mouseProjZ[2]= midZ;
