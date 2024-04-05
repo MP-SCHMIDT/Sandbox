@@ -22,6 +22,7 @@
 #include "FractalCurvDev/FractalCurvDev.hpp"
 #include "FractalElevMap/FractalElevMap.hpp"
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
+#include "JumpinPlayerAI/JumpinPlayerAI.hpp"
 #include "MarkovProcGene/MarkovProcGene.hpp"
 #include "MassSpringSyst/MassSpringSyst.hpp"
 #include "ParticForceLaw/ParticForceLaw.hpp"
@@ -79,6 +80,7 @@ AlgoTestEnviro myAlgoTestEnviro;
 FractalCurvDev myFractalCurvDev;
 FractalElevMap myFractalElevMap;
 ImageExtruMesh myImageExtruMesh;
+JumpinPlayerAI myJumpinPlayerAI;
 MarkovProcGene myMarkovProcGene;
 MassSpringSyst myMassSpringSyst;
 ParticForceLaw myParticForceLaw;
@@ -102,6 +104,7 @@ enum ProjectID
   FractalCurvDevID,
   FractalElevMapID,
   ImageExtruMeshID,
+  JumpinPlayerAIID,
   MarkovProcGeneID,
   MassSpringSystID,
   ParticForceLawID,
@@ -129,6 +132,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
   if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj) myFractalElevMap= FractalElevMap();
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj) myImageExtruMesh= ImageExtruMesh();
+  if (currentProjectID != ProjectID::JumpinPlayerAIID && myJumpinPlayerAI.isActivProj) myJumpinPlayerAI= JumpinPlayerAI();
   if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj) myMarkovProcGene= MarkovProcGene();
   if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj) myMassSpringSyst= MassSpringSyst();
   if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj) myParticForceLaw= ParticForceLaw();
@@ -149,6 +153,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.SetActiveProject();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.SetActiveProject();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
+  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.SetActiveProject();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.SetActiveProject();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.SetActiveProject();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.SetActiveProject();
@@ -172,6 +177,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Refresh();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Refresh();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
+  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Refresh();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Refresh();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Refresh();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Refresh();
@@ -195,6 +201,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Animate();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Animate();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
+  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Animate();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Animate();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Animate();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Animate();
@@ -218,6 +225,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Draw();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Draw();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
+  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Draw();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Draw();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Draw();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Draw();
@@ -241,6 +249,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.isRefreshed= false;
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
+  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.isRefreshed= false;
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.isRefreshed= false;
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.isRefreshed= false;
@@ -782,6 +791,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(keyUpperCase);
+    if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress(keyUpperCase);
@@ -997,6 +1007,7 @@ void init_menu() {
   glutAddMenuEntry("FractalCurvDev", ProjectID::FractalCurvDevID);
   glutAddMenuEntry("FractalElevMap", ProjectID::FractalElevMapID);
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
+  glutAddMenuEntry("JumpinPlayerAI", ProjectID::JumpinPlayerAIID);
   glutAddMenuEntry("MarkovProcGene", ProjectID::MarkovProcGeneID);
   glutAddMenuEntry("MassSpringSyst", ProjectID::MassSpringSystID);
   glutAddMenuEntry("ParticForceLaw", ProjectID::ParticForceLawID);
