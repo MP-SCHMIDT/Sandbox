@@ -183,57 +183,6 @@ void ParticLifeOrga::Animate() {
       Vel[k]+= 0.5 * (oldAcc + Acc[k]) * dt;  // vt+1 = vt + 0.5 * (at + at+1) * dt
     }
   }
-
-  // // Update density trail
-  // // Get field sizes and init if non existant
-  // int nbX, nbY, nbZ;
-  // SrtUtil::GetFieldDimensions(densityField, nbX, nbY, nbZ);
-  // if (int(displacementField.size()) != nbX || int(displacementField[0].size()) != nbY || int(displacementField[0][0].size()) != nbZ) {
-  //   displacementField= vector<vector<vector<Vec::Vec3<double>>>>(nbX, vector<vector<Vec::Vec3<double>>>(nbY, vector<Vec::Vec3<double>>(nbZ, {0.0, 0.0, 0.0})));
-  // }
-  // double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
-  // SrtUtil::GetVoxelSizes(nbX, nbY, nbZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);
-  // SrtUtil::GetVoxelStart(D.boxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
-  // // Loop through particles and leave trail
-  // for (int k= 0; k < nbParticles; k++) {
-  //   int x= std::min(std::max(int(std::round((Pos[k][0] - D.boxMin[0]) / stepX)), 0), nbX - 1);
-  //   int y= std::min(std::max(int(std::round((Pos[k][1] - D.boxMin[1]) / stepY)), 0), nbY - 1);
-  //   int z= std::min(std::max(int(std::round((Pos[k][2] - D.boxMin[2]) / stepZ)), 0), nbZ - 1);
-  //   densityField[x][y][z]= std::min(densityField[x][y][z] + D.UI[plconRatio5_____].D() * D.UI[plconRatio5_____].D(), 1.0);
-  //   displacementField[x][y][z]= displacementField[x][y][z] + D.UI[plconRatio5_____].D() * D.UI[plconRatio5_____].D() * Vel[k];
-  // }
-  // SrtAlgoField::SmoothScalarField(densityField);
-  // SrtAlgoField::SmoothVectorField(displacementField);
-  // // Trail map decay
-  // for (int x= 0; x < nbX; x++) {
-  //   for (int y= 0; y < nbY; y++) {
-  //     for (int z= 0; z < nbZ; z++) {
-  //       densityField[x][y][z]= std::max(densityField[x][y][z] - D.UI[plconRatio4_____].D() * D.UI[plconRatio4_____].D(), 0.0);
-  //       displacementField[x][y][z]= displacementField[x][y][z] * (1.0 - D.UI[plconRatio4_____].D() * D.UI[plconRatio4_____].D());
-  //     }
-  //   }
-  // }
-
-  // // Update density trail isosurface
-  // bool showIso= true;
-  // if (showIso) {
-  //   static vector<vector<vector<double>>> tmpDensityField;
-  //   if (int(tmpDensityField.size()) != nbX + 2 || int(tmpDensityField[0].size()) != nbY + 2 || int(tmpDensityField[0][0].size()) != nbZ + 2)
-  //     tmpDensityField= vector<vector<vector<double>>>(nbX + 2, vector<vector<double>>(nbY + 2, vector<double>(nbZ + 2, 0.0)));
-  //   array<double, 3> expandedBBoxMin;
-  //   array<double, 3> expandedBBoxMax;
-  //   double scaleX= (D.boxMax[0] - D.boxMin[0]) / double(nbX);
-  //   double scaleY= (D.boxMax[1] - D.boxMin[1]) / double(nbY);
-  //   double scaleZ= (D.boxMax[2] - D.boxMin[2]) / double(nbZ);
-  //   expandedBBoxMin= {D.boxMin[0] - scaleX, D.boxMin[1] - scaleY, D.boxMin[2] - scaleZ};
-  //   expandedBBoxMax= {D.boxMax[0] + scaleX, D.boxMax[1] + scaleY, D.boxMax[2] + scaleZ};
-  //   for (int x= 0; x < nbX; x++)
-  //     for (int y= 0; y < nbY; y++)
-  //       for (int z= 0; z < nbZ; z++)
-  //         tmpDensityField[x + 1][y + 1][z + 1]= densityField[x][y][z];
-  //   SrtMarchingCubes::ComputeMarchingCubes(tmpDensityField, expandedBBoxMin, expandedBBoxMax, D.UI[DensiCut________].D(), vertsIso, trisIso);
-  //   normalsIso.clear();
-  // }
 }
 
 
