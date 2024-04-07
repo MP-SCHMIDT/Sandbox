@@ -20,14 +20,15 @@ class JumpinPlayerAI
     VerboseLevel____,
   };
 
-  // Problem dimensions
-  int nW;
-  int nH;
-  double voxSize;
+  int nW;                                       // Dimensions of the board
+  int nH;                                       // Dimensions of the board
+  std::vector<std::vector<bool>> White;         // Flag for presence of white pieces
+  std::vector<std::vector<bool>> Black;         // Flag for presence of black pieces
+  std::vector<std::vector<bool>> Occupied;      // Flag for presence of any pieces
+  std::vector<std::vector<bool>> Destinations;  // Flag for possible destinations of picked square
+  std::array<int, 2> Select;                    // Coordinates of selected square
 
-  // Fields for scenario setup
-  std::vector<std::vector<bool>> White;
-  std::vector<std::vector<bool>> Black;
+  void ComputeDestinations(const int w, const int h);
 
   public:
   bool isActivProj;
