@@ -746,9 +746,6 @@ void callback_reshape(int width, int height) {
 
 // Keyboard interruption callback
 void callback_keyboard(unsigned char key, int x, int y) {
-  (void)x;  // Disable warning unused variable
-  (void)y;  // Disable warning unused variable
-
   // // Display pressed key code
   // printf("%c  %d\n", key, key);
 
@@ -782,6 +779,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if (key == ',') project_ForceHardInit();
   else if (key == '/') project_QueueSoftRefresh();
   else if ((key >= 'A' && key <= 'Z') || (key >= 'a' && key <= 'z')) {
+    ComputeMouseIn3D(x, y);
     const unsigned char keyUpperCase= (key >= 'a' && key <= 'z') ? (key - ('a' - 'A')) : (key);
     if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(keyUpperCase);
@@ -899,7 +897,7 @@ void callback_mouse_click(int button, int state, int x, int y) {
 void callback_mouse_motion(int x, int y) {
   cam->setCurrentMousePos(float(x), float(y));
 
-  ComputeMouseIn3D(x, y);
+  if (isCursorDraw) ComputeMouseIn3D(x, y);
 
   glutPostRedisplay();
 }
@@ -918,9 +916,9 @@ void callback_passive_mouse_motion(int x, int y) {
     }
   }
 
-  ComputeMouseIn3D(x, y);
+  if (isCursorDraw) ComputeMouseIn3D(x, y);
 
-  if (D.idxParamUI != prevParamIdx || D.idxCursorUI != prevCursorIdx || isCursorDraw)
+  if (isCursorDraw || D.idxParamUI != prevParamIdx || D.idxCursorUI != prevCursorIdx)
     glutPostRedisplay();
 }
 
