@@ -17,17 +17,25 @@ class JumpinPlayerAI
   {
     BoardW__________,
     BoardH__________,
+    StartingRows____,
     VerboseLevel____,
   };
 
-  int nW;                                       // Dimensions of the board
-  int nH;                                       // Dimensions of the board
-  std::vector<std::vector<bool>> White;         // Flag for presence of white pieces
-  std::vector<std::vector<bool>> Black;         // Flag for presence of black pieces
-  std::vector<std::vector<bool>> Occupied;      // Flag for presence of any pieces
-  std::vector<std::vector<bool>> Destinations;  // Flag for possible destinations of picked square
-  std::array<int, 2> Select;                    // Coordinates of selected square
+  // Structure to store a board state
+  struct BoardState
+  {
+    std::vector<std::vector<char>> Pawns;                              // Flag for presence of pawns (Black= -1, White= +1)
+    std::vector<std::vector<std::vector<std::array<char, 2>>>> Moves;  // List of possible moves for each starting position
+    int Score;                                                         // Evaluated score of the board
+  };
 
+  int nW;                      // Dimensions of the board
+  int nH;                      // Dimensions of the board
+  BoardState Board;            // Currrent state of the board
+  std::array<char, 2> Select;  // Coordinates of selected square
+
+  void ComputeScore();
+  void ComputeMoves();
   void ComputeDestinations(const int w, const int h);
 
   public:

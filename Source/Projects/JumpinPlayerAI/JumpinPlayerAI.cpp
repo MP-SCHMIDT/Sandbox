@@ -39,6 +39,7 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.clear();
     D.UI.push_back(ParamUI("BoardW__________", 6));
     D.UI.push_back(ParamUI("BoardH__________", 11));
+    D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
@@ -94,19 +95,19 @@ void JumpinPlayerAI::Refresh() {
   if (CheckRefresh()) return;
   isRefreshed= true;
 
-  White= Field::AllocField2D(nW, nH, false);
-  Black= Field::AllocField2D(nW, nH, false);
-  Occupied= Field::AllocField2D(nW, nH, false);
-  Destinations= Field::AllocField2D(nW, nH, false);
-  Select= {-1, -1};
+  Board.Pawns= Field::AllocField2D(nW, nH, char(0));
+  Board.Moves= Field::AllocField2D(nW, nH, std::vector<std::array<char, 2>>());
+  Board.Score= 0;
 
+  Select= {0, 0};
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      if (h < 2) Black[w][h]= true;
-      if (h >= nH - 2) White[w][h]= true;
-      if (Black[w][h] || White[w][h]) Occupied[w][h]= true;
+      if (h < D.UI[StartingRows____].I()) Board.Pawns[w][h]= -1;
+      if (h >= nH - D.UI[StartingRows____].I()) Board.Pawns[w][h]= +1;
     }
   }
+  ComputeScore();
+  ComputeMoves();
 }
 
 
@@ -121,47 +122,32 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
 
   // Handle keyboard action
   if (key == 'E') {
-    White[wCursor][hCursor]= false;
-    Black[wCursor][hCursor]= false;
-    Occupied[wCursor][hCursor]= false;
-  }
-  if (key == 'W') {
-    White[wCursor][hCursor]= true;
-    Black[wCursor][hCursor]= false;
-    Occupied[wCursor][hCursor]= true;
+    Board.Pawns[wCursor][hCursor]= 0;
+    ComputeScore();
+    ComputeMoves();
   }
   if (key == 'B') {
-    White[wCursor][hCursor]= false;
-    Black[wCursor][hCursor]= true;
-    Occupied[wCursor][hCursor]= true;
+    Board.Pawns[wCursor][hCursor]= -1;
+    ComputeScore();
+    ComputeMoves();
+  }
+  if (key == 'W') {
+    Board.Pawns[wCursor][hCursor]= +1;
+    ComputeScore();
+    ComputeMoves();
   }
   if (key == 'S') {
-    if (Occupied[wCursor][hCursor]) {
-      Select= {wCursor, hCursor};
-      Destinations= Field::AllocField2D(nW, nH, false);
-      bool oldWhite= White[wCursor][hCursor];
-      bool oldBlack= Black[wCursor][hCursor];
-      Occupied[wCursor][hCursor]= false;
-      ComputeDestinations(wCursor, hCursor);
-      White[wCursor][hCursor]= oldWhite;
-      Black[wCursor][hCursor]= oldBlack;
-      Occupied[wCursor][hCursor]= true;
-    }
+    Select= {char(wCursor), char(hCursor)};
   }
   if (key == 'D') {
-    if (wCursor != Select[0] || hCursor != Select[1]) {
-      if (Destinations[wCursor][hCursor]) {
-        if (White[Select[0]][Select[1]]) {
-          White[Select[0]][Select[1]]= false;
-          White[wCursor][hCursor]= true;
-        }
-        if (Black[Select[0]][Select[1]]) {
-          Black[Select[0]][Select[1]]= false;
-          Black[wCursor][hCursor]= true;
-        }
-        Occupied[Select[0]][Select[1]]= false;
-        Occupied[wCursor][hCursor]= true;
-        Destinations= Field::AllocField2D(nW, nH, false);
+    std::array<char, 2> target= {char(wCursor), char(hCursor)};
+    for (std::array<char, 2> move : Board.Moves[Select[0]][Select[1]]) {
+      if (move == target) {
+        Board.Pawns[target[0]][target[1]]= Board.Pawns[Select[0]][Select[1]];
+        Board.Pawns[Select[0]][Select[1]]= 0;
+        ComputeScore();
+        ComputeMoves();
+        break;
       }
     }
   }
@@ -184,6 +170,7 @@ void JumpinPlayerAI::Draw() {
 
   const double voxSize= 1.0 / (double)nH;
 
+  // Draw the board
   if (D.displayMode1) {
     glPushMatrix();
     glTranslatef(0.5f, 0.0f, 0.0f);
@@ -199,39 +186,47 @@ void JumpinPlayerAI::Draw() {
     }
     glPopMatrix();
   }
+
+  // Draw the pawns
   if (D.displayMode2) {
-    glPushMatrix();
-    glTranslatef(0.50f, 0.0f, 0.0f);
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    glTranslatef(0.0f, 0.0f, 0.01f);
+    glEnable(GL_LIGHTING);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (White[w][h]) glColor3f(1.0f, 1.0f, 1.0f);
-        if (Black[w][h]) glColor3f(0.0f, 0.0f, 0.0f);
-        if (White[w][h] || Black[w][h])
-          glRectf(D.boxMin[1] + 0.2 * voxSize + float(w) * voxSize, D.boxMin[2] + 0.2 * voxSize + float(h) * voxSize,
-                  D.boxMin[1] - 0.2 * voxSize + float(w + 1) * voxSize, D.boxMin[2] - 0.2 * voxSize + float(h + 1) * voxSize);
+        if (Board.Pawns[w][h] != 0) {
+          if (Board.Pawns[w][h] < 0) glColor3f(0.2f, 0.2f, 0.2f);
+          if (Board.Pawns[w][h] > 0) glColor3f(0.8f, 0.8f, 0.8f);
+          glPushMatrix();
+          glTranslatef(D.boxMin[0] + 0.5 * voxSize,
+                       D.boxMin[1] + 0.5 * voxSize + float(w) * voxSize,
+                       D.boxMin[2] + 0.5 * voxSize + float(h) * voxSize);
+          glutSolidSphere(0.45 * voxSize, 36, 10);
+          glPopMatrix();
+        }
       }
     }
-    glPopMatrix();
+    glDisable(GL_LIGHTING);
   }
 
+  // Draw the selection and available moves
   if (D.displayMode3) {
     glLineWidth(2.0);
     glPushMatrix();
+    // Set the initial transformation
     glTranslatef(D.boxMin[0] + 0.5f * voxSize, D.boxMin[1] + 0.5f * voxSize, D.boxMin[2] + 0.5f * voxSize);
     glScalef(voxSize, voxSize, voxSize);
-    for (int w= 0; w < nW; w++) {
-      for (int h= 0; h < nH; h++) {
-        if (w == Select[0] && h == Select[1]) glColor3f(0.2f, 0.2f, 1.0f);
-        else if (Destinations[w][h]) glColor3f(1.0f, 0.2f, 0.2f);
-        else continue;
-        glPushMatrix();
-        glTranslatef(0.0f, (float)w, (float)h);
-        glutWireCube(0.95f);
-        glPopMatrix();
-      }
+    // Draw the selection
+    glColor3f(0.2f, 0.2f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, (float)Select[0], (float)Select[1]);
+    glutWireCube(0.95f);
+    glPopMatrix();
+    // Draw the moves
+    glColor3f(1.0f, 0.2f, 0.2f);
+    for (std::array<char, 2> move : Board.Moves[Select[0]][Select[1]]) {
+      glPushMatrix();
+      glTranslatef(0.0f, (float)move[0], (float)move[1]);
+      glutWireCube(0.95f);
+      glPopMatrix();
     }
     glPopMatrix();
     glLineWidth(1.0);
@@ -239,23 +234,33 @@ void JumpinPlayerAI::Draw() {
 }
 
 
+void JumpinPlayerAI::ComputeScore() {
+  Board.Score= 0;
+}
+
+
+void JumpinPlayerAI::ComputeMoves() {
+  Board.Moves= Field::AllocField2D(nW, nH, std::vector<std::array<char, 2>>());
+}
+
+
 void JumpinPlayerAI::ComputeDestinations(const int w, const int h) {
-  Destinations[w][h]= true;
-  for (int idxDir= 0; idxDir < 4; idxDir++) {
-    const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
-    const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
-    if (w + 2 * wInc < 0 || w + 2 * wInc >= nW) continue;
-    if (h + 2 * hInc < 0 || h + 2 * hInc >= nH) continue;
-    if (!Occupied[w + wInc][h + hInc]) continue;
-    int wOff= w + 2 * wInc;
-    int hOff= h + 2 * hInc;
-    while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
-      if (!Occupied[wOff][hOff]) {
-        if (!Destinations[wOff][hOff]) ComputeDestinations(wOff, hOff);
-        break;
-      }
-      wOff+= wInc;
-      hOff+= hInc;
-    }
-  }
+  // Destinations[w][h]= true;
+  // for (int idxDir= 0; idxDir < 4; idxDir++) {
+  //   const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
+  //   const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
+  //   if (w + 2 * wInc < 0 || w + 2 * wInc >= nW) continue;
+  //   if (h + 2 * hInc < 0 || h + 2 * hInc >= nH) continue;
+  //   if (!Occupied[w + wInc][h + hInc]) continue;
+  //   int wOff= w + 2 * wInc;
+  //   int hOff= h + 2 * hInc;
+  //   while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
+  //     if (!Occupied[wOff][hOff]) {
+  //       if (!Destinations[wOff][hOff]) ComputeDestinations(wOff, hOff);
+  //       break;
+  //     }
+  //     wOff+= wInc;
+  //     hOff+= hInc;
+  //   }
+  // }
 }
