@@ -95,19 +95,18 @@ void JumpinPlayerAI::Refresh() {
   if (CheckRefresh()) return;
   isRefreshed= true;
 
-  Board.Pawns= Field::AllocField2D(nW, nH, char(0));
-  Board.Moves= Field::AllocField2D(nW, nH, std::vector<std::array<char, 2>>());
-  Board.Score= 0;
+  MainBoard.Pawns= Field::AllocField2D(nW, nH, 0);
+  MainBoard.Moves= Field::AllocField2D(nW, nH, std::vector<std::array<int, 2>>());
+  MainBoard.Score= 0;
 
   Select= {0, 0};
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      if (h < D.UI[StartingRows____].I()) Board.Pawns[w][h]= -1;
-      if (h >= nH - D.UI[StartingRows____].I()) Board.Pawns[w][h]= +1;
+      if (h < D.UI[StartingRows____].I()) MainBoard.Pawns[w][h]= +1;
+      if (h >= nH - D.UI[StartingRows____].I()) MainBoard.Pawns[w][h]= -1;
     }
   }
-  ComputeScore();
-  ComputeMoves();
+  UpdateMainBoard();
 }
 
 
@@ -117,36 +116,32 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   if (!CheckAlloc()) Allocate();
 
   // Get cursor coordinates on the board
-  const int wCursor= std::min(std::max(int(std::floor((double)nW * (D.mouseProjX[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]))), 0), nW - 1);
-  const int hCursor= std::min(std::max(int(std::floor((double)nH * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]))), 0), nH - 1);
+  const int wCursor= std::min(std::max((int)std::floor((double)nW * (D.mouseProjX[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1])), 0), nW - 1);
+  const int hCursor= std::min(std::max((int)std::floor((double)nH * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2])), 0), nH - 1);
 
   // Handle keyboard action
   if (key == 'E') {
-    Board.Pawns[wCursor][hCursor]= 0;
-    ComputeScore();
-    ComputeMoves();
+    MainBoard.Pawns[wCursor][hCursor]= 0;
+    UpdateMainBoard();
   }
   if (key == 'B') {
-    Board.Pawns[wCursor][hCursor]= -1;
-    ComputeScore();
-    ComputeMoves();
+    MainBoard.Pawns[wCursor][hCursor]= -1;
+    UpdateMainBoard();
   }
   if (key == 'W') {
-    Board.Pawns[wCursor][hCursor]= +1;
-    ComputeScore();
-    ComputeMoves();
+    MainBoard.Pawns[wCursor][hCursor]= +1;
+    UpdateMainBoard();
   }
   if (key == 'S') {
-    Select= {char(wCursor), char(hCursor)};
+    Select= {wCursor, hCursor};
   }
   if (key == 'D') {
-    std::array<char, 2> target= {char(wCursor), char(hCursor)};
-    for (std::array<char, 2> move : Board.Moves[Select[0]][Select[1]]) {
+    std::array<int, 2> target= {wCursor, hCursor};
+    for (std::array<int, 2> move : MainBoard.Moves[Select[0]][Select[1]]) {
       if (move == target) {
-        Board.Pawns[target[0]][target[1]]= Board.Pawns[Select[0]][Select[1]];
-        Board.Pawns[Select[0]][Select[1]]= 0;
-        ComputeScore();
-        ComputeMoves();
+        MainBoard.Pawns[target[0]][target[1]]= MainBoard.Pawns[Select[0]][Select[1]];
+        MainBoard.Pawns[Select[0]][Select[1]]= 0;
+        UpdateMainBoard();
         break;
       }
     }
@@ -178,8 +173,8 @@ void JumpinPlayerAI::Draw() {
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if ((w + h) % 2 == 0) glColor3f(0.4f, 0.4f, 0.4f);
-        else glColor3f(0.6f, 0.6f, 0.6f);
+        if ((w + h) % 2 == 0) glColor3f(0.45f, 0.45f, 0.45f);
+        else glColor3f(0.55f, 0.55f, 0.55f);
         glRectf(D.boxMin[1] + float(w) * voxSize, D.boxMin[2] + float(h) * voxSize,
                 D.boxMin[1] + float(w + 1) * voxSize, D.boxMin[2] + float(h + 1) * voxSize);
       }
@@ -192,9 +187,9 @@ void JumpinPlayerAI::Draw() {
     glEnable(GL_LIGHTING);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (Board.Pawns[w][h] != 0) {
-          if (Board.Pawns[w][h] < 0) glColor3f(0.2f, 0.2f, 0.2f);
-          if (Board.Pawns[w][h] > 0) glColor3f(0.8f, 0.8f, 0.8f);
+        if (MainBoard.Pawns[w][h] != 0) {
+          if (MainBoard.Pawns[w][h] < 0) glColor3f(0.2f, 0.2f, 0.2f);
+          if (MainBoard.Pawns[w][h] > 0) glColor3f(0.8f, 0.8f, 0.8f);
           glPushMatrix();
           glTranslatef(D.boxMin[0] + 0.5 * voxSize,
                        D.boxMin[1] + 0.5 * voxSize + float(w) * voxSize,
@@ -222,7 +217,7 @@ void JumpinPlayerAI::Draw() {
     glPopMatrix();
     // Draw the moves
     glColor3f(1.0f, 0.2f, 0.2f);
-    for (std::array<char, 2> move : Board.Moves[Select[0]][Select[1]]) {
+    for (std::array<int, 2> move : MainBoard.Moves[Select[0]][Select[1]]) {
       glPushMatrix();
       glTranslatef(0.0f, (float)move[0], (float)move[1]);
       glutWireCube(0.95f);
@@ -233,34 +228,78 @@ void JumpinPlayerAI::Draw() {
   }
 }
 
+void JumpinPlayerAI::UpdateMainBoard() {
+  ComputeScore(MainBoard);
+  ComputeMoves(MainBoard);
 
-void JumpinPlayerAI::ComputeScore() {
-  Board.Score= 0;
+  if (D.Plot.size() < 1) D.Plot.resize(1);
+  D.Plot[0].name= "Score";
+  D.Plot[0].isSymmetric= true;
+  D.Plot[0].val.push_back(MainBoard.Score);
+}
+
+void JumpinPlayerAI::ComputeScore(BoardState &ioBoard) {
+  // Reset score
+  ioBoard.Score= 0;
+
+  // Add score for pawn advance
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      if (ioBoard.Pawns[w][h] > 0) ioBoard.Score+= (h + 1) * 10;
+      if (ioBoard.Pawns[w][h] < 0) ioBoard.Score-= (nH - h) * 10;
+    }
+  }
 }
 
 
-void JumpinPlayerAI::ComputeMoves() {
-  Board.Moves= Field::AllocField2D(nW, nH, std::vector<std::array<char, 2>>());
+void JumpinPlayerAI::ComputeMoves(BoardState &ioBoard) {
+  // Initialize flag fields
+  std::vector<std::vector<bool>> Occup= Field::AllocField2D(nW, nH, false);
+  for (int w= 0; w < nW; w++)
+    for (int h= 0; h < nH; h++)
+      if (ioBoard.Pawns[w][h] != 0) Occup[w][h]= true;
+
+  // Sweep through pawns
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      ioBoard.Moves[w][h].clear();
+      if (ioBoard.Pawns[w][h] == 0) continue;
+      std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
+      Visit[w][h]= true;
+      Occup[w][h]= false;
+      ComputeDestinations(ioBoard, Occup, Visit, w, h, w, h);
+      Occup[w][h]= true;
+    }
+  }
 }
 
 
-void JumpinPlayerAI::ComputeDestinations(const int w, const int h) {
-  // Destinations[w][h]= true;
-  // for (int idxDir= 0; idxDir < 4; idxDir++) {
-  //   const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
-  //   const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
-  //   if (w + 2 * wInc < 0 || w + 2 * wInc >= nW) continue;
-  //   if (h + 2 * hInc < 0 || h + 2 * hInc >= nH) continue;
-  //   if (!Occupied[w + wInc][h + hInc]) continue;
-  //   int wOff= w + 2 * wInc;
-  //   int hOff= h + 2 * hInc;
-  //   while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
-  //     if (!Occupied[wOff][hOff]) {
-  //       if (!Destinations[wOff][hOff]) ComputeDestinations(wOff, hOff);
-  //       break;
-  //     }
-  //     wOff+= wInc;
-  //     hOff+= hInc;
-  //   }
-  // }
+void JumpinPlayerAI::ComputeDestinations(BoardState &ioBoard,
+                                         const std::vector<std::vector<bool>> &iOccup,
+                                         std::vector<std::vector<bool>> &ioVisit,
+                                         const int iStartW, const int iStartH,
+                                         const int iW, const int iH) {
+  for (int idxDir= 0; idxDir < 4; idxDir++) {
+    const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
+    const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
+    if (iW + 2 * wInc < 0 || iW + 2 * wInc >= nW ||
+        iH + 2 * hInc < 0 || iH + 2 * hInc >= nH) continue;
+    if (!iOccup[iW + wInc][iH + hInc]) continue;
+    int wOff= iW + 2 * wInc;
+    int hOff= iH + 2 * hInc;
+    while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
+      if (iOccup[wOff][hOff]) {
+        wOff+= wInc;
+        hOff+= hInc;
+      }
+      else if (!ioVisit[wOff][hOff]) {
+        ioBoard.Moves[iStartW][iStartH].push_back(std::array<int, 2>{wOff, hOff});
+        ioVisit[wOff][hOff]= true;
+        ComputeDestinations(ioBoard, iOccup, ioVisit, iStartW, iStartH, wOff, hOff);
+        break;
+      }
+      else
+        break;
+    }
+  }
 }
