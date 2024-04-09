@@ -37,9 +37,16 @@ JumpinPlayerAI::JumpinPlayerAI() {
 void JumpinPlayerAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("BoardW__________", 6));
-    D.UI.push_back(ParamUI("BoardH__________", 11));
+    D.UI.push_back(ParamUI("BoardW__________", 4));
+    D.UI.push_back(ParamUI("BoardH__________", 5));
     D.UI.push_back(ParamUI("StartingRows____", 2));
+    D.UI.push_back(ParamUI("SinglePlayer____", 1));
+    D.UI.push_back(ParamUI("SearchDepth_____", 1));
+    D.UI.push_back(ParamUI("TreeStepDist____", 0.3));
+    D.UI.push_back(ParamUI("TreeStepRadians_", 0.5));
+    D.UI.push_back(ParamUI("TreeFactDist____", 0.5));
+    D.UI.push_back(ParamUI("TreeFactRadians_", 0.125));
+    D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
@@ -57,12 +64,15 @@ void JumpinPlayerAI::SetActiveProject() {
 bool JumpinPlayerAI::CheckAlloc() {
   if (D.UI[BoardW__________].hasChanged()) isAllocated= false;
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
+  if (D.UI[StartingRows____].hasChanged()) isAllocated= false;
+  if (D.UI[SinglePlayer____].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
 
 // Check if parameter changes should trigger a refresh
 bool JumpinPlayerAI::CheckRefresh() {
+  if (D.UI[SearchDepth_____].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
@@ -74,10 +84,16 @@ void JumpinPlayerAI::Allocate() {
   isRefreshed= false;
   isAllocated= true;
 
+  // Clear any existing board tree
+  if (RootBoard != nullptr) DeleteBoard(RootBoard);
+
   // Get UI parameters
   nW= std::max(D.UI[BoardW__________].I(), 1);
   nH= std::max(D.UI[BoardH__________].I(), 1);
+  wSel= -1;
+  hSel= -1;
 
+  // Set box dimensions
   const double voxSize= 1.0 / (double)nH;
   D.boxMin= {0.5 - 0.5 * voxSize,
              0.5 - 0.5 * voxSize * double(nW),
@@ -85,6 +101,16 @@ void JumpinPlayerAI::Allocate() {
   D.boxMax= {0.5 + 0.5 * voxSize,
              0.5 + 0.5 * voxSize * double(nW),
              0.5 + 0.5 * voxSize * double(nH)};
+
+  // Create and initialize root board with pawns
+  RootBoard= CreateBoard();
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      if (h < D.UI[StartingRows____].I()) RootBoard->Pawns[w][h]= +1;
+      if (!D.UI[SinglePlayer____].B())
+        if (h >= nH - D.UI[StartingRows____].I()) RootBoard->Pawns[w][h]= -1;
+    }
+  }
 }
 
 
@@ -95,18 +121,14 @@ void JumpinPlayerAI::Refresh() {
   if (CheckRefresh()) return;
   isRefreshed= true;
 
-  MainBoard.Pawns= Field::AllocField2D(nW, nH, 0);
-  MainBoard.Moves= Field::AllocField2D(nW, nH, std::vector<std::array<int, 2>>());
-  MainBoard.Score= 0;
+  // Compute root board score and moves
+  ComputeBoardScore(RootBoard);
+  ComputeBoardMoves(RootBoard, 0);
 
-  Select= {0, 0};
-  for (int w= 0; w < nW; w++) {
-    for (int h= 0; h < nH; h++) {
-      if (h < D.UI[StartingRows____].I()) MainBoard.Pawns[w][h]= +1;
-      if (h >= nH - D.UI[StartingRows____].I()) MainBoard.Pawns[w][h]= -1;
-    }
-  }
-  UpdateMainBoard();
+  if (D.Plot.size() < 1) D.Plot.resize(1);
+  D.Plot[0].name= "Score";
+  D.Plot[0].isSymmetric= true;
+  D.Plot[0].val.push_back(RootBoard->Score);
 }
 
 
@@ -116,36 +138,74 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   if (!CheckAlloc()) Allocate();
 
   // Get cursor coordinates on the board
-  const int wCursor= std::min(std::max((int)std::floor((double)nW * (D.mouseProjX[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1])), 0), nW - 1);
-  const int hCursor= std::min(std::max((int)std::floor((double)nH * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2])), 0), nH - 1);
+  const int wCursor= (int)std::floor((double)nW * (D.mouseProjX[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
+  const int hCursor= (int)std::floor((double)nH * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
 
   // Handle keyboard action
   if (key == 'E') {
-    MainBoard.Pawns[wCursor][hCursor]= 0;
-    UpdateMainBoard();
+    if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
+      RootBoard->Pawns[wCursor][hCursor]= 0;
+    }
   }
   if (key == 'B') {
-    MainBoard.Pawns[wCursor][hCursor]= -1;
-    UpdateMainBoard();
+    if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
+      RootBoard->Pawns[wCursor][hCursor]= -1;
+    }
   }
   if (key == 'W') {
-    MainBoard.Pawns[wCursor][hCursor]= +1;
-    UpdateMainBoard();
+    if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
+      RootBoard->Pawns[wCursor][hCursor]= +1;
+    }
   }
   if (key == 'S') {
-    Select= {wCursor, hCursor};
+    wSel= wCursor;
+    hSel= hCursor;
   }
   if (key == 'D') {
     std::array<int, 2> target= {wCursor, hCursor};
-    for (std::array<int, 2> move : MainBoard.Moves[Select[0]][Select[1]]) {
-      if (move == target) {
-        MainBoard.Pawns[target[0]][target[1]]= MainBoard.Pawns[Select[0]][Select[1]];
-        MainBoard.Pawns[Select[0]][Select[1]]= 0;
-        UpdateMainBoard();
-        break;
+    if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
+      for (std::array<int, 2> move : RootBoard->Moves[wSel][hSel]) {
+        if (move == target) {
+          RootBoard->Pawns[target[0]][target[1]]= RootBoard->Pawns[wSel][hSel];
+          RootBoard->Pawns[wSel][hSel]= 0;
+          break;
+        }
       }
     }
   }
+  if (key == 'A' || key == 'Z') {
+    bool isSet= false;
+    int scoreBest= 0, wBest= 0, hBest= 0, kBest= 0;
+    for (int w= 0; w < nW; w++) {
+      for (int h= 0; h < nH; h++) {
+        for (int k= 0; k < (int)RootBoard->Moves[w][h].size(); k++) {
+          bool newBest= false;
+          if (key == 'A' && RootBoard->Pawns[w][h] > 0 && (!isSet || scoreBest < RootBoard->SubBoards[w][h][k]->Score)) newBest= true;
+          if (key == 'Z' && RootBoard->Pawns[w][h] < 0 && (!isSet || scoreBest > RootBoard->SubBoards[w][h][k]->Score)) newBest= true;
+          if (newBest) {
+            isSet= true;
+            scoreBest= RootBoard->SubBoards[w][h][k]->Score;
+            wBest= w;
+            hBest= h;
+            kBest= k;
+          }
+        }
+      }
+    }
+    if (isSet) {
+      std::array<int, 2> moveBest= RootBoard->Moves[wBest][hBest][kBest];
+      RootBoard->Pawns[moveBest[0]][moveBest[1]]= RootBoard->Pawns[wBest][hBest];
+      RootBoard->Pawns[wBest][hBest]= 0;
+    }
+  }
+
+  ComputeBoardScore(RootBoard);
+  ComputeBoardMoves(RootBoard, 0);
+
+  if (D.Plot.size() < 1) D.Plot.resize(1);
+  D.Plot[0].name= "Score";
+  D.Plot[0].isSymmetric= true;
+  D.Plot[0].val.push_back(RootBoard->Score);
 }
 
 
@@ -187,9 +247,12 @@ void JumpinPlayerAI::Draw() {
     glEnable(GL_LIGHTING);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (MainBoard.Pawns[w][h] != 0) {
-          if (MainBoard.Pawns[w][h] < 0) glColor3f(0.2f, 0.2f, 0.2f);
-          if (MainBoard.Pawns[w][h] > 0) glColor3f(0.8f, 0.8f, 0.8f);
+        if (RootBoard->Pawns[w][h] != 0) {
+          float r= 0.2f, g= 0.2f, b= 0.2f;
+          if (RootBoard->Pawns[w][h] < 0) r= g= b= 0.2f;
+          if (RootBoard->Pawns[w][h] > 0) r= g= b= 0.8f;
+          if (w == wSel && h == hSel) g+= 0.2f;
+          glColor3f(r, g, b);
           glPushMatrix();
           glTranslatef(D.boxMin[0] + 0.5 * voxSize,
                        D.boxMin[1] + 0.5 * voxSize + float(w) * voxSize,
@@ -202,100 +265,197 @@ void JumpinPlayerAI::Draw() {
     glDisable(GL_LIGHTING);
   }
 
-  // Draw the selection and available moves
+  // Draw the available moves for the selected pawn
   if (D.displayMode3) {
     glLineWidth(2.0);
     glPushMatrix();
-    // Set the initial transformation
     glTranslatef(D.boxMin[0] + 0.5f * voxSize, D.boxMin[1] + 0.5f * voxSize, D.boxMin[2] + 0.5f * voxSize);
     glScalef(voxSize, voxSize, voxSize);
-    // Draw the selection
-    glColor3f(0.2f, 0.2f, 1.0f);
-    glPushMatrix();
-    glTranslatef(0.0f, (float)Select[0], (float)Select[1]);
-    glutWireCube(0.95f);
-    glPopMatrix();
-    // Draw the moves
-    glColor3f(1.0f, 0.2f, 0.2f);
-    for (std::array<int, 2> move : MainBoard.Moves[Select[0]][Select[1]]) {
-      glPushMatrix();
-      glTranslatef(0.0f, (float)move[0], (float)move[1]);
-      glutWireCube(0.95f);
-      glPopMatrix();
+    if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
+      for (int k= 0; k < (int)RootBoard->Moves[wSel][hSel].size(); k++) {
+        std::array<int, 2> move= RootBoard->Moves[wSel][hSel][k];
+        BoardState *subBoard= RootBoard->SubBoards[wSel][hSel][k];
+        float r, g, b;
+        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * (float)subBoard->Score, r, g, b);
+        glColor3f(r, g, b);
+        glPushMatrix();
+        glTranslatef(0.0f, (float)move[0], (float)move[1]);
+        glutWireCube(0.95f);
+        glPopMatrix();
+      }
     }
     glPopMatrix();
     glLineWidth(1.0);
   }
+
+  // Draw the board tree
+  if (D.displayMode4) {
+    float px= 0.5f * (D.boxMin[0] + D.boxMax[0]);
+    float py= D.boxMax[1] + 0.6f * (D.boxMax[1] - D.boxMin[1]);
+    float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
+    glLineWidth(2.0);
+    glPointSize(4.0);
+    glBegin(GL_LINES);
+    DrawBoardTree(RootBoard, px, py, pz, 0.0f, 0.0f,
+                  D.UI[TreeStepDist____].F(), D.UI[TreeStepRadians_].F(),
+                  D.UI[TreeFactDist____].F(), D.UI[TreeFactRadians_].F());
+    glEnd();
+    glLineWidth(1.0);
+    glPointSize(1.0);
+  }
 }
 
-void JumpinPlayerAI::UpdateMainBoard() {
-  ComputeScore(MainBoard);
-  ComputeMoves(MainBoard);
 
-  if (D.Plot.size() < 1) D.Plot.resize(1);
-  D.Plot[0].name= "Score";
-  D.Plot[0].isSymmetric= true;
-  D.Plot[0].val.push_back(MainBoard.Score);
+void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard,
+                                   const float px, const float py, const float pz,
+                                   const float dist, const float radians,
+                                   const float distStep, const float radiansStep,
+                                   const float distFact, const float radiansFact) {
+  if (iBoard == nullptr) printf("Error: Drawing a null board");
+
+  float r, g, b;
+  float distOff= dist + distStep;
+  float radiansOff= radians;
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      for (BoardState *subBoard : iBoard->SubBoards[w][h]) {
+        float relScore= (float)(subBoard->Score - RootBoard->Score);
+        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
+        glColor3f(r, g, b);
+        glVertex3f(px, py + dist * std::cos(radians), pz + dist * std::sin(radians));
+        glVertex3f(px, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
+        DrawBoardTree(subBoard, px, py, pz, distOff, radiansOff, distStep * distFact, radiansStep * radiansFact, distFact, radiansFact);
+        radiansOff+= radiansStep;
+      }
+    }
+  }
 }
 
-void JumpinPlayerAI::ComputeScore(BoardState &ioBoard) {
+
+JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard() {
+  BoardState *newBoard= new BoardState;
+  newBoard->Pawns= Field::AllocField2D(nW, nH, 0);
+  newBoard->Moves= Field::AllocField2D(nW, nH, std::vector<std::array<int, 2>>());
+  newBoard->SubBoards= Field::AllocField2D(nW, nH, std::vector<BoardState *>());
+  newBoard->Score= 0;
+  newBoard->ScoreMax= 0;
+  newBoard->ScoreMin= 0;
+  return newBoard;
+}
+
+
+void JumpinPlayerAI::DeleteBoard(BoardState *ioBoard) {
+  if (ioBoard == nullptr) printf("Error: Deleting a null board");
+
+  for (int w= 0; w < nW; w++)
+    for (int h= 0; h < nH; h++)
+      for (BoardState *subBoard : ioBoard->SubBoards[w][h])
+        DeleteBoard(subBoard);
+  delete ioBoard;
+  ioBoard= nullptr;
+}
+
+
+void JumpinPlayerAI::DeleteSubBoards(BoardState *ioBoard, const int w, const int h) {
+  if (ioBoard == nullptr) printf("Error: Deleting subBoards in a null board");
+
+  for (BoardState *subBoard : ioBoard->SubBoards[w][h]) {
+    DeleteBoard(subBoard);
+  }
+  ioBoard->SubBoards[w][h].clear();
+}
+
+
+void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
+  if (ioBoard == nullptr) printf("Error: Computing score of a null board");
+
   // Reset score
-  ioBoard.Score= 0;
+  ioBoard->Score= 0;
 
   // Add score for pawn advance
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      if (ioBoard.Pawns[w][h] > 0) ioBoard.Score+= (h + 1) * 10;
-      if (ioBoard.Pawns[w][h] < 0) ioBoard.Score-= (nH - h) * 10;
+      if (ioBoard->Pawns[w][h] > 0) ioBoard->Score+= (h + 1) * 10;
+      if (ioBoard->Pawns[w][h] < 0) ioBoard->Score-= (nH - h) * 10;
     }
   }
 }
 
 
-void JumpinPlayerAI::ComputeMoves(BoardState &ioBoard) {
-  // Initialize flag fields
-  std::vector<std::vector<bool>> Occup= Field::AllocField2D(nW, nH, false);
-  for (int w= 0; w < nW; w++)
-    for (int h= 0; h < nH; h++)
-      if (ioBoard.Pawns[w][h] != 0) Occup[w][h]= true;
+// void JumpinPlayerAI::ConsolidateBoardScore(BoardState *ioBoard) {
+//   if (ioBoard == nullptr) printf("Error: Consolidating score of a null board");
+
+//   for (int w= 0; w < nW; w++) {
+//     for (int h= 0; h < nH; h++) {
+//       for (int k= 0; k < (int)RootBoard->Moves[wSel][hSel].size(); k++) {
+//         std::array<int, 2> move= RootBoard->Moves[wSel][hSel][k];
+//         BoardState *subBoard= ioBoard->SubBoards[w][h][k];
+
+//       }
+//     }
+//   }
+// }
+
+
+void JumpinPlayerAI::ComputeBoardMoves(BoardState *ioBoard, const int iDepth) {
+  if (ioBoard == nullptr) printf("Error: Computing moves of a null board");
 
   // Sweep through pawns
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      ioBoard.Moves[w][h].clear();
-      if (ioBoard.Pawns[w][h] == 0) continue;
-      std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
-      Visit[w][h]= true;
-      Occup[w][h]= false;
-      ComputeDestinations(ioBoard, Occup, Visit, w, h, w, h);
-      Occup[w][h]= true;
+      // Clear existing moves and boards
+      ioBoard->Moves[w][h].clear();
+      DeleteSubBoards(ioBoard, w, h);
+      // Compute possible moves for the current pawn
+      if (ioBoard->Pawns[w][h] != 0) {
+        std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
+        Visit[w][h]= true;
+        const int oldPawn= ioBoard->Pawns[w][h];
+        ioBoard->Pawns[w][h]= 0;
+        ComputePawnDestinations(ioBoard, Visit, w, h, w, h);
+        ioBoard->Pawns[w][h]= oldPawn;
+      }
+      // Create board for each move of the current pawn
+      for (std::array<int, 2> move : ioBoard->Moves[w][h]) {
+        BoardState *newBoard= CreateBoard();
+        newBoard->Pawns= ioBoard->Pawns;
+        newBoard->Pawns[move[0]][move[1]]= newBoard->Pawns[w][h];
+        newBoard->Pawns[w][h]= 0;
+        ioBoard->SubBoards[w][h].push_back(newBoard);
+        if (iDepth < D.UI[SearchDepth_____].I()) {
+          ComputeBoardMoves(newBoard, iDepth + 1);
+        }
+      }
+      // Compute score for each move of the current pawn
+      for (BoardState *subBoard : ioBoard->SubBoards[w][h]) {
+        ComputeBoardScore(subBoard);
+      }
     }
   }
 }
 
 
-void JumpinPlayerAI::ComputeDestinations(BoardState &ioBoard,
-                                         const std::vector<std::vector<bool>> &iOccup,
-                                         std::vector<std::vector<bool>> &ioVisit,
-                                         const int iStartW, const int iStartH,
-                                         const int iW, const int iH) {
+void JumpinPlayerAI::ComputePawnDestinations(BoardState *ioBoard,
+                                             std::vector<std::vector<bool>> &ioVisit,
+                                             const int iStartW, const int iStartH,
+                                             const int iW, const int iH) {
   for (int idxDir= 0; idxDir < 4; idxDir++) {
     const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
     const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
     if (iW + 2 * wInc < 0 || iW + 2 * wInc >= nW ||
         iH + 2 * hInc < 0 || iH + 2 * hInc >= nH) continue;
-    if (!iOccup[iW + wInc][iH + hInc]) continue;
+    if (ioBoard->Pawns[iW + wInc][iH + hInc] == 0) continue;
     int wOff= iW + 2 * wInc;
     int hOff= iH + 2 * hInc;
     while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
-      if (iOccup[wOff][hOff]) {
+      if (ioBoard->Pawns[wOff][hOff] != 0) {
         wOff+= wInc;
         hOff+= hInc;
       }
       else if (!ioVisit[wOff][hOff]) {
-        ioBoard.Moves[iStartW][iStartH].push_back(std::array<int, 2>{wOff, hOff});
+        ioBoard->Moves[iStartW][iStartH].push_back(std::array<int, 2>{wOff, hOff});
         ioVisit[wOff][hOff]= true;
-        ComputeDestinations(ioBoard, iOccup, ioVisit, iStartW, iStartH, wOff, hOff);
+        ComputePawnDestinations(ioBoard, ioVisit, iStartW, iStartH, wOff, hOff);
         break;
       }
       else
