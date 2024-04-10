@@ -41,7 +41,7 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.push_back(ParamUI("BoardH__________", 5));
     D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("SinglePlayer____", 1));
-    D.UI.push_back(ParamUI("SearchDepth_____", 1));
+    D.UI.push_back(ParamUI("SearchDepth_____", 2));
     D.UI.push_back(ParamUI("TreeStepDist____", 0.3));
     D.UI.push_back(ParamUI("TreeStepRadians_", 0.5));
     D.UI.push_back(ParamUI("TreeFactDist____", 0.5));
@@ -90,6 +90,7 @@ void JumpinPlayerAI::Allocate() {
   // Get UI parameters
   nW= std::max(D.UI[BoardW__________].I(), 1);
   nH= std::max(D.UI[BoardH__________].I(), 1);
+  idxTurn= 0;
   wSel= -1;
   hSel= -1;
 
@@ -124,6 +125,7 @@ void JumpinPlayerAI::Refresh() {
   // Compute root board score and moves
   ComputeBoardScore(RootBoard);
   ComputeBoardMoves(RootBoard, 0);
+  ConsolidateBoardScores(RootBoard, 0);
 
   if (D.Plot.size() < 1) D.Plot.resize(1);
   D.Plot[0].name= "Score";
@@ -142,25 +144,22 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   const int hCursor= (int)std::floor((double)nH * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
 
   // Handle keyboard action
-  if (key == 'E') {
+  if (key == 'E' || key == 'W' || key == 'B') {
     if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
-      RootBoard->Pawns[wCursor][hCursor]= 0;
+      if (key == 'E') RootBoard->Pawns[wCursor][hCursor]= 0;
+      if (key == 'W') RootBoard->Pawns[wCursor][hCursor]= +1;
+      if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= -1;
+      ComputeBoardScore(RootBoard);
+      ComputeBoardMoves(RootBoard, 0);
+      ConsolidateBoardScores(RootBoard, 0);
     }
   }
-  if (key == 'B') {
-    if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
-      RootBoard->Pawns[wCursor][hCursor]= -1;
-    }
-  }
-  if (key == 'W') {
-    if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
-      RootBoard->Pawns[wCursor][hCursor]= +1;
-    }
-  }
+
   if (key == 'S') {
     wSel= wCursor;
     hSel= hCursor;
   }
+
   if (key == 'D') {
     std::array<int, 2> target= {wCursor, hCursor};
     if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
@@ -172,7 +171,12 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
         }
       }
     }
+    ComputeBoardScore(RootBoard);
+    ComputeBoardMoves(RootBoard, 0);
+    ConsolidateBoardScores(RootBoard, 0);
+    idxTurn++;
   }
+
   if (key == 'A' || key == 'Z') {
     bool isSet= false;
     int scoreBest= 0, wBest= 0, hBest= 0, kBest= 0;
@@ -197,10 +201,33 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
       RootBoard->Pawns[moveBest[0]][moveBest[1]]= RootBoard->Pawns[wBest][hBest];
       RootBoard->Pawns[wBest][hBest]= 0;
     }
+    ComputeBoardScore(RootBoard);
+    ComputeBoardMoves(RootBoard, 0);
+    ConsolidateBoardScores(RootBoard, 0);
+    idxTurn++;
   }
 
-  ComputeBoardScore(RootBoard);
-  ComputeBoardMoves(RootBoard, 0);
+  if (key == 'F' || key == 'G') {
+    std::array<int, 2> beg, end;
+    if (key == 'F') {
+      beg= RootBoard->MoveBestWhite[0];
+      end= RootBoard->MoveBestWhite[1];
+      RootBoard->MoveBestWhite= {std::array<int, 2>{-1, -1}, std::array<int, 2>{-1, -1}};
+    }
+    else {
+      beg= RootBoard->MoveBestBlack[0];
+      end= RootBoard->MoveBestBlack[1];
+      RootBoard->MoveBestBlack= {std::array<int, 2>{-1, -1}, std::array<int, 2>{-1, -1}};
+    }
+    if (beg[0] != -1 && beg[1] != -1 && end[0] != -1 && end[1] != -1) {
+      RootBoard->Pawns[end[0]][end[1]]= RootBoard->Pawns[beg[0]][beg[1]];
+      RootBoard->Pawns[beg[0]][beg[1]]= 0;
+      idxTurn++;
+      ComputeBoardScore(RootBoard);
+      ComputeBoardMoves(RootBoard, 0);
+      ConsolidateBoardScores(RootBoard, 0);
+    }
+  }
 
   if (D.Plot.size() < 1) D.Plot.resize(1);
   D.Plot[0].name= "Score";
@@ -223,7 +250,7 @@ void JumpinPlayerAI::Draw() {
   if (!isAllocated) return;
   if (!isRefreshed) return;
 
-  const double voxSize= 1.0 / (double)nH;
+  const float voxSize= 1.0 / (float)nH;
 
   // Draw the board
   if (D.displayMode1) {
@@ -267,7 +294,7 @@ void JumpinPlayerAI::Draw() {
 
   // Draw the available moves for the selected pawn
   if (D.displayMode3) {
-    glLineWidth(2.0);
+    glLineWidth(2.0f);
     glPushMatrix();
     glTranslatef(D.boxMin[0] + 0.5f * voxSize, D.boxMin[1] + 0.5f * voxSize, D.boxMin[2] + 0.5f * voxSize);
     glScalef(voxSize, voxSize, voxSize);
@@ -276,7 +303,8 @@ void JumpinPlayerAI::Draw() {
         std::array<int, 2> move= RootBoard->Moves[wSel][hSel][k];
         BoardState *subBoard= RootBoard->SubBoards[wSel][hSel][k];
         float r, g, b;
-        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * (float)subBoard->Score, r, g, b);
+        const float relScore= (float)(subBoard->Score - RootBoard->Score);
+        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
         glColor3f(r, g, b);
         glPushMatrix();
         glTranslatef(0.0f, (float)move[0], (float)move[1]);
@@ -285,7 +313,7 @@ void JumpinPlayerAI::Draw() {
       }
     }
     glPopMatrix();
-    glLineWidth(1.0);
+    glLineWidth(1.0f);
   }
 
   // Draw the board tree
@@ -293,38 +321,63 @@ void JumpinPlayerAI::Draw() {
     float px= 0.5f * (D.boxMin[0] + D.boxMax[0]);
     float py= D.boxMax[1] + 0.6f * (D.boxMax[1] - D.boxMin[1]);
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
-    glLineWidth(2.0);
-    glPointSize(4.0);
+    glLineWidth(2.0f);
     glBegin(GL_LINES);
-    DrawBoardTree(RootBoard, px, py, pz, 0.0f, 0.0f,
+    DrawBoardTree(RootBoard, 1, px, py, pz, 0.0f, 0.0f,
                   D.UI[TreeStepDist____].F(), D.UI[TreeStepRadians_].F(),
                   D.UI[TreeFactDist____].F(), D.UI[TreeFactRadians_].F());
     glEnd();
-    glLineWidth(1.0);
-    glPointSize(1.0);
+    glLineWidth(1.0f);
+    glPointSize(10.0f);
+    glBegin(GL_POINTS);
+    DrawBoardTree(RootBoard, 0, px, py, pz, 0.0f, 0.0f,
+                  D.UI[TreeStepDist____].F(), D.UI[TreeStepRadians_].F(),
+                  D.UI[TreeFactDist____].F(), D.UI[TreeFactRadians_].F());
+    glEnd();
+    glPointSize(1.0f);
   }
 }
 
 
-void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard,
+void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDrawMode,
                                    const float px, const float py, const float pz,
                                    const float dist, const float radians,
                                    const float distStep, const float radiansStep,
                                    const float distFact, const float radiansFact) {
   if (iBoard == nullptr) printf("Error: Drawing a null board");
 
-  float r, g, b;
   float distOff= dist + distStep;
   float radiansOff= radians;
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      for (BoardState *subBoard : iBoard->SubBoards[w][h]) {
-        float relScore= (float)(subBoard->Score - RootBoard->Score);
-        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
-        glColor3f(r, g, b);
-        glVertex3f(px, py + dist * std::cos(radians), pz + dist * std::sin(radians));
-        glVertex3f(px, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
-        DrawBoardTree(subBoard, px, py, pz, distOff, radiansOff, distStep * distFact, radiansStep * radiansFact, distFact, radiansFact);
+      for (int k= 0; k < (int)iBoard->Moves[w][h].size(); k++) {
+        BoardState *subBoard= iBoard->SubBoards[w][h][k];
+        if (iDrawMode == 0) {
+          float r, g, b;
+          const float relScore= (float)(subBoard->ScoreBestWhite - RootBoard->Score);
+          Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
+          glColor3f(r, g, b);
+          glVertex3f(px + 0.01f, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
+        }
+        else {
+          if (iBoard->MoveBestWhite[0] == std::array<int, 2>{w, h} && iBoard->MoveBestWhite[1] == iBoard->Moves[w][h][k]) {
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex3f(px + 0.01f, py + dist * std::cos(radians), pz + dist * std::sin(radians));
+            glVertex3f(px + 0.01f, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
+          }
+          if (iBoard->MoveBestBlack[0] == std::array<int, 2>{w, h} && iBoard->MoveBestBlack[1] == iBoard->Moves[w][h][k]) {
+            glColor3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(px + 0.01f, py + dist * std::cos(radians), pz + dist * std::sin(radians));
+            glVertex3f(px + 0.01f, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
+          }
+          float r, g, b;
+          const float relScore= (float)(subBoard->Score - RootBoard->Score);
+          Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
+          glColor3f(r, g, b);
+          glVertex3f(px, py + dist * std::cos(radians), pz + dist * std::sin(radians));
+          glVertex3f(px, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
+        }
+        DrawBoardTree(subBoard, iDrawMode, px, py, pz, distOff, radiansOff, distStep * distFact, radiansStep * radiansFact, distFact, radiansFact);
         radiansOff+= radiansStep;
       }
     }
@@ -338,8 +391,12 @@ JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard() {
   newBoard->Moves= Field::AllocField2D(nW, nH, std::vector<std::array<int, 2>>());
   newBoard->SubBoards= Field::AllocField2D(nW, nH, std::vector<BoardState *>());
   newBoard->Score= 0;
-  newBoard->ScoreMax= 0;
-  newBoard->ScoreMin= 0;
+  newBoard->ScoreBestWhite= 0;
+  newBoard->ScoreBestBlack= 0;
+  newBoard->StepsBestWhite= 0;
+  newBoard->StepsBestBlack= 0;
+  newBoard->MoveBestWhite= {std::array<int, 2>{-1, -1}, std::array<int, 2>{-1, -1}};
+  newBoard->MoveBestBlack= {std::array<int, 2>{-1, -1}, std::array<int, 2>{-1, -1}};
   return newBoard;
 }
 
@@ -382,19 +439,36 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
 }
 
 
-// void JumpinPlayerAI::ConsolidateBoardScore(BoardState *ioBoard) {
-//   if (ioBoard == nullptr) printf("Error: Consolidating score of a null board");
+void JumpinPlayerAI::ConsolidateBoardScores(BoardState *ioBoard, const int iDepth) {
+  if (ioBoard == nullptr) printf("Error: Consolidating score of a null board");
 
-//   for (int w= 0; w < nW; w++) {
-//     for (int h= 0; h < nH; h++) {
-//       for (int k= 0; k < (int)RootBoard->Moves[wSel][hSel].size(); k++) {
-//         std::array<int, 2> move= RootBoard->Moves[wSel][hSel][k];
-//         BoardState *subBoard= ioBoard->SubBoards[w][h][k];
-
-//       }
-//     }
-//   }
-// }
+  ioBoard->ScoreBestWhite= ioBoard->Score;
+  ioBoard->ScoreBestBlack= ioBoard->Score;
+  ioBoard->StepsBestWhite= 0;
+  ioBoard->StepsBestBlack= 0;
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      for (int k= 0; k < (int)ioBoard->Moves[w][h].size(); k++) {
+        BoardState *subBoard= ioBoard->SubBoards[w][h][k];
+        ConsolidateBoardScores(subBoard, iDepth + 1);
+        if (D.UI[SinglePlayer____].B()) {
+          if (ioBoard->Pawns[w][h] > 0) {
+            if (ioBoard->ScoreBestWhite < subBoard->ScoreBestWhite ||
+                (ioBoard->ScoreBestWhite == subBoard->ScoreBestWhite && ioBoard->StepsBestWhite > subBoard->StepsBestWhite)) {
+              ioBoard->StepsBestWhite= subBoard->StepsBestWhite + 1;
+              ioBoard->ScoreBestWhite= subBoard->ScoreBestWhite;
+              ioBoard->MoveBestWhite[0]= {w, h};
+              ioBoard->MoveBestWhite[1]= ioBoard->Moves[w][h][k];
+            }
+          }
+        }
+        else {
+          // TODO handle 2 player mode with minimax dependant on iDepth and idxTurn
+        }
+      }
+    }
+  }
+}
 
 
 void JumpinPlayerAI::ComputeBoardMoves(BoardState *ioBoard, const int iDepth) {
@@ -422,7 +496,7 @@ void JumpinPlayerAI::ComputeBoardMoves(BoardState *ioBoard, const int iDepth) {
         newBoard->Pawns[move[0]][move[1]]= newBoard->Pawns[w][h];
         newBoard->Pawns[w][h]= 0;
         ioBoard->SubBoards[w][h].push_back(newBoard);
-        if (iDepth < D.UI[SearchDepth_____].I()) {
+        if (iDepth < D.UI[SearchDepth_____].I() - 1) {
           ComputeBoardMoves(newBoard, iDepth + 1);
         }
       }
