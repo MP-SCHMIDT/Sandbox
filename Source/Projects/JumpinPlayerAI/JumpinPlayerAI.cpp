@@ -45,10 +45,6 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("SearchDepth_____", 3));
     D.UI.push_back(ParamUI("______________01", NAN));
-    D.UI.push_back(ParamUI("TreeStepDist____", 0.3));
-    D.UI.push_back(ParamUI("TreeStepRadians_", 0.5));
-    D.UI.push_back(ParamUI("TreeFactDist____", 0.5));
-    D.UI.push_back(ParamUI("TreeFactRadians_", 0.125));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("______________02", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
@@ -146,11 +142,11 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   const int hCursor= (int)std::floor((double)nH * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
 
   // Board set-up
-  if (key == 'E' || key == 'W' || key == 'B') {
+  if (key == 'R' || key == 'G' || key == 'B') {
     if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
-      if (key == 'E') RootBoard->Pawns[wCursor][hCursor]= 0;
-      if (key == 'W') RootBoard->Pawns[wCursor][hCursor]= +1;
-      if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= -1;
+      if (key == 'R') RootBoard->Pawns[wCursor][hCursor]= -1;
+      if (key == 'G') RootBoard->Pawns[wCursor][hCursor]= 0;
+      if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= +1;
       wSel= hSel= -1;
       ComputeGameTreeSearch(RootBoard, 0);
     }
@@ -169,6 +165,7 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   }
 
   // Manual move
+  bool AutoplayBot= false;
   if (key == 'D') {
     std::array<int, 2> target= {wCursor, hCursor};
     if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
@@ -179,6 +176,7 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
           wSel= hSel= -1;
           idxTurn++;
           ComputeGameTreeSearch(RootBoard, 0);
+          AutoplayBot= true;
           break;
         }
       }
@@ -186,7 +184,8 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   }
 
   // Automated move
-  if (key == 'F') {
+  if (key == 'F' || AutoplayBot) {
+    AutoplayBot= false;
     if (RootBoard->BestIsSet && RootBoard->StepsBest > 0) {
       std::array<int, 2> beg= {-1, -1}, end= {-1, -1};
       for (int w= 0; w < nW; w++) {
@@ -286,13 +285,8 @@ void JumpinPlayerAI::Draw() {
     glTranslatef(D.boxMin[0] + 0.5f * voxSize, D.boxMin[1] + 0.5f * voxSize, D.boxMin[2] + 0.5f * voxSize);
     glScalef(voxSize, voxSize, voxSize);
     if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
-      for (int k= 0; k < (int)RootBoard->Moves[wSel][hSel].size(); k++) {
-        std::array<int, 2> move= RootBoard->Moves[wSel][hSel][k];
-        BoardState *subBoard= RootBoard->SubBoards[wSel][hSel][k];
-        float r, g, b;
-        const float relScore= (float)(subBoard->Score - RootBoard->Score);
-        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
-        glColor3f(r, g, b);
+      for (std::array<int, 2> move : RootBoard->Moves[wSel][hSel]) {
+        glColor3f(0.5f, 0.8f, 0.5f);
         glPushMatrix();
         glTranslatef(0.0f, (float)move[0], (float)move[1]);
         glutWireCube(0.95f);
@@ -310,38 +304,42 @@ void JumpinPlayerAI::Draw() {
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
     glLineWidth(2.0f);
     glBegin(GL_LINES);
-    DrawBoardTree(RootBoard, px, py, pz, 0.0f, 0.0f,
-                  D.UI[TreeStepDist____].F(), D.UI[TreeStepRadians_].F(),
-                  D.UI[TreeFactDist____].F(), D.UI[TreeFactRadians_].F());
+    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), 0.0f, 2.0f * std::numbers::pi);
     glEnd();
     glLineWidth(1.0f);
   }
 }
 
 
-void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard,
+void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
                                    const float px, const float py, const float pz,
-                                   const float dist, const float radians,
-                                   const float distStep, const float radiansStep,
-                                   const float distFact, const float radiansFact) {
+                                   const float radius, const float arcBeg, const float arcEnd) {
   if (iBoard == nullptr) printf("Error: Drawing a null board");
 
-  float distOff= dist + distStep;
-  float radiansOff= radians;
+  // Find the number of moves for angle spacing
+  int nbMoves= 0;
+  for (int w= 0; w < nW; w++)
+    for (int h= 0; h < nH; h++)
+      nbMoves+= (int)iBoard->Moves[w][h].size();
+  const float arcStep= (arcEnd - arcBeg) / float(nbMoves);
+  const float distBeg= radius * float(iDepth) / D.UI[SearchDepth_____].F();
+  const float distEnd= radius * float(iDepth + 1) / D.UI[SearchDepth_____].F();
+
+  // Recursively draw the moves
+  int idxMove= 0;
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
       for (int k= 0; k < (int)iBoard->Moves[w][h].size(); k++) {
         BoardState *subBoard= iBoard->SubBoards[w][h][k];
         // Draw the branch for the move
         float r, g, b;
-        const float relScore= (float)(subBoard->Score - RootBoard->Score);
-        Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * relScore, r, g, b);
+        Colormap::RatioToJetBrightSmooth(0.5f - D.UI[ColorFactor_____].F() * float(subBoard->Score), r, g, b);
         glColor3f(r, g, b);
-        glVertex3f(px, py + dist * std::cos(radians), pz + dist * std::sin(radians));
-        glVertex3f(px, py + distOff * std::cos(radiansOff), pz + distOff * std::sin(radiansOff));
-        // Recursion
-        DrawBoardTree(subBoard, px, py, pz, distOff, radiansOff, distStep * distFact, radiansStep * radiansFact, distFact, radiansFact);
-        radiansOff+= radiansStep;
+        glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
+        glVertex3f(px, py + distEnd * std::cos(arcBeg + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + idxMove * arcStep));
+        // Recursively draw moves in the sub arc
+        DrawBoardTree(subBoard, iDepth + 1, px, py, pz, radius, arcBeg + (idxMove - 0.5f) * arcStep, arcBeg + (idxMove + 0.5f) * arcStep);
+        idxMove++;
       }
     }
   }

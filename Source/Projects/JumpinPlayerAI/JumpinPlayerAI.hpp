@@ -23,10 +23,6 @@ class JumpinPlayerAI
     ______________00,
     SearchDepth_____,
     ______________01,
-    TreeStepDist____,
-    TreeStepRadians_,
-    TreeFactDist____,
-    TreeFactRadians_,
     ColorFactor_____,
     ______________02,
     VerboseLevel____,
@@ -53,11 +49,9 @@ class JumpinPlayerAI
   int hSel;                        // Coordinates of the currently selected pawn
 
   // Draw
-  void DrawBoardTree(const BoardState *iBoard,
+  void DrawBoardTree(const BoardState *iBoard, const int iDepth,
                      const float px, const float py, const float pz,
-                     const float dist, const float radians,
-                     const float distStep, const float radiansStep,
-                     const float distFact, const float radiansFact);
+                     const float radius, const float arcBeg, const float arcEnd);
   void PlotData();
 
   // Board creation and destruction
