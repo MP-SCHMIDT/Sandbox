@@ -13,6 +13,13 @@ namespace Timer {
     return (int)TimerStack.size();
   }
 
+  inline double CheckTimer() {
+    if (TimerStack.empty()) return -1.0;
+    std::chrono::high_resolution_clock::time_point timeNew= std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point timeOld= TimerStack[TimerStack.size() - 1];
+    return std::chrono::duration<double>(timeNew - timeOld).count();
+  }
+
   inline double PopTimer() {
     if (TimerStack.empty()) return -1.0;
     std::chrono::high_resolution_clock::time_point timeNew= std::chrono::high_resolution_clock::now();
