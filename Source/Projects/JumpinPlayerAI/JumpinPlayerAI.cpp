@@ -114,6 +114,8 @@ void JumpinPlayerAI::Allocate() {
         RootBoard->Pawns[w][h]= -1;
     }
   }
+
+  // TODO precompute extremal scores for color normalization
 }
 
 
@@ -278,6 +280,8 @@ void JumpinPlayerAI::Draw() {
     glDisable(GL_LIGHTING);
   }
 
+  // TODO add cheat mode overlay showing best moves
+
   // Draw the available moves for the selected pawn
   if (D.displayMode3) {
     glLineWidth(2.0f);
@@ -425,6 +429,10 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
     return;
   }
 
+  // TODO add time limit check
+
+  // TODO add alpha beta pruning
+
   // Search the tree recursively
   ioBoard->BestIsSet= false;
   bool isBluTurn= true;
@@ -521,7 +529,7 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
     }
   }
 
-  // TODO add other scoring schemes
+  // TODO add penality for stranded pawns
 }
 
 
