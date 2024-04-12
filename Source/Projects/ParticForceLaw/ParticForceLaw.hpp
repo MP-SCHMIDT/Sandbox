@@ -96,7 +96,6 @@ class ParticForceLaw
     MetaballIsoval__,
     ColorMode_______,
     ColorFactor_____,
-    ColorDecay______,
     VisuScale_______,
     VisuSimple______,
     VisuHideOOB_____,

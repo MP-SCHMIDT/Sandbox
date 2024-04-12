@@ -43,7 +43,7 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("DomainX_________", 1.0));    // Simulation domain size
     D.UI.push_back(ParamUI("DomainY_________", 1.0));    // Simulation domain size
     D.UI.push_back(ParamUI("DomainZ_________", 1.0));    // Simulation domain size
-    D.UI.push_back(ParamUI("ScenarioPreset__", 0));      // Scenario choice, 0 load file, 1+ hard coded scenarios
+    D.UI.push_back(ParamUI("ScenarioPreset__", 4));      // Scenario choice, 0 load file, 1+ hard coded scenarios
     D.UI.push_back(ParamUI("Scenario2DID____", 0));      // BMP file to load
     D.UI.push_back(ParamUI("Scenario2DThick_", 0.5));    // Relative thickness of loaded file wrt domain
     D.UI.push_back(ParamUI("LatticePitch____", 0.04));   // Charateristic lengthscale of particle cloud, controls the number of particles
@@ -105,12 +105,11 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("______________05", NAN));    //
     D.UI.push_back(ParamUI("MetaballVoxSize_", 0.04));   // Voxel size for Metaball and Marching Cubes isosurface
     D.UI.push_back(ParamUI("MetaballIsoval__", 0.5));    // Isovalue for Marching Cubes
-    D.UI.push_back(ParamUI("ColorMode_______", 3));      // Display
+    D.UI.push_back(ParamUI("ColorMode_______", 3));      // Show material, boundary conditions, velocity, force magnitude, velocity magnitude
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));    // Color factor for modes supporting it
-    D.UI.push_back(ParamUI("ColorDecay______", 1.0));    // Color temporal decay for modes supporting it
     D.UI.push_back(ParamUI("VisuScale_______", 0.5));    // Size scaling of display elements
-    D.UI.push_back(ParamUI("VisuSimple______", 1));      // Toggle for simplified draw mode
-    D.UI.push_back(ParamUI("VisuHideOOB_____", 0));      // Enable draw of particles out of bounds
+    D.UI.push_back(ParamUI("VisuSimple______", 0));      // Toggle for simplified draw mode
+    D.UI.push_back(ParamUI("VisuHideOOB_____", 0));      // Hide particles out of bounds
     D.UI.push_back(ParamUI("VisuMinNeighbor_", 0));      // Hide particles with too few neighbors
     D.UI.push_back(ParamUI("______________06", NAN));    //
     D.UI.push_back(ParamUI("TestParamMIP_0__", 0));      // Generic param for testing purposes
@@ -154,7 +153,9 @@ bool ParticForceLaw::CheckRefresh() {
   if (D.UI[ForceLawPresetB_].hasChanged()) isRefreshed= false;
   if (D.UI[ForceLawScaleA__].hasChanged()) isRefreshed= false;
   if (D.UI[ForceLawScaleB__].hasChanged()) isRefreshed= false;
-  for (int idxParam= ForceLawA_0_00__; idxParam <= ForceLawB_3_00__; idxParam++)
+  for (int idxParam= ForceLawA_0_00__; idxParam <= ForceLawA_3_00__; idxParam++)
+    if (D.UI[idxParam].hasChanged()) isRefreshed= false;
+  for (int idxParam= ForceLawB_0_00__; idxParam <= ForceLawB_3_00__; idxParam++)
     if (D.UI[idxParam].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
@@ -273,6 +274,33 @@ void ParticForceLaw::Draw() {
   if (!isRefreshed) return;
 
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+
+  // Set particle color
+  for (int k= 0; k < (int)Pos.size(); k++) {
+    float r= 0.5f, g= 0.5f, b= 0.5f;
+    if (D.UI[ColorMode_______].I() == 0) {
+      if (Mat[k] == 0) r= 1.0f;
+      if (Mat[k] == 1) g= 1.0f;
+      if (Mat[k] == 2) b= 1.0f;
+    }
+    if (D.UI[ColorMode_______].I() == 1) {
+      r= 0.5f + 0.3f * (float)BCPos[k];
+      g= 0.5f + 0.3f * (float)BCVel[k];
+      b= 0.5f + 0.3f * (float)BCFor[k];
+    }
+    if (D.UI[ColorMode_______].I() == 2) {
+      r= D.UI[ColorFactor_____].F() * Vel[k][0] + 0.5f;
+      g= D.UI[ColorFactor_____].F() * Vel[k][1] + 0.5f;
+      b= D.UI[ColorFactor_____].F() * Vel[k][2] + 0.5f;
+    }
+    if (D.UI[ColorMode_______].I() == 3) {
+      Colormap::RatioToJetBrightSmooth(ForceMag[k] * D.UI[ColorFactor_____].F(), r, g, b);
+    }
+    if (D.UI[ColorMode_______].I() == 4) {
+      Colormap::RatioToBlackBody(Vel[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
+    }
+    Col[k].set(r, g, b);
+  }
 
   // Display particles
   if (D.displayMode1) {
@@ -1053,33 +1081,6 @@ void ParticForceLaw::StepSimulation() {
 
   // Advance time
   SimTime+= dt;
-
-  // Set particle color with gradual decay
-  for (int k= 0; k < (int)Pos.size(); k++) {
-    float r= 0.5f, g= 0.5f, b= 0.5f;
-    if (D.UI[ColorMode_______].I() == 0) {
-      if (Mat[k] == 0) r= 1.0f;
-      if (Mat[k] == 1) g= 1.0f;
-      if (Mat[k] == 2) b= 1.0f;
-    }
-    if (D.UI[ColorMode_______].I() == 1) {
-      r= 0.5f + 0.3f * (float)BCPos[k];
-      g= 0.5f + 0.3f * (float)BCVel[k];
-      b= 0.5f + 0.3f * (float)BCFor[k];
-    }
-    if (D.UI[ColorMode_______].I() == 2) {
-      r= D.UI[ColorFactor_____].F() * Vel[k][0] + 0.5f;
-      g= D.UI[ColorFactor_____].F() * Vel[k][1] + 0.5f;
-      b= D.UI[ColorFactor_____].F() * Vel[k][2] + 0.5f;
-    }
-    if (D.UI[ColorMode_______].I() == 3) {
-      Colormap::RatioToJetBrightSmooth(ForceMag[k] * D.UI[ColorFactor_____].F(), r, g, b);
-    }
-    if (D.UI[ColorMode_______].I() == 4) {
-      Colormap::RatioToBlackBody(Vel[k].norm() * D.UI[ColorFactor_____].F(), r, g, b);
-    }
-    Col[k]= (1.0f - D.UI[ColorDecay______].F()) * Col[k] + D.UI[ColorDecay______].F() * Vec::Vec3<float>(r, g, b);
-  }
 
   // Scatter plot of sensor data
   if ((int)D.Scatter.size() < RunID) D.Scatter.resize(RunID);
