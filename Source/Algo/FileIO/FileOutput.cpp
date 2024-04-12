@@ -1211,8 +1211,8 @@ bool FileOutput::SaveGraphTXTFile(
     std::vector<std::array<int, 2>> const& iBars,
     std::vector<double> const& iBarRadii,
     bool const iVerbose) {
-  if (iNodes.size() != iLoads.size()) throw;
-  if (iNodes.size() != iClamps.size()) throw;
+  if (iNodes.size() != iLoads.size()) return false;
+  if (iNodes.size() != iClamps.size()) return false;
 
   if (iVerbose) printf("Saving TXT graph file [%s]\n", iFullpath.c_str());
   FILE* outputFile= nullptr;
