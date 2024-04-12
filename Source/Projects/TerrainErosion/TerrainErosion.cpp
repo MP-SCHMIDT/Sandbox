@@ -289,7 +289,6 @@ void TerrainErosion::Animate() {
   }
 
   // Resolve droplet-droplet collisions
-  // TODO spatial partition
   for (int k0= 0; k0 < dropletNbK; k0++) {
     for (int k1= k0 + 1; k1 < dropletNbK; k1++) {
       if ((dropletPosCur[k1] - dropletPosCur[k0]).normSquared() <= (dropletRadCur[k0] + dropletRadCur[k1]) * (dropletRadCur[k0] + dropletRadCur[k1])) {
