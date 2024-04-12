@@ -16,6 +16,7 @@
 #include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 #include "Util/Random.hpp"
+#include "Util/Timer.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -38,12 +39,14 @@ void JumpinPlayerAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("BoardW__________", 4));
-    D.UI.push_back(ParamUI("BoardH__________", 5));
+    D.UI.push_back(ParamUI("BoardH__________", 8));
     D.UI.push_back(ParamUI("EnableBluPlayer_", 1));
     D.UI.push_back(ParamUI("EnableRedPlayer_", 1));
     D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("SearchDepth_____", 3));
+    D.UI.push_back(ParamUI("MaxSearchDepth__", 3));
+    D.UI.push_back(ParamUI("MaxThinkTime____", 0.05));
+    D.UI.push_back(ParamUI("MaxTreeNodes____", 1000));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("______________02", NAN));
@@ -73,7 +76,9 @@ bool JumpinPlayerAI::CheckAlloc() {
 
 // Check if parameter changes should trigger a refresh
 bool JumpinPlayerAI::CheckRefresh() {
-  if (D.UI[SearchDepth_____].hasChanged()) isRefreshed= false;
+  if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
+  if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
+  if (D.UI[MaxTreeNodes____].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
@@ -114,8 +119,6 @@ void JumpinPlayerAI::Allocate() {
         RootBoard->Pawns[w][h]= -1;
     }
   }
-
-  // TODO precompute extremal scores for color normalization
 }
 
 
@@ -177,8 +180,8 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
           RootBoard->Pawns[wSel][hSel]= 0;
           wSel= hSel= -1;
           idxTurn++;
-          ComputeGameTreeSearch(RootBoard, 0);
           AutoplayBot= true;
+          ComputeGameTreeSearch(RootBoard, 0);
           break;
         }
       }
@@ -318,7 +321,7 @@ void JumpinPlayerAI::Draw() {
 void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
                                    const float px, const float py, const float pz,
                                    const float radius, const float arcBeg, const float arcEnd) {
-  if (iBoard == nullptr) printf("Error: Drawing a null board");
+  if (iBoard == nullptr) printf("[ERROR] Drawing a null board\n");
 
   // Find the number of moves for angle spacing
   int nbMoves= 0;
@@ -326,8 +329,8 @@ void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
     for (int h= 0; h < nH; h++)
       nbMoves+= (int)iBoard->Moves[w][h].size();
   const float arcStep= (arcEnd - arcBeg) / float(nbMoves);
-  const float distBeg= radius * float(iDepth) / D.UI[SearchDepth_____].F();
-  const float distEnd= radius * float(iDepth + 1) / D.UI[SearchDepth_____].F();
+  const float distBeg= radius * float(iDepth) / D.UI[MaxSearchDepth__].F();
+  const float distEnd= radius * float(iDepth + 1) / D.UI[MaxSearchDepth__].F();
 
   // Recursively draw the moves
   int idxMove= 0;
@@ -388,7 +391,7 @@ JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard() {
 
 
 void JumpinPlayerAI::DeleteBoard(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("Error: Deleting a null board");
+  if (ioBoard == nullptr) printf("[ERROR] Deleting a null board\n");
 
   for (int w= 0; w < nW; w++)
     for (int h= 0; h < nH; h++)
@@ -400,10 +403,13 @@ void JumpinPlayerAI::DeleteBoard(BoardState *ioBoard) {
 
 
 void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth) {
-  if (ioBoard == nullptr) printf("Error: Computing game tree search of a null board");
+  if (ioBoard == nullptr) printf("[ERROR] Computing game tree search of a null board\n");
+
+  bool skipSearch= false;
 
   // Reset if root node
   if (iDepth == 0) {
+    Timer::PushTimer();
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
         ioBoard->Moves[w][h].clear();
@@ -422,76 +428,85 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
   // Set the base score of the board
   ComputeBoardScore(ioBoard);
   CheckWinState(ioBoard, iDepth);
-  if (iDepth == D.UI[SearchDepth_____].I() || ioBoard->WinState != 0) {
+  if (iDepth == D.UI[MaxSearchDepth__].I() ||
+      ioBoard->WinState != 0 ||
+      (D.UI[MaxThinkTime____].D() > 0.0 && Timer::CheckTimer() >= D.UI[MaxThinkTime____].D())) {
     ioBoard->ScoreBest= ioBoard->Score;
     ioBoard->StepsBest= 0;
     ioBoard->BestIsSet= true;
-    return;
+    skipSearch= true;
   }
 
-  // TODO add time limit check
+  // TODO improve time limit check
+
+  // TODO add tree node count check
 
   // TODO add alpha beta pruning
 
   // Search the tree recursively
-  ioBoard->BestIsSet= false;
-  bool isBluTurn= true;
-  if (D.UI[EnableRedPlayer_].B() && (!D.UI[EnableBluPlayer_].B() || (idxTurn + iDepth) % 2 == 1)) isBluTurn= false;
-  if (iDepth < D.UI[SearchDepth_____].I()) {
-    for (int w= 0; w < nW; w++) {
-      for (int h= 0; h < nH; h++) {
-        // Compute possible moves for the current pawn
-        if (ioBoard->Pawns[w][h] != 0) {
-          if ((isBluTurn && ioBoard->Pawns[w][h] > 0) ||
-              (!isBluTurn && ioBoard->Pawns[w][h] < 0)) {
-            std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
-            Visit[w][h]= true;
-            const int oldPawn= ioBoard->Pawns[w][h];
-            ioBoard->Pawns[w][h]= 0;
-            ComputePawnJumps(ioBoard, Visit, w, h, w, h);
-            ioBoard->Pawns[w][h]= oldPawn;
-          }
-        }
-        // Create board for each move of the current pawn
-        for (std::array<int, 2> move : ioBoard->Moves[w][h]) {
-          BoardState *newBoard= CreateBoard();
-          newBoard->Pawns= ioBoard->Pawns;
-          newBoard->Pawns[move[0]][move[1]]= newBoard->Pawns[w][h];
-          newBoard->Pawns[w][h]= 0;
-          ioBoard->SubBoards[w][h].push_back(newBoard);
-          if (iDepth < D.UI[SearchDepth_____].I()) {
-            ComputeGameTreeSearch(newBoard, iDepth + 1);
-          }
-          // Update the best score
-          if (isBluTurn) {
-            if (!ioBoard->BestIsSet ||
-                ioBoard->ScoreBest < newBoard->ScoreBest ||
-                (ioBoard->ScoreBest == newBoard->ScoreBest && ioBoard->StepsBest > newBoard->StepsBest + 1)) {
-              ioBoard->ScoreBest= newBoard->ScoreBest;
-              ioBoard->StepsBest= newBoard->StepsBest + 1;
-              ioBoard->WinState= newBoard->WinState;
-              ioBoard->BestIsSet= true;
+  if (!skipSearch) {
+    ioBoard->BestIsSet= false;
+    bool isBluTurn= true;
+    if (D.UI[EnableRedPlayer_].B() && (!D.UI[EnableBluPlayer_].B() || (idxTurn + iDepth) % 2 == 1)) isBluTurn= false;
+    if (iDepth < D.UI[MaxSearchDepth__].I()) {
+      for (int w= 0; w < nW; w++) {
+        for (int h= 0; h < nH; h++) {
+          // Compute possible moves for the current pawn
+          if (ioBoard->Pawns[w][h] != 0) {
+            if ((isBluTurn && ioBoard->Pawns[w][h] > 0) ||
+                (!isBluTurn && ioBoard->Pawns[w][h] < 0)) {
+              std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
+              Visit[w][h]= true;
+              const int oldPawn= ioBoard->Pawns[w][h];
+              ioBoard->Pawns[w][h]= 0;
+              ComputePawnJumps(ioBoard, Visit, w, h, w, h);
+              ioBoard->Pawns[w][h]= oldPawn;
             }
           }
-          else {
-            if (!ioBoard->BestIsSet ||
-                ioBoard->ScoreBest > newBoard->ScoreBest ||
-                (ioBoard->ScoreBest == newBoard->ScoreBest && ioBoard->StepsBest > newBoard->StepsBest + 1)) {
-              ioBoard->ScoreBest= newBoard->ScoreBest;
-              ioBoard->StepsBest= newBoard->StepsBest + 1;
-              ioBoard->WinState= newBoard->WinState;
-              ioBoard->BestIsSet= true;
+          // Create board for each move of the current pawn
+          for (std::array<int, 2> move : ioBoard->Moves[w][h]) {
+            BoardState *newBoard= CreateBoard();
+            newBoard->Pawns= ioBoard->Pawns;
+            newBoard->Pawns[move[0]][move[1]]= newBoard->Pawns[w][h];
+            newBoard->Pawns[w][h]= 0;
+            ioBoard->SubBoards[w][h].push_back(newBoard);
+            if (iDepth < D.UI[MaxSearchDepth__].I()) {
+              ComputeGameTreeSearch(newBoard, iDepth + 1);
+            }
+            // Update the best score
+            if (isBluTurn) {
+              if (!ioBoard->BestIsSet ||
+                  ioBoard->ScoreBest < newBoard->ScoreBest ||
+                  (ioBoard->ScoreBest == newBoard->ScoreBest && ioBoard->StepsBest > newBoard->StepsBest + 1)) {
+                ioBoard->ScoreBest= newBoard->ScoreBest;
+                ioBoard->StepsBest= newBoard->StepsBest + 1;
+                ioBoard->WinState= newBoard->WinState;
+                ioBoard->BestIsSet= true;
+              }
+            }
+            else {
+              if (!ioBoard->BestIsSet ||
+                  ioBoard->ScoreBest > newBoard->ScoreBest ||
+                  (ioBoard->ScoreBest == newBoard->ScoreBest && ioBoard->StepsBest > newBoard->StepsBest + 1)) {
+                ioBoard->ScoreBest= newBoard->ScoreBest;
+                ioBoard->StepsBest= newBoard->StepsBest + 1;
+                ioBoard->WinState= newBoard->WinState;
+                ioBoard->BestIsSet= true;
+              }
             }
           }
         }
       }
     }
   }
+
+  if (iDepth == 0)
+    Timer::PopTimer();
 }
 
 
 void JumpinPlayerAI::CheckWinState(BoardState *ioBoard, const int iDepth) {
-  if (ioBoard == nullptr) printf("Error: Checking win state of a null board");
+  if (ioBoard == nullptr) printf("[ERROR] Checking win state of a null board\n");
 
   bool isBluTurn= true;
   if (D.UI[EnableRedPlayer_].B() && (!D.UI[EnableBluPlayer_].B() || (idxTurn + iDepth) % 2 == 1)) isBluTurn= false;
@@ -516,7 +531,7 @@ void JumpinPlayerAI::CheckWinState(BoardState *ioBoard, const int iDepth) {
 
 
 void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("Error: Computing score of a null board");
+  if (ioBoard == nullptr) printf("[ERROR] Computing score of a null board\n");
 
   // Reset score
   ioBoard->Score= 0;
