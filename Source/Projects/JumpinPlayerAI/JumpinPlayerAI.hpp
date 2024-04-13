@@ -17,36 +17,41 @@ class JumpinPlayerAI
   {
     BoardW__________,
     BoardH__________,
-    EnableBluPlayer_,
-    EnableRedPlayer_,
+    BotBluPlayer____,
+    BotRedPlayer____,
     StartingRows____,
     ______________00,
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeNodes____,
     ______________01,
-    ColorFactor_____,
+    ValPushTotal____,
+    ValPushLast_____,
+    ValSoftStranded_,
+    ValHardStranded_,
     ______________02,
+    ColorFactor_____,
+    ______________03,
     VerboseLevel____,
   };
 
   // Structure to store a board state
   struct BoardState
   {
-    std::vector<std::vector<int>> Pawns;                              // Flag for presence of pawns (Red= -1, Blu= +1)
-    std::vector<std::vector<std::vector<std::array<int, 2>>>> Moves;  // List of possible moves for each starting position
-    std::vector<std::vector<std::vector<BoardState *>>> SubBoards;    // Resulting board states for each potential move
-    int Score;                                                        // Evaluated score of the board
-    int ScoreBest;                                                    // Best score found in sub tree
-    int StepsBest;                                                    // Number of steps to reach the best score found in sub tree
-    int WinState;                                                     // Number indicating if a player has a guaranteed win
-    bool BestIsSet;                                                   // Flag indicating if the best move is set
+    std::array<int, 4> Move;              // Move source and destination that leads to this board (or 0 0 0 0 if root board)
+    std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Red= -1, Blu= +1)
+    std::vector<BoardState *> SubBoards;  // List of possible boards reachable from the current position
+    int Score;                            // Evaluated score of the board
+    int NashScore;                        // Nash score found in sub tree
+    int NashNbSteps;                      // Number of steps to reach the Nash score found in sub tree
+    int NashMoveIdx;                      // Index of the Nash sub board or -1 if leaf node
   };
 
   int nW;                          // Dimensions of the board
   int nH;                          // Dimensions of the board
   int idxTurn;                     // Counter for the current turn in the game
-  BoardState *RootBoard= nullptr;  // Currrent state of the board
+  int nbTreeNodes;                 // Counter for the number of nodes evaluated in the current search
+  BoardState *RootBoard= nullptr;  // Current state of the board
   int wSel;                        // Coordinates of the currently selected pawn
   int hSel;                        // Coordinates of the currently selected pawn
 
@@ -57,17 +62,23 @@ class JumpinPlayerAI
   void PlotData();
 
   // Board creation and destruction
-  BoardState *CreateBoard();
+  BoardState *CreateBoard(const std::vector<std::vector<int>> &iPawns,
+                          const std::array<int, 4> &iMove);
   void DeleteBoard(BoardState *ioBoard);
 
-  // Game tree board computation
-  void ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth);
-  void CheckWinState(BoardState *ioBoard, const int iDepth);
+  // Evaluation
   void ComputeBoardScore(BoardState *ioBoard);
-  void ComputePawnJumps(BoardState *ioBoard,
-                        std::vector<std::vector<bool>> &ioVisit,
+
+  // Search
+  void ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth);
+  void ComputePawnJumps(BoardState *ioBoard, const int iDepth,
                         const int iStartW, const int iStartH,
-                        const int iW, const int iH);
+                        const int iCurrW, const int iCurrH,
+                        std::vector<std::vector<bool>> &ioVisit,
+                        std::vector<std::array<int, 2>> &ioJumps);
+
+  // Utility
+  bool inline IsBluTurn(const int iDepth);
 
   public:
   bool isActivProj;
