@@ -45,9 +45,9 @@ class JumpinPlayerAI
   // Structure to store a board state
   struct BoardState
   {
-    std::array<int, 4> Move;              // Move source and destination that leads to this board (or 0 0 0 0 if root board)
-    std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Red= -1, Blu= +1)
     std::vector<BoardState *> SubBoards;  // List of possible boards reachable from the current position sorted in Nash order
+    std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Red= -1, Blu= +1)
+    std::array<int, 4> Move;              // Move source and destination that leads to this board (or 0 0 0 0 if root board)
     int Score;                            // Evaluated score of the board
     int NashScore;                        // Nash score found in sub tree
     int NashNbSteps;                      // Number of steps to reach the Nash score found in sub tree
@@ -57,6 +57,7 @@ class JumpinPlayerAI
   int nH;                          // Dimensions of the board
   int idxTurn;                     // Counter for the current turn in the game
   int nbTreeNodes;                 // Counter for the number of nodes evaluated in the current search
+  double thinkTime;                // Time spent in the last search
   BoardState *RootBoard= nullptr;  // Current state of the board
   int wSel;                        // Coordinates of the currently selected pawn
   int hSel;                        // Coordinates of the currently selected pawn
@@ -76,12 +77,13 @@ class JumpinPlayerAI
   void ComputeBoardScore(BoardState *ioBoard);
 
   // Search
-  void ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth);
-  void ComputePawnJumps(BoardState *ioBoard, const int iDepth,
-                        const int iStartW, const int iStartH,
-                        const int iCurrW, const int iCurrH,
-                        std::vector<std::vector<bool>> &ioVisit,
-                        std::vector<std::array<int, 2>> &ioJumps);
+  void ComputeGameTreeSearch();
+  void RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth);
+  void RecursivePawnJumps(BoardState *ioBoard, const int iDepth,
+                          const int iStartW, const int iStartH,
+                          const int iCurrW, const int iCurrH,
+                          std::vector<std::vector<bool>> &ioVisit,
+                          std::vector<std::array<int, 2>> &ioJumps);
 
   // Utility
   void inline SortedBoardInsertion(BoardState *ioBoard, const int iDepth, BoardState *NewBoard);

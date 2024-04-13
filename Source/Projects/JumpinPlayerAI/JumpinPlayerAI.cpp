@@ -111,6 +111,8 @@ void JumpinPlayerAI::Allocate() {
   nW= std::max(D.UI[BoardW__________].I(), 1);
   nH= std::max(D.UI[BoardH__________].I(), 1);
   idxTurn= 0;
+  nbTreeNodes= 0;
+  thinkTime= 0.0;
   wSel= -1;
   hSel= -1;
 
@@ -145,7 +147,7 @@ void JumpinPlayerAI::Refresh() {
   isRefreshed= true;
 
   // Compute root board score and moves
-  ComputeGameTreeSearch(RootBoard, 0);
+  ComputeGameTreeSearch();
 
   // Plot the scores
   PlotData();
@@ -168,14 +170,14 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
       if (key == 'G') RootBoard->Pawns[wCursor][hCursor]= 0;
       if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= +1;
       wSel= hSel= -1;
-      ComputeGameTreeSearch(RootBoard, 0);
+      ComputeGameTreeSearch();
     }
   }
 
   // Skip turn
   if (key == 'C') {
     idxTurn++;
-    ComputeGameTreeSearch(RootBoard, 0);
+    ComputeGameTreeSearch();
   }
 
   // Manual pawn selection
@@ -194,7 +196,7 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
           RootBoard->Pawns[wSel][hSel]= 0;
           wSel= hSel= -1;
           idxTurn++;
-          ComputeGameTreeSearch(RootBoard, 0);
+          ComputeGameTreeSearch();
           break;
         }
       }
@@ -220,7 +222,7 @@ void JumpinPlayerAI::Animate() {
       RootBoard->Pawns[NashMove[0]][NashMove[1]]= 0;
       wSel= hSel= -1;
       idxTurn++;
-      ComputeGameTreeSearch(RootBoard, 0);
+      ComputeGameTreeSearch();
     }
   }
 
@@ -332,7 +334,7 @@ void JumpinPlayerAI::Draw() {
 void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
                                    const float px, const float py, const float pz,
                                    const float radius, const float arcBeg, const float arcEnd) {
-  if (iBoard == nullptr) printf("[ERROR] Drawing a null board\n");
+  if (iBoard == nullptr) printf("[ERROR] DrawBoardTree on a null board\n");
 
   // Precompute distances and arc radians
   const float arcStep= (arcEnd - arcBeg) / float(iBoard->SubBoards.size());
@@ -364,19 +366,20 @@ void JumpinPlayerAI::PlotData() {
 
   // Print turn and win state
   D.Status.clear();
-  D.Status.resize(3);
+  D.Status.resize(4);
   D.Status[0]= std::string{"Turn:"} + std::to_string(idxTurn);
   D.Status[1]= std::string{"Player:"} + (IsBluTurn(0) ? std::string{"Blu"} : std::string{"Red"});
   if (RootBoard->NashScore == +INT_MAX) D.Status[2]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
   if (RootBoard->NashScore == -INT_MAX) D.Status[2]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
+  D.Status[3]= std::string{"ThinkTime:"} + std::to_string(thinkTime) + std::string{"ms"};
 }
 
 
 JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::vector<int>> &iPawns,
                                                         const std::array<int, 4> &iMove) {
   BoardState *newBoard= new BoardState;
-  newBoard->Move= iMove;
   newBoard->Pawns= iPawns;
+  newBoard->Move= iMove;
   newBoard->Score= 0;
   newBoard->NashScore= 0;
   newBoard->NashNbSteps= 0;
@@ -385,7 +388,7 @@ JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::v
 
 
 void JumpinPlayerAI::DeleteBoard(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] Deleting a null board\n");
+  if (ioBoard == nullptr) printf("[ERROR] DeleteBoard on a null board\n");
   for (BoardState *subBoard : ioBoard->SubBoards)
     DeleteBoard(subBoard);
   delete ioBoard;
@@ -394,7 +397,7 @@ void JumpinPlayerAI::DeleteBoard(BoardState *ioBoard) {
 
 
 void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] Computing score of a null board\n");
+  if (ioBoard == nullptr) printf("[ERROR] ComputeBoardScore on a null board\n");
 
   // Check for win state
   bool isWinBlu= true;
@@ -457,27 +460,36 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
 }
 
 
-void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth) {
-  if (ioBoard == nullptr) printf("[ERROR] Computing game tree search of a null board\n");
+void JumpinPlayerAI::ComputeGameTreeSearch() {
+  // Start the timer and node counter
+  Timer::PushTimer();
+  nbTreeNodes= 1;
 
-  // Reset if root node
-  if (iDepth == 0) {
-    Timer::PushTimer();
-    nbTreeNodes= 1;
-    ioBoard->Move= {0, 0, 0, 0};
-    for (BoardState *subBoard : ioBoard->SubBoards)
-      DeleteBoard(subBoard);
-    ioBoard->SubBoards.clear();
-    ioBoard->Score= 0;
-    ioBoard->NashScore= 0;
-    ioBoard->NashNbSteps= 0;
-  }
+  // Reset root node
+  for (BoardState *subBoard : RootBoard->SubBoards)
+    DeleteBoard(subBoard);
+  RootBoard->SubBoards.clear();
+  RootBoard->Move= {0, 0, 0, 0};
+  RootBoard->Score= 0;
+  RootBoard->NashScore= 0;
+  RootBoard->NashNbSteps= 0;
+
+  // Run the recursive search
+  RecursiveTreeSearch(RootBoard, 0, D.UI[MaxSearchDepth__].I());
+
+  // Stop the timer
+  thinkTime= Timer::PopTimer();
+}
+
+
+void JumpinPlayerAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth) {
+  if (ioBoard == nullptr) printf("[ERROR] RecursiveTreeSearch on a null board\n");
 
   // Set the base score of the board
   ComputeBoardScore(ioBoard);
 
   // Check if leaf node
-  if (iDepth == D.UI[MaxSearchDepth__].I() ||
+  if (iDepth == iMaxDepth ||
       ioBoard->Score == +INT_MAX ||
       ioBoard->Score == -INT_MAX ||
       (D.UI[MaxThinkTime____].D() > 0.0 && Timer::CheckTimer() >= D.UI[MaxThinkTime____].D()) ||
@@ -500,7 +512,7 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
             Visit[w][h]= true;
             const int oldPawn= ioBoard->Pawns[w][h];
             ioBoard->Pawns[w][h]= 0;
-            ComputePawnJumps(ioBoard, iDepth, w, h, w, h, Visit, Jumps);
+            RecursivePawnJumps(ioBoard, iDepth, w, h, w, h, Visit, Jumps);
             ioBoard->Pawns[w][h]= oldPawn;
           }
         }
@@ -511,7 +523,7 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
           newBoard->Pawns[jump[0]][jump[1]]= newBoard->Pawns[w][h];
           newBoard->Pawns[w][h]= 0;
           nbTreeNodes++;
-          ComputeGameTreeSearch(newBoard, iDepth + 1);
+          RecursiveTreeSearch(newBoard, iDepth + 1, iMaxDepth);
           // Insert the new board in the sorted list
           SortedBoardInsertion(ioBoard, iDepth, newBoard);
           ioBoard->NashScore= ioBoard->SubBoards[0]->NashScore;
@@ -520,18 +532,16 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
       }
     }
   }
-
-  // Remove timer at root node
-  if (iDepth == 0)
-    Timer::PopTimer();
 }
 
 
-void JumpinPlayerAI::ComputePawnJumps(BoardState *ioBoard, const int iDepth,
-                                      const int iStartW, const int iStartH,
-                                      const int iCurrW, const int iCurrH,
-                                      std::vector<std::vector<bool>> &ioVisit,
-                                      std::vector<std::array<int, 2>> &ioJumps) {
+void JumpinPlayerAI::RecursivePawnJumps(BoardState *ioBoard, const int iDepth,
+                                        const int iStartW, const int iStartH,
+                                        const int iCurrW, const int iCurrH,
+                                        std::vector<std::vector<bool>> &ioVisit,
+                                        std::vector<std::array<int, 2>> &ioJumps) {
+  if (ioBoard == nullptr) printf("[ERROR] RecursivePawnJumps on a null board\n");
+
   for (int idxDir= 0; idxDir < 4; idxDir++) {
     const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
     const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
@@ -545,7 +555,7 @@ void JumpinPlayerAI::ComputePawnJumps(BoardState *ioBoard, const int iDepth,
         if (!ioVisit[wOff][hOff]) {
           ioVisit[wOff][hOff]= true;
           ioJumps.push_back(std::array<int, 2>{wOff, hOff});
-          ComputePawnJumps(ioBoard, iDepth, iStartW, iStartH, wOff, hOff, ioVisit, ioJumps);
+          RecursivePawnJumps(ioBoard, iDepth, iStartW, iStartH, wOff, hOff, ioVisit, ioJumps);
         }
         break;
       }
@@ -559,6 +569,8 @@ void JumpinPlayerAI::ComputePawnJumps(BoardState *ioBoard, const int iDepth,
 
 
 void inline JumpinPlayerAI::SortedBoardInsertion(BoardState *ioBoard, const int iDepth, BoardState *NewBoard) {
+  if (ioBoard == nullptr) printf("[ERROR] SortedBoardInsertion on a null board\n");
+
   int idx= 0;
   while (idx < (int)ioBoard->SubBoards.size()) {
     BoardState *subBoard= ioBoard->SubBoards[idx];
