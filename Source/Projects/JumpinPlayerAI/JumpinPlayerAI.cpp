@@ -38,15 +38,15 @@ JumpinPlayerAI::JumpinPlayerAI() {
 void JumpinPlayerAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("BoardW__________", 2));
+    D.UI.push_back(ParamUI("BoardW__________", 4));
     D.UI.push_back(ParamUI("BoardH__________", 8));
     D.UI.push_back(ParamUI("BotBluPlayer____", 1));
     D.UI.push_back(ParamUI("BotRedPlayer____", 1));
     D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("MaxSearchDepth__", 2));
+    D.UI.push_back(ParamUI("MaxSearchDepth__", 5));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
-    D.UI.push_back(ParamUI("MaxTreeNodes____", 0));
+    D.UI.push_back(ParamUI("MaxTreeNodes____", 10000));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("ValPushTotal____", 10));
     D.UI.push_back(ParamUI("ValPushLast_____", 100));
@@ -55,6 +55,13 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.push_back(ParamUI("______________02", NAN));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("______________03", NAN));
+    D.UI.push_back(ParamUI("TestParamGAI_0__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_1__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_2__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_3__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_4__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_5__", 0.0));
+    D.UI.push_back(ParamUI("______________04", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
 
@@ -207,8 +214,8 @@ void JumpinPlayerAI::Animate() {
 
   // Autoplay the Nash move if the current player is a bot
   if ((D.UI[BotBluPlayer____].B() && IsBluTurn(0)) || (D.UI[BotRedPlayer____].B() && !IsBluTurn(0))) {
-    if (RootBoard->NashMoveIdx >= 0) {
-      std::array<int, 4> NashMove= RootBoard->SubBoards[RootBoard->NashMoveIdx]->Move;
+    if (!RootBoard->SubBoards.empty()) {
+      std::array<int, 4> NashMove= RootBoard->SubBoards[0]->Move;
       RootBoard->Pawns[NashMove[2]][NashMove[3]]= RootBoard->Pawns[NashMove[0]][NashMove[1]];
       RootBoard->Pawns[NashMove[0]][NashMove[1]]= 0;
       wSel= hSel= -1;
@@ -373,7 +380,6 @@ JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::v
   newBoard->Score= 0;
   newBoard->NashScore= 0;
   newBoard->NashNbSteps= 0;
-  newBoard->NashMoveIdx= -1;
   return newBoard;
 }
 
@@ -465,7 +471,6 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
     ioBoard->Score= 0;
     ioBoard->NashScore= 0;
     ioBoard->NashNbSteps= 0;
-    ioBoard->NashMoveIdx= -1;
   }
 
   // Set the base score of the board
@@ -505,21 +510,12 @@ void JumpinPlayerAI::ComputeGameTreeSearch(BoardState *ioBoard, const int iDepth
           BoardState *newBoard= CreateBoard(ioBoard->Pawns, std::array<int, 4>({w, h, jump[0], jump[1]}));
           newBoard->Pawns[jump[0]][jump[1]]= newBoard->Pawns[w][h];
           newBoard->Pawns[w][h]= 0;
-          ioBoard->SubBoards.push_back(newBoard);
           nbTreeNodes++;
           ComputeGameTreeSearch(newBoard, iDepth + 1);
-          // Check if the sub board has a new Nash score
-          bool updateScore= false;
-          if (ioBoard->NashMoveIdx < 0) updateScore= true;
-          else if (IsBluTurn(iDepth) && ioBoard->NashScore < newBoard->NashScore) updateScore= true;
-          else if (!IsBluTurn(iDepth) && ioBoard->NashScore > newBoard->NashScore) updateScore= true;
-          else if (ioBoard->NashScore == newBoard->NashScore && ioBoard->NashNbSteps > newBoard->NashNbSteps + 1) updateScore= true;
-          // Update the Nash score
-          if (updateScore) {
-            ioBoard->NashScore= newBoard->NashScore;
-            ioBoard->NashNbSteps= newBoard->NashNbSteps + 1;
-            ioBoard->NashMoveIdx= (int)ioBoard->SubBoards.size() - 1;
-          }
+          // Insert the new board in the sorted list
+          SortedBoardInsertion(ioBoard, iDepth, newBoard);
+          ioBoard->NashScore= ioBoard->SubBoards[0]->NashScore;
+          ioBoard->NashNbSteps= ioBoard->SubBoards[0]->NashNbSteps + 1;
         }
       }
     }
@@ -559,6 +555,19 @@ void JumpinPlayerAI::ComputePawnJumps(BoardState *ioBoard, const int iDepth,
       }
     }
   }
+}
+
+
+void inline JumpinPlayerAI::SortedBoardInsertion(BoardState *ioBoard, const int iDepth, BoardState *NewBoard) {
+  int idx= 0;
+  while (idx < (int)ioBoard->SubBoards.size()) {
+    BoardState *subBoard= ioBoard->SubBoards[idx];
+    if (IsBluTurn(iDepth) && subBoard->NashScore < NewBoard->NashScore) break;
+    if (!IsBluTurn(iDepth) && subBoard->NashScore > NewBoard->NashScore) break;
+    if (subBoard->NashScore == NewBoard->NashScore && subBoard->NashNbSteps > NewBoard->NashNbSteps + 1) break;
+    idx++;
+  }
+  ioBoard->SubBoards.insert(ioBoard->SubBoards.begin() + idx, NewBoard);
 }
 
 

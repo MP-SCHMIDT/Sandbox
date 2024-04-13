@@ -32,6 +32,13 @@ class JumpinPlayerAI
     ______________02,
     ColorFactor_____,
     ______________03,
+    TestParamGAI_0__,
+    TestParamGAI_1__,
+    TestParamGAI_2__,
+    TestParamGAI_3__,
+    TestParamGAI_4__,
+    TestParamGAI_5__,
+    ______________04,
     VerboseLevel____,
   };
 
@@ -40,11 +47,10 @@ class JumpinPlayerAI
   {
     std::array<int, 4> Move;              // Move source and destination that leads to this board (or 0 0 0 0 if root board)
     std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Red= -1, Blu= +1)
-    std::vector<BoardState *> SubBoards;  // List of possible boards reachable from the current position
+    std::vector<BoardState *> SubBoards;  // List of possible boards reachable from the current position sorted in Nash order
     int Score;                            // Evaluated score of the board
     int NashScore;                        // Nash score found in sub tree
     int NashNbSteps;                      // Number of steps to reach the Nash score found in sub tree
-    int NashMoveIdx;                      // Index of the Nash sub board or -1 if leaf node
   };
 
   int nW;                          // Dimensions of the board
@@ -78,6 +84,7 @@ class JumpinPlayerAI
                         std::vector<std::array<int, 2>> &ioJumps);
 
   // Utility
+  void inline SortedBoardInsertion(BoardState *ioBoard, const int iDepth, BoardState *NewBoard);
   bool inline IsBluTurn(const int iDepth);
 
   public:
