@@ -2,8 +2,10 @@
 
 
 // Standard lib
+#include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <random>
 #include <vector>
 
 // GLUT lib
@@ -38,18 +40,21 @@ JumpinPlayerAI::JumpinPlayerAI() {
 void JumpinPlayerAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("BoardW__________", 4));
-    D.UI.push_back(ParamUI("BoardH__________", 8));
+    D.UI.push_back(ParamUI("BoardW__________", 6));
+    D.UI.push_back(ParamUI("BoardH__________", 11));
+    D.UI.push_back(ParamUI("StartingRows____", 2));
+    D.UI.push_back(ParamUI("RandomBoard_____", 0));
     D.UI.push_back(ParamUI("BotBluPlayer____", 1));
     D.UI.push_back(ParamUI("BotRedPlayer____", 1));
-    D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("MaxSearchDepth__", 5));
+    D.UI.push_back(ParamUI("BluMoveOrdering_", 0));
+    D.UI.push_back(ParamUI("RedMoveOrdering_", 1));
+    D.UI.push_back(ParamUI("MaxSearchDepth__", 6));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
-    D.UI.push_back(ParamUI("MaxTreeNodes____", 10000));
+    D.UI.push_back(ParamUI("MaxTreeBoards___", 8000));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("ValPushTotal____", 10));
-    D.UI.push_back(ParamUI("ValPushLast_____", 100));
+    D.UI.push_back(ParamUI("ValPushLast_____", 50));
     D.UI.push_back(ParamUI("ValSoftStranded_", -40));
     D.UI.push_back(ParamUI("ValHardStranded_", -100));
     D.UI.push_back(ParamUI("______________02", NAN));
@@ -80,15 +85,18 @@ bool JumpinPlayerAI::CheckAlloc() {
   if (D.UI[BoardW__________].hasChanged()) isAllocated= false;
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
   if (D.UI[StartingRows____].hasChanged()) isAllocated= false;
+  if (D.UI[RandomBoard_____].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
 
 // Check if parameter changes should trigger a refresh
 bool JumpinPlayerAI::CheckRefresh() {
+  if (D.UI[BluMoveOrdering_].hasChanged()) isRefreshed= false;
+  if (D.UI[RedMoveOrdering_].hasChanged()) isRefreshed= false;
   if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
   if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
-  if (D.UI[MaxTreeNodes____].hasChanged()) isRefreshed= false;
+  if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;
   if (D.UI[ValPushTotal____].hasChanged()) isRefreshed= false;
   if (D.UI[ValPushLast_____].hasChanged()) isRefreshed= false;
   if (D.UI[ValSoftStranded_].hasChanged()) isRefreshed= false;
@@ -111,7 +119,7 @@ void JumpinPlayerAI::Allocate() {
   nW= std::max(D.UI[BoardW__________].I(), 1);
   nH= std::max(D.UI[BoardH__________].I(), 1);
   idxTurn= 0;
-  nbTreeNodes= 0;
+  nbTreeBoards= 0;
   thinkTime= 0.0;
   wSel= -1;
   hSel= -1;
@@ -127,12 +135,29 @@ void JumpinPlayerAI::Allocate() {
 
   // Create and initialize root board with pawns
   std::vector<std::vector<int>> StartPawns= Field::AllocField2D(nW, nH, 0);
-  for (int w= 0; w < nW; w++) {
-    for (int h= 0; h < nH; h++) {
-      if (h < D.UI[StartingRows____].I())
-        StartPawns[w][h]= +1;
-      if (h >= nH - D.UI[StartingRows____].I())
-        StartPawns[w][h]= -1;
+  int nbRows= std::min(D.UI[StartingRows____].I(), nH / 2);
+  if (D.UI[RandomBoard_____].B()) {
+    for (int player= -1; player <= +1; player+= 2) {
+      for (int k= 0; k < nbRows * nW; k++) {
+        while (true) {
+          const int randW= Random::Val(0, nW - 1);
+          const int randH= Random::Val(0, nH - 1);
+          if (StartPawns[randW][randH] == 0) {
+            StartPawns[randW][randH]= player;
+            break;
+          }
+        }
+      }
+    }
+  }
+  else {
+    for (int w= 0; w < nW; w++) {
+      for (int h= 0; h < nH; h++) {
+        if (h < nbRows)
+          StartPawns[w][h]= +1;
+        if (h >= nH - nbRows)
+          StartPawns[w][h]= -1;
+      }
     }
   }
   RootBoard= CreateBoard(StartPawns, std::array<int, 4>({0, 0, 0, 0}));
@@ -319,12 +344,12 @@ void JumpinPlayerAI::Draw() {
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
     glLineWidth(2.0f);
     glBegin(GL_LINES);
-    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), 0.0f, 2.0f * std::numbers::pi);
+    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -1.0f, std::numbers::pi + 1.0f);
     glEnd();
     glLineWidth(1.0f);
     glPointSize(10.0f);
     glBegin(GL_POINTS);
-    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), 0.0f, 2.0f * std::numbers::pi);
+    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -1.0f, std::numbers::pi + 1.0f);
     glEnd();
     glPointSize(1.0f);
   }
@@ -347,8 +372,8 @@ void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
     Colormap::RatioToJetBrightSmooth(0.5f - D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
     glColor3f(r, g, b);
     glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
-    glVertex3f(px, py + distEnd * std::cos(arcBeg + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + idxMove * arcStep));
-    DrawBoardTree(iBoard->SubBoards[idxMove], iDepth + 1, px, py, pz, radius, arcBeg + (idxMove - 0.5f) * arcStep, arcBeg + (idxMove + 0.5f) * arcStep);
+    glVertex3f(px, py + distEnd * std::cos(arcBeg + 0.5f * arcStep + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + 0.5f * arcStep + idxMove * arcStep));
+    DrawBoardTree(iBoard->SubBoards[idxMove], iDepth + 1, px, py, pz, radius, arcBeg + 0.5f * arcStep + (idxMove - 0.5f) * arcStep, arcBeg + 0.5f * arcStep + (idxMove + 0.5f) * arcStep);
   }
 }
 
@@ -461,21 +486,22 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
 
 
 void JumpinPlayerAI::ComputeGameTreeSearch() {
-  // Start the timer and node counter
+  // Start the timer and board counter
   Timer::PushTimer();
-  nbTreeNodes= 1;
+  nbTreeBoards= 1;
 
-  // Reset root node
+  // Reset root board
   for (BoardState *subBoard : RootBoard->SubBoards)
     DeleteBoard(subBoard);
   RootBoard->SubBoards.clear();
   RootBoard->Move= {0, 0, 0, 0};
-  RootBoard->Score= 0;
-  RootBoard->NashScore= 0;
-  RootBoard->NashNbSteps= 0;
+  ComputeBoardScore(RootBoard);
 
-  // Run the recursive search
-  RecursiveTreeSearch(RootBoard, 0, D.UI[MaxSearchDepth__].I());
+  // TODO add alpha beta pruning
+
+  // Run the recursive search with iterative deepening
+  for (int iterMaxSearchDepth= 1; iterMaxSearchDepth <= D.UI[MaxSearchDepth__].I(); iterMaxSearchDepth++)
+    RecursiveTreeSearch(RootBoard, 0, iterMaxSearchDepth);
 
   // Stop the timer
   thinkTime= Timer::PopTimer();
@@ -485,77 +511,83 @@ void JumpinPlayerAI::ComputeGameTreeSearch() {
 void JumpinPlayerAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth) {
   if (ioBoard == nullptr) printf("[ERROR] RecursiveTreeSearch on a null board\n");
 
-  // Set the base score of the board
-  ComputeBoardScore(ioBoard);
-
-  // Check if leaf node
-  if (iDepth == iMaxDepth ||
+  // Handle leaf board
+  if (iDepth >= iMaxDepth ||
       ioBoard->Score == +INT_MAX ||
       ioBoard->Score == -INT_MAX ||
       (D.UI[MaxThinkTime____].D() > 0.0 && Timer::CheckTimer() >= D.UI[MaxThinkTime____].D()) ||
-      (D.UI[MaxTreeNodes____].I() > 0 && nbTreeNodes >= D.UI[MaxTreeNodes____].I())) {
+      (D.UI[MaxTreeBoards___].I() > 0 && nbTreeBoards >= D.UI[MaxTreeBoards___].I())) {
     ioBoard->NashScore= ioBoard->Score;
     ioBoard->NashNbSteps= 0;
   }
-  else {
-    // Search the tree recursively
-    // TODO add alpha beta pruning
-    // TODO add move ordering via iterative deepening
+  // Handle first visit of board and creation of sub boards
+  else if (ioBoard->SubBoards.empty()) {
+    // Find all the possible moves from the current board
+    std::vector<std::array<int, 4>> Moves;
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        // Compute possible jumps for the current pawn
-        std::vector<std::array<int, 2>> Jumps;
-        if (ioBoard->Pawns[w][h] != 0) {
-          if ((IsBluTurn(iDepth) && ioBoard->Pawns[w][h] > 0) ||
-              (!IsBluTurn(iDepth) && ioBoard->Pawns[w][h] < 0)) {
-            std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
-            Visit[w][h]= true;
-            const int oldPawn= ioBoard->Pawns[w][h];
-            ioBoard->Pawns[w][h]= 0;
-            RecursivePawnJumps(ioBoard, iDepth, w, h, w, h, Visit, Jumps);
-            ioBoard->Pawns[w][h]= oldPawn;
-          }
-        }
-        // Loop through each jump of the current pawn
-        for (std::array<int, 2> jump : Jumps) {
-          // Create and recursively evaluate the sub board for the current jump
-          BoardState *newBoard= CreateBoard(ioBoard->Pawns, std::array<int, 4>({w, h, jump[0], jump[1]}));
-          newBoard->Pawns[jump[0]][jump[1]]= newBoard->Pawns[w][h];
-          newBoard->Pawns[w][h]= 0;
-          nbTreeNodes++;
-          RecursiveTreeSearch(newBoard, iDepth + 1, iMaxDepth);
-          // Insert the new board in the sorted list
-          SortedBoardInsertion(ioBoard, iDepth, newBoard);
-          ioBoard->NashScore= ioBoard->SubBoards[0]->NashScore;
-          ioBoard->NashNbSteps= ioBoard->SubBoards[0]->NashNbSteps + 1;
+        if ((ioBoard->Pawns[w][h] > 0 && IsBluTurn(iDepth)) || (ioBoard->Pawns[w][h] < 0 && !IsBluTurn(iDepth))) {
+          // Compute possible moves for the current pawn
+          std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
+          Visit[w][h]= true;
+          const int oldPawn= ioBoard->Pawns[w][h];
+          ioBoard->Pawns[w][h]= 0;
+          RecursivePawnMoves(ioBoard, w, h, w, h, Visit, Moves);
+          ioBoard->Pawns[w][h]= oldPawn;
         }
       }
     }
+    // Create and recursively search the sub board for each move
+    for (std::array<int, 4> move : Moves) {
+      // Create and score the sub board for the current move
+      BoardState *newBoard= CreateBoard(ioBoard->Pawns, move);
+      newBoard->Pawns[move[2]][move[3]]= newBoard->Pawns[move[0]][move[1]];
+      newBoard->Pawns[move[0]][move[1]]= 0;
+      ComputeBoardScore(newBoard);
+      ioBoard->SubBoards.push_back(newBoard);
+      nbTreeBoards++;
+      // Recursively search the sub tree for the current move
+      RecursiveTreeSearch(newBoard, iDepth + 1, iMaxDepth);
+    }
+    // Sort the sub boards
+    if (!ioBoard->SubBoards.empty()) {
+      SortSubBoards(ioBoard, iDepth);
+      ioBoard->NashScore= ioBoard->SubBoards[0]->NashScore;
+      ioBoard->NashNbSteps= ioBoard->SubBoards[0]->NashNbSteps + 1;
+    }
+  }
+  // Handle already visited board with existing sub boards
+  else {
+    for (BoardState *subBoard : ioBoard->SubBoards)
+      RecursiveTreeSearch(subBoard, iDepth + 1, iMaxDepth);
+    SortSubBoards(ioBoard, iDepth);
+    ioBoard->NashScore= ioBoard->SubBoards[0]->NashScore;
+    ioBoard->NashNbSteps= ioBoard->SubBoards[0]->NashNbSteps + 1;
   }
 }
 
 
-void JumpinPlayerAI::RecursivePawnJumps(BoardState *ioBoard, const int iDepth,
-                                        const int iStartW, const int iStartH,
-                                        const int iCurrW, const int iCurrH,
+void JumpinPlayerAI::RecursivePawnMoves(BoardState *ioBoard,
+                                        const int iPawnW, const int iPawnH,
+                                        const int iJumpW, const int iJumpH,
                                         std::vector<std::vector<bool>> &ioVisit,
-                                        std::vector<std::array<int, 2>> &ioJumps) {
-  if (ioBoard == nullptr) printf("[ERROR] RecursivePawnJumps on a null board\n");
+                                        std::vector<std::array<int, 4>> &ioMoves) {
+  if (ioBoard == nullptr) printf("[ERROR] RecursivePawnMoves on a null board\n");
 
   for (int idxDir= 0; idxDir < 4; idxDir++) {
     const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
     const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
-    if (iCurrW + 2 * wInc < 0 || iCurrW + 2 * wInc >= nW ||
-        iCurrH + 2 * hInc < 0 || iCurrH + 2 * hInc >= nH) continue;
-    if (ioBoard->Pawns[iCurrW + wInc][iCurrH + hInc] == 0) continue;
-    int wOff= iCurrW + 2 * wInc;
-    int hOff= iCurrH + 2 * hInc;
+    if (iJumpW + 2 * wInc < 0 || iJumpW + 2 * wInc >= nW ||
+        iJumpH + 2 * hInc < 0 || iJumpH + 2 * hInc >= nH) continue;
+    if (ioBoard->Pawns[iJumpW + wInc][iJumpH + hInc] == 0) continue;
+    int wOff= iJumpW + 2 * wInc;
+    int hOff= iJumpH + 2 * hInc;
     while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
       if (ioBoard->Pawns[wOff][hOff] == 0) {
         if (!ioVisit[wOff][hOff]) {
           ioVisit[wOff][hOff]= true;
-          ioJumps.push_back(std::array<int, 2>{wOff, hOff});
-          RecursivePawnJumps(ioBoard, iDepth, iStartW, iStartH, wOff, hOff, ioVisit, ioJumps);
+          ioMoves.push_back(std::array<int, 4>{iPawnW, iPawnH, wOff, hOff});
+          RecursivePawnMoves(ioBoard, iPawnW, iPawnH, wOff, hOff, ioVisit, ioMoves);
         }
         break;
       }
@@ -568,18 +600,49 @@ void JumpinPlayerAI::RecursivePawnJumps(BoardState *ioBoard, const int iDepth,
 }
 
 
-void inline JumpinPlayerAI::SortedBoardInsertion(BoardState *ioBoard, const int iDepth, BoardState *NewBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] SortedBoardInsertion on a null board\n");
+void JumpinPlayerAI::SortSubBoards(BoardState *ioBoard, const int iDepth) {
+  if (ioBoard == nullptr) printf("[ERROR] SortSubBoards on a null board\n");
 
-  int idx= 0;
-  while (idx < (int)ioBoard->SubBoards.size()) {
-    BoardState *subBoard= ioBoard->SubBoards[idx];
-    if (IsBluTurn(iDepth) && subBoard->NashScore < NewBoard->NashScore) break;
-    if (!IsBluTurn(iDepth) && subBoard->NashScore > NewBoard->NashScore) break;
-    if (subBoard->NashScore == NewBoard->NashScore && subBoard->NashNbSteps > NewBoard->NashNbSteps + 1) break;
-    idx++;
+  // Get the ordering mode
+  int ordering= 0;
+  if (IsBluTurn(iDepth)) ordering= D.UI[BluMoveOrdering_].I();
+  else ordering= D.UI[RedMoveOrdering_].I();
+
+  // Bubble sort of the sub boards in Nash order
+  if (ordering == 0) {
+    for (int k0= 0; k0 < (int)ioBoard->SubBoards.size(); k0++) {
+      for (int k1= k0 + 1; k1 < (int)ioBoard->SubBoards.size(); k1++) {
+        if ((IsBluTurn(iDepth) && ioBoard->SubBoards[k0]->NashScore < ioBoard->SubBoards[k1]->NashScore) ||
+            (!IsBluTurn(iDepth) && ioBoard->SubBoards[k0]->NashScore > ioBoard->SubBoards[k1]->NashScore) ||
+            (ioBoard->SubBoards[k0]->NashScore == ioBoard->SubBoards[k1]->NashScore &&
+             ioBoard->SubBoards[k0]->NashNbSteps > ioBoard->SubBoards[k1]->NashNbSteps)) {
+          BoardState *tmp= ioBoard->SubBoards[k0];
+          ioBoard->SubBoards[k0]= ioBoard->SubBoards[k1];
+          ioBoard->SubBoards[k1]= tmp;
+        }
+      }
+    }
   }
-  ioBoard->SubBoards.insert(ioBoard->SubBoards.begin() + idx, NewBoard);
+
+  // Bubble sort of the sub boards in greedy order
+  else if (ordering == 1) {
+    for (int k0= 0; k0 < (int)ioBoard->SubBoards.size(); k0++) {
+      for (int k1= k0 + 1; k1 < (int)ioBoard->SubBoards.size(); k1++) {
+        if ((IsBluTurn(iDepth) && ioBoard->SubBoards[k0]->Score < ioBoard->SubBoards[k1]->Score) ||
+            (!IsBluTurn(iDepth) && ioBoard->SubBoards[k0]->Score > ioBoard->SubBoards[k1]->Score)) {
+          BoardState *tmp= ioBoard->SubBoards[k0];
+          ioBoard->SubBoards[k0]= ioBoard->SubBoards[k1];
+          ioBoard->SubBoards[k1]= tmp;
+        }
+      }
+    }
+  }
+
+  // Random shuffle of the boards
+  else if (ordering == 2) {
+    static auto rng= std::default_random_engine{};
+    std::shuffle(std::begin(ioBoard->SubBoards), std::end(ioBoard->SubBoards), rng);
+  }
 }
 
 

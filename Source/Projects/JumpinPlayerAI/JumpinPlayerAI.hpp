@@ -17,13 +17,16 @@ class JumpinPlayerAI
   {
     BoardW__________,
     BoardH__________,
+    StartingRows____,
+    RandomBoard_____,
     BotBluPlayer____,
     BotRedPlayer____,
-    StartingRows____,
     ______________00,
+    BluMoveOrdering_,
+    RedMoveOrdering_,
     MaxSearchDepth__,
     MaxThinkTime____,
-    MaxTreeNodes____,
+    MaxTreeBoards___,
     ______________01,
     ValPushTotal____,
     ValPushLast_____,
@@ -56,7 +59,7 @@ class JumpinPlayerAI
   int nW;                          // Dimensions of the board
   int nH;                          // Dimensions of the board
   int idxTurn;                     // Counter for the current turn in the game
-  int nbTreeNodes;                 // Counter for the number of nodes evaluated in the current search
+  int nbTreeBoards;                // Counter for the number of boards evaluated in the current search
   double thinkTime;                // Time spent in the last search
   BoardState *RootBoard= nullptr;  // Current state of the board
   int wSel;                        // Coordinates of the currently selected pawn
@@ -79,14 +82,14 @@ class JumpinPlayerAI
   // Search
   void ComputeGameTreeSearch();
   void RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth);
-  void RecursivePawnJumps(BoardState *ioBoard, const int iDepth,
-                          const int iStartW, const int iStartH,
-                          const int iCurrW, const int iCurrH,
+  void RecursivePawnMoves(BoardState *ioBoard,
+                          const int iPawnW, const int iPawnH,
+                          const int iJumpW, const int iJumpH,
                           std::vector<std::vector<bool>> &ioVisit,
-                          std::vector<std::array<int, 2>> &ioJumps);
+                          std::vector<std::array<int, 4>> &ioMoves);
 
   // Utility
-  void inline SortedBoardInsertion(BoardState *ioBoard, const int iDepth, BoardState *NewBoard);
+  void SortSubBoards(BoardState *ioBoard, const int iDepth);
   bool inline IsBluTurn(const int iDepth);
 
   public:
