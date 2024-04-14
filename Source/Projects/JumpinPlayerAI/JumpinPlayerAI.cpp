@@ -419,10 +419,11 @@ void JumpinPlayerAI::PlotData() {
 
   // Print turn and win state
   D.Status.clear();
-  D.Status.resize(4);
+  D.Status.resize(5);
   D.Status[0]= std::string{"Turn:"} + std::to_string(idxTurn);
   D.Status[1]= std::string{"ThinkTime:"} + std::to_string(thinkTime) + std::string{"ms"};
-  D.Status[2]= std::string{"Player:"} + (IsBluTurn(0) ? std::string{"Blu"} : std::string{"Red"});
-  if (RootBoard->NashScore == +INT_MAX) D.Status[3]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
-  if (RootBoard->NashScore == -INT_MAX) D.Status[3]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
+  D.Status[2]= std::string{"BoardCount:"} + std::to_string(nbTreeBoards);
+  D.Status[3]= std::string{"Player:"} + (IsBluTurn(0) ? std::string{"Blu"} : std::string{"Red"});
+  if (RootBoard->NashScore == +INT_MAX) D.Status[4]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
+  if (RootBoard->NashScore == -INT_MAX) D.Status[4]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
 }
