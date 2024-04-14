@@ -13,7 +13,7 @@
 extern Data D;
 
 
-bool JumpinPlayerAI::IsBluTurn(const int iDepth) {
+bool JumpinPlayerAI::IsRedTurn(const int iDepth) {
   return (idxTurn + iDepth) % 2 == 0;
 }
 
@@ -22,17 +22,17 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
   if (ioBoard == nullptr) printf("[ERROR] ComputeBoardScore on a null board\n");
 
   // Check for win state
-  bool isWinBlu= true;
   bool isWinRed= true;
-  for (int w= 0; w < nW && isWinBlu; w++)
-    for (int h= nH - D.UI[StartingRows____].I(); h < nH && isWinBlu; h++)
-      if (ioBoard->Pawns[w][h] <= 0) isWinBlu= false;
+  bool isWinBlu= true;
   for (int w= 0; w < nW && isWinRed; w++)
-    for (int h= 0; h < D.UI[StartingRows____].I() && isWinRed; h++)
-      if (ioBoard->Pawns[w][h] >= 0) isWinRed= false;
+    for (int h= nH - D.UI[StartingRows____].I(); h < nH && isWinRed; h++)
+      if (ioBoard->Pawns[w][h] <= 0) isWinRed= false;
+  for (int w= 0; w < nW && isWinBlu; w++)
+    for (int h= 0; h < D.UI[StartingRows____].I() && isWinBlu; h++)
+      if (ioBoard->Pawns[w][h] >= 0) isWinBlu= false;
 
-  if (isWinBlu) ioBoard->Score= +INT_MAX;
-  else if (isWinRed) ioBoard->Score= -INT_MAX;
+  if (isWinRed) ioBoard->Score= +INT_MAX;
+  else if (isWinBlu) ioBoard->Score= -INT_MAX;
   else {
     // Reset the score
     ioBoard->Score= 0;
@@ -49,21 +49,21 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
 
     // Add score for last pawn advance
     if (D.UI[ValPushLast_____].I() != 0) {
-      bool foundLastBlu= false;
-      for (int h= 0; h < nH && !foundLastBlu; h++) {
-        for (int w= 0; w < nW && !foundLastBlu; w++) {
+      bool foundLastRed= false;
+      for (int h= 0; h < nH && !foundLastRed; h++) {
+        for (int w= 0; w < nW && !foundLastRed; w++) {
           if (ioBoard->Pawns[w][h] > 0) {
             ioBoard->Score+= (h + 1) * D.UI[ValPushLast_____].I();
-            foundLastBlu= true;
+            foundLastRed= true;
           }
         }
       }
-      bool foundLastRed= false;
-      for (int h= nH - 1; h >= 0 && !foundLastRed; h--) {
-        for (int w= 0; w < nW && !foundLastRed; w++) {
+      bool foundLastBlu= false;
+      for (int h= nH - 1; h >= 0 && !foundLastBlu; h--) {
+        for (int w= 0; w < nW && !foundLastBlu; w++) {
           if (ioBoard->Pawns[w][h] < 0) {
             ioBoard->Score-= (nH - h) * D.UI[ValPushLast_____].I();
-            foundLastRed= true;
+            foundLastBlu= true;
           }
         }
       }

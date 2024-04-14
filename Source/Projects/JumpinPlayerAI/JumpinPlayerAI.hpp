@@ -19,8 +19,8 @@ class JumpinPlayerAI
     StartingRows____,
     RandomBoard_____,
     SinglePlayer____,
-    BotStrategyBlu__,
     BotStrategyRed__,
+    BotStrategyBlu__,
     ______________00,
     MaxSearchDepth__,
     MaxThinkTime____,
@@ -47,7 +47,7 @@ class JumpinPlayerAI
   struct BoardState
   {
     std::vector<BoardState *> SubBoards;  // List of possible boards reachable from the current position sorted in Nash order
-    std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Red= -1, Blu= +1)
+    std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Blu= -1, Red= +1)
     std::array<int, 4> Move;              // Move source and destination that leads to this board (or 0 0 0 0 if root board)
     int Score;                            // Evaluated score of the board
     int NashScore;                        // Nash score found in sub tree
@@ -76,7 +76,7 @@ class JumpinPlayerAI
   void DeleteBoard(BoardState *ioBoard);
 
   // Evaluation
-  bool IsBluTurn(const int iDepth);
+  bool IsRedTurn(const int iDepth);
   void ComputeBoardScore(BoardState *ioBoard);
 
   // Search

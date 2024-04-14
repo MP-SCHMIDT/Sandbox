@@ -19,7 +19,7 @@ JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::v
   BoardState *newBoard= new BoardState;
   newBoard->Pawns= iPawns;
   newBoard->Move= iMove;
-  newBoard->Score= (IsBluTurn(iDepth)) ? -INT_MAX : INT_MAX;
+  newBoard->Score= (IsRedTurn(iDepth)) ? -INT_MAX : INT_MAX;
   newBoard->NashScore= newBoard->Score;
   newBoard->NashNbSteps= INT_MAX;
   return newBoard;

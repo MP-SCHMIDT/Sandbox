@@ -58,7 +58,7 @@ void JumpinPlayerAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, 
     std::vector<std::array<int, 4>> Moves;
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if ((ioBoard->Pawns[w][h] > 0 && IsBluTurn(iDepth)) || (ioBoard->Pawns[w][h] < 0 && !IsBluTurn(iDepth))) {
+        if ((ioBoard->Pawns[w][h] > 0 && IsRedTurn(iDepth)) || (ioBoard->Pawns[w][h] < 0 && !IsRedTurn(iDepth))) {
           // Compute possible moves for the current pawn
           std::vector<std::vector<bool>> Visit= Field::AllocField2D(nW, nH, false);
           Visit[w][h]= true;
@@ -136,8 +136,8 @@ void JumpinPlayerAI::SortSubBoards(BoardState *ioBoard, const int iDepth) {
   // Bubble sort of the sub boards in Nash order
   for (int k0= 0; k0 < (int)ioBoard->SubBoards.size(); k0++) {
     for (int k1= k0 + 1; k1 < (int)ioBoard->SubBoards.size(); k1++) {
-      if ((IsBluTurn(iDepth) && ioBoard->SubBoards[k0]->NashScore < ioBoard->SubBoards[k1]->NashScore) ||
-          (!IsBluTurn(iDepth) && ioBoard->SubBoards[k0]->NashScore > ioBoard->SubBoards[k1]->NashScore) ||
+      if ((IsRedTurn(iDepth) && ioBoard->SubBoards[k0]->NashScore < ioBoard->SubBoards[k1]->NashScore) ||
+          (!IsRedTurn(iDepth) && ioBoard->SubBoards[k0]->NashScore > ioBoard->SubBoards[k1]->NashScore) ||
           (ioBoard->SubBoards[k0]->NashScore == ioBoard->SubBoards[k1]->NashScore &&
            ioBoard->SubBoards[k0]->NashNbSteps > ioBoard->SubBoards[k1]->NashNbSteps)) {
         BoardState *tmp= ioBoard->SubBoards[k0];

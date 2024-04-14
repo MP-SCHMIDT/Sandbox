@@ -38,8 +38,8 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("RandomBoard_____", 0));
     D.UI.push_back(ParamUI("SinglePlayer____", 1));
-    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
     D.UI.push_back(ParamUI("BotStrategyRed__", 3));
+    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("MaxSearchDepth__", 6));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
@@ -193,9 +193,9 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
   // Board set-up
   if (key == 'R' || key == 'G' || key == 'B') {
     if (wCursor >= 0 && wCursor < nW && hCursor >= 0 && hCursor < nH) {
-      if (key == 'R') RootBoard->Pawns[wCursor][hCursor]= -1;
+      if (key == 'R') RootBoard->Pawns[wCursor][hCursor]= +1;
       if (key == 'G') RootBoard->Pawns[wCursor][hCursor]= 0;
-      if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= +1;
+      if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= -1;
       wSel= hSel= -1;
       ComputeGameTreeSearch();
     }
@@ -249,7 +249,7 @@ void JumpinPlayerAI::Animate() {
   if (!CheckRefresh()) Refresh();
 
   // Autoplay a move if the current player is a bot
-  const int BotStrategy= IsBluTurn(0) ? D.UI[BotStrategyBlu__].I() : D.UI[BotStrategyRed__].I();
+  const int BotStrategy= IsRedTurn(0) ? D.UI[BotStrategyRed__].I() : D.UI[BotStrategyBlu__].I();
   if (BotStrategy > 0) {
     if (!RootBoard->SubBoards.empty()) {
       // Select the move based on chosen strategy
@@ -259,8 +259,8 @@ void JumpinPlayerAI::Animate() {
       }
       else if (BotStrategy == 2) {
         for (int k= 0; k < (int)RootBoard->SubBoards.size(); k++) {
-          if (IsBluTurn(0) && RootBoard->SubBoards[k]->Score > RootBoard->SubBoards[idxMove]->Score) idxMove= k;
-          if (!IsBluTurn(0) && RootBoard->SubBoards[k]->Score < RootBoard->SubBoards[idxMove]->Score) idxMove= k;
+          if (IsRedTurn(0) && RootBoard->SubBoards[k]->Score > RootBoard->SubBoards[idxMove]->Score) idxMove= k;
+          if (!IsRedTurn(0) && RootBoard->SubBoards[k]->Score < RootBoard->SubBoards[idxMove]->Score) idxMove= k;
         }
       }
       else if (BotStrategy == 3) {
@@ -301,8 +301,8 @@ void JumpinPlayerAI::Draw() {
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
         const float col= ((w + h) % 2 == 0) ? 0.4f : 0.6f;
-        if (h < D.UI[StartingRows____].I()) glColor3f(col + 0.2f, col, col);
-        else if (h >= nH - D.UI[StartingRows____].I()) glColor3f(col, col, col + 0.2f);
+        if (h >= nH - D.UI[StartingRows____].I()) glColor3f(col + 0.2f, col, col);
+        else if (h < D.UI[StartingRows____].I()) glColor3f(col, col, col + 0.2f);
         else glColor3f(col, col, col);
         glRectf(D.boxMin[1] + float(w) * voxSize, D.boxMin[2] + float(h) * voxSize,
                 D.boxMin[1] + float(w + 1) * voxSize, D.boxMin[2] + float(h + 1) * voxSize);
@@ -318,8 +318,8 @@ void JumpinPlayerAI::Draw() {
       for (int h= 0; h < nH; h++) {
         if (RootBoard->Pawns[w][h] != 0) {
           float r= 0.5f, g= 0.5f, b= 0.5f;
-          if (RootBoard->Pawns[w][h] < 0) r+= 0.4f;
-          if (RootBoard->Pawns[w][h] > 0) b+= 0.4f;
+          if (RootBoard->Pawns[w][h] > 0) r+= 0.4f;
+          if (RootBoard->Pawns[w][h] < 0) b+= 0.4f;
           glColor3f(r, g, b);
           glPushMatrix();
           glTranslatef(D.boxMin[0] + 0.5f * voxSize,
@@ -397,7 +397,7 @@ void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
   // Recursively draw the moves
   for (int idxMove= 0; idxMove < (int)iBoard->SubBoards.size(); idxMove++) {
     float r, g, b;
-    Colormap::RatioToJetBrightSmooth(0.5f - D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
+    Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
     glColor3f(r, g, b);
     glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
     glVertex3f(px, py + distEnd * std::cos(arcBeg + 0.5f * arcStep + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + 0.5f * arcStep + idxMove * arcStep));
@@ -423,7 +423,7 @@ void JumpinPlayerAI::PlotData() {
   D.Status[0]= std::string{"Turn:"} + std::to_string(idxTurn);
   D.Status[1]= std::string{"ThinkTime:"} + std::to_string(thinkTime) + std::string{"ms"};
   D.Status[2]= std::string{"BoardCount:"} + std::to_string(nbTreeBoards);
-  D.Status[3]= std::string{"Player:"} + (IsBluTurn(0) ? std::string{"Blu"} : std::string{"Red"});
-  if (RootBoard->NashScore == +INT_MAX) D.Status[4]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
-  if (RootBoard->NashScore == -INT_MAX) D.Status[4]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
+  D.Status[3]= std::string{"Player:"} + (IsRedTurn(0) ? std::string{"Red"} : std::string{"Blu"});
+  if (RootBoard->NashScore == +INT_MAX) D.Status[4]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
+  if (RootBoard->NashScore == -INT_MAX) D.Status[4]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
 }
