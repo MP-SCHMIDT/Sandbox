@@ -5,7 +5,6 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Vec.hpp"
 
 
 // Jumpin board game AI
@@ -19,11 +18,10 @@ class JumpinPlayerAI
     BoardH__________,
     StartingRows____,
     RandomBoard_____,
-    BotBluPlayer____,
-    BotRedPlayer____,
+    SinglePlayer____,
+    BotStrategyBlu__,
+    BotStrategyRed__,
     ______________00,
-    BluMoveOrdering_,
-    RedMoveOrdering_,
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeBoards___,
@@ -77,6 +75,7 @@ class JumpinPlayerAI
   void DeleteBoard(BoardState *ioBoard);
 
   // Evaluation
+  bool IsBluTurn(const int iDepth);
   void ComputeBoardScore(BoardState *ioBoard);
 
   // Search
@@ -87,10 +86,7 @@ class JumpinPlayerAI
                           const int iJumpW, const int iJumpH,
                           std::vector<std::vector<bool>> &ioVisit,
                           std::vector<std::array<int, 4>> &ioMoves);
-
-  // Utility
   void SortSubBoards(BoardState *ioBoard, const int iDepth);
-  bool inline IsBluTurn(const int iDepth);
 
   public:
   bool isActivProj;
