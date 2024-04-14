@@ -71,7 +71,8 @@ class JumpinPlayerAI
 
   // Board creation and destruction
   BoardState *CreateBoard(const std::vector<std::vector<int>> &iPawns,
-                          const std::array<int, 4> &iMove);
+                          const std::array<int, 4> &iMove,
+                          const int iDepth);
   void DeleteBoard(BoardState *ioBoard);
 
   // Evaluation

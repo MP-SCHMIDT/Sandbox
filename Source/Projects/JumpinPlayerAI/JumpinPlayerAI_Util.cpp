@@ -14,13 +14,14 @@ extern Data D;
 
 
 JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::vector<int>> &iPawns,
-                                                        const std::array<int, 4> &iMove) {
+                                                        const std::array<int, 4> &iMove,
+                                                        const int iDepth) {
   BoardState *newBoard= new BoardState;
   newBoard->Pawns= iPawns;
   newBoard->Move= iMove;
-  newBoard->Score= 0;
-  newBoard->NashScore= 0;
-  newBoard->NashNbSteps= 0;
+  newBoard->Score= (IsBluTurn(iDepth)) ? -INT_MAX : INT_MAX;
+  newBoard->NashScore= newBoard->Score;
+  newBoard->NashNbSteps= INT_MAX;
   return newBoard;
 }
 

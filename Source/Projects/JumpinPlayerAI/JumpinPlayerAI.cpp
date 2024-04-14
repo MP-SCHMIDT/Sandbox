@@ -38,8 +38,8 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("RandomBoard_____", 0));
     D.UI.push_back(ParamUI("SinglePlayer____", 1));
-    D.UI.push_back(ParamUI("BotStrategyBlu__", 1));
-    D.UI.push_back(ParamUI("BotStrategyRed__", 1));
+    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
+    D.UI.push_back(ParamUI("BotStrategyRed__", 3));
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("MaxSearchDepth__", 6));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
@@ -162,7 +162,7 @@ void JumpinPlayerAI::Allocate() {
     }
   }
 
-  RootBoard= CreateBoard(StartPawns, std::array<int, 4>({0, 0, 0, 0}));
+  RootBoard= CreateBoard(StartPawns, std::array<int, 4>({0, 0, 0, 0}), 0);
 }
 
 
@@ -213,6 +213,13 @@ void JumpinPlayerAI::KeyPress(const unsigned char key) {
     hSel= hCursor;
   }
 
+  // Run benchmark of current AI capability
+  if (key == 'T') {
+    // Start with win position
+    // Execute N random moves
+    // Run AI to see if it returns to win position in N or more moves
+  }
+
   // Manual pawn move
   if (key == 'D') {
     if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
@@ -241,10 +248,11 @@ void JumpinPlayerAI::Animate() {
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
 
-  // Autoplay the Nash move if the current player is a bot
+  // Autoplay a move if the current player is a bot
   const int BotStrategy= IsBluTurn(0) ? D.UI[BotStrategyBlu__].I() : D.UI[BotStrategyRed__].I();
   if (BotStrategy > 0) {
     if (!RootBoard->SubBoards.empty()) {
+      // Select the move based on chosen strategy
       int idxMove= 0;
       if (BotStrategy == 1) {
         idxMove= Random::Val(0, (int)RootBoard->SubBoards.size() - 1);
@@ -258,6 +266,7 @@ void JumpinPlayerAI::Animate() {
       else if (BotStrategy == 3) {
         idxMove= 0;
       }
+      // Execute the move
       std::array<int, 4> SelectedMove= RootBoard->SubBoards[idxMove]->Move;
       if (SelectedMove[0] != -1 && SelectedMove[1] != -1 && SelectedMove[2] != -1 && SelectedMove[3] != -1) {
         RootBoard->Pawns[SelectedMove[2]][SelectedMove[3]]= RootBoard->Pawns[SelectedMove[0]][SelectedMove[1]];
@@ -412,8 +421,8 @@ void JumpinPlayerAI::PlotData() {
   D.Status.clear();
   D.Status.resize(4);
   D.Status[0]= std::string{"Turn:"} + std::to_string(idxTurn);
-  D.Status[1]= std::string{"Player:"} + (IsBluTurn(0) ? std::string{"Blu"} : std::string{"Red"});
-  if (RootBoard->NashScore == +INT_MAX) D.Status[2]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
-  if (RootBoard->NashScore == -INT_MAX) D.Status[2]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
-  D.Status[3]= std::string{"ThinkTime:"} + std::to_string(thinkTime) + std::string{"ms"};
+  D.Status[1]= std::string{"ThinkTime:"} + std::to_string(thinkTime) + std::string{"ms"};
+  D.Status[2]= std::string{"Player:"} + (IsBluTurn(0) ? std::string{"Blu"} : std::string{"Red"});
+  if (RootBoard->NashScore == +INT_MAX) D.Status[3]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
+  if (RootBoard->NashScore == -INT_MAX) D.Status[3]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
 }

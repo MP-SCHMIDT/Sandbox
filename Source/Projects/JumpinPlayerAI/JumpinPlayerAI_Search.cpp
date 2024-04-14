@@ -69,17 +69,15 @@ void JumpinPlayerAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, 
         }
       }
     }
-    // Add the optional turn skip move
+    // Add the turn skip move if no other valid move
     if (Moves.empty())
       Moves.push_back(std::array<int, 4>{-1, -1, -1, -1});
-    // Create and score the sub board for each move
+    // Create the sub board for each move
     for (std::array<int, 4> move : Moves) {
-      BoardState *newBoard= CreateBoard(ioBoard->Pawns, move);
-      newBoard->Score= ioBoard->Score;
+      BoardState *newBoard= CreateBoard(ioBoard->Pawns, move, iDepth + 1);
       if (move[0] != -1 && move[1] != -1 && move[2] != -1 && move[3] != -1) {
         newBoard->Pawns[move[2]][move[3]]= newBoard->Pawns[move[0]][move[1]];
         newBoard->Pawns[move[0]][move[1]]= 0;
-        ComputeBoardScore(newBoard);
       }
       ioBoard->SubBoards.push_back(newBoard);
       nbTreeBoards++;
@@ -87,11 +85,15 @@ void JumpinPlayerAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, 
   }
 
   // Recursively search the sub boards and update Nash
-  for (BoardState *subBoard : ioBoard->SubBoards)
+  for (BoardState *subBoard : ioBoard->SubBoards) {
+    ComputeBoardScore(subBoard);
     RecursiveTreeSearch(subBoard, iDepth + 1, iMaxDepth);
+  }
   SortSubBoards(ioBoard, iDepth);
   ioBoard->NashScore= ioBoard->SubBoards[0]->NashScore;
   ioBoard->NashNbSteps= ioBoard->SubBoards[0]->NashNbSteps + 1;
+
+  return;
 }
 
 
