@@ -25,7 +25,8 @@ class JumpinPlayerAI
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeBoards___,
-    MoveOrdering____,
+    MoveSortScore___,
+    MoveSortNash____,
     ABPruning_______,
     IterDeepening___,
     ______________01,
@@ -51,7 +52,7 @@ class JumpinPlayerAI
   {
     std::vector<BoardState *> SubBoards;  // List of possible boards reachable from the current position sorted in Nash order
     std::vector<std::vector<int>> Pawns;  // Flag grid for presence of pawns on the board (Blu= -1, Red= +1)
-    std::array<int, 4> Move;              // Move source and destination that leads to this board (or 0 0 0 0 if root board)
+    std::array<int, 4> Move;              // Move source and destination that led to this board (or -1 -1 -1 -1 if null move)
     int Score;                            // Evaluated score of the board
     int NashScore;                        // Nash score found in sub tree
     int NashNbSteps;                      // Number of steps to reach the Nash score found in sub tree
@@ -84,14 +85,15 @@ class JumpinPlayerAI
 
   // Search
   void ComputeGameTreeSearch();
-  int RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth, int &alpha, int &beta);
+  int RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth, int iAlpha, int iBeta);
   void RecursivePawnMoves(BoardState *ioBoard,
                           const int iPawnW, const int iPawnH,
                           const int iJumpW, const int iJumpH,
                           std::vector<std::vector<bool>> &ioVisit,
                           std::vector<std::array<int, 4>> &ioMoves);
   int GetIdxNashSubBoard(BoardState *ioBoard, const int iDepth);
-  void SortSubBoards(BoardState *ioBoard, const int iDepth);
+  void SortSubBoardsScore(BoardState *ioBoard, const int iDepth);
+  void SortSubBoardsNash(BoardState *ioBoard, const int iDepth);
 
   public:
   bool isActivProj;

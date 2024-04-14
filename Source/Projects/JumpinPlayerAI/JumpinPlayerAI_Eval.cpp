@@ -23,10 +23,10 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
 
   // Check for win state
   bool isWinRed= true;
-  bool isWinBlu= true;
   for (int w= 0; w < nW && isWinRed; w++)
     for (int h= nH - D.UI[StartingRows____].I(); h < nH && isWinRed; h++)
       if (ioBoard->Pawns[w][h] <= 0) isWinRed= false;
+  bool isWinBlu= true;
   for (int w= 0; w < nW && isWinBlu; w++)
     for (int h= 0; h < D.UI[StartingRows____].I() && isWinBlu; h++)
       if (ioBoard->Pawns[w][h] >= 0) isWinBlu= false;
