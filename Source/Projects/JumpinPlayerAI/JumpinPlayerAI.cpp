@@ -33,17 +33,20 @@ JumpinPlayerAI::JumpinPlayerAI() {
 void JumpinPlayerAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("BoardW__________", 4));
+    D.UI.push_back(ParamUI("BoardW__________", 3));
     D.UI.push_back(ParamUI("BoardH__________", 8));
     D.UI.push_back(ParamUI("StartingRows____", 2));
     D.UI.push_back(ParamUI("RandomBoard_____", 0));
-    D.UI.push_back(ParamUI("SinglePlayer____", 1));
+    D.UI.push_back(ParamUI("SinglePlayer____", 0));
     D.UI.push_back(ParamUI("BotStrategyRed__", 3));
     D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("MaxSearchDepth__", 6));
+    D.UI.push_back(ParamUI("MaxSearchDepth__", 4));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
-    D.UI.push_back(ParamUI("MaxTreeBoards___", 64000));
+    D.UI.push_back(ParamUI("MaxTreeBoards___", 0));
+    D.UI.push_back(ParamUI("MoveOrdering____", 0));
+    D.UI.push_back(ParamUI("ABPruning_______", 0));
+    D.UI.push_back(ParamUI("IterDeepening___", 0));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("ValPushTotal____", 10));
     D.UI.push_back(ParamUI("ValPushLast_____", 50));
@@ -88,6 +91,9 @@ bool JumpinPlayerAI::CheckRefresh() {
   if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
   if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
   if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;
+  if (D.UI[MoveOrdering____].hasChanged()) isRefreshed= false;
+  if (D.UI[ABPruning_______].hasChanged()) isRefreshed= false;
+  if (D.UI[IterDeepening___].hasChanged()) isRefreshed= false;
   if (D.UI[ValPushTotal____].hasChanged()) isRefreshed= false;
   if (D.UI[ValPushLast_____].hasChanged()) isRefreshed= false;
   if (D.UI[ValSoftStranded_].hasChanged()) isRefreshed= false;
@@ -125,26 +131,26 @@ void JumpinPlayerAI::Allocate() {
              0.5 + 0.5 * voxSize * double(nH)};
 
   // Create and initialize root board with pawns
-  std::vector<std::vector<int>> StartPawns= Field::AllocField2D(nW, nH, 0);
+  std::vector<std::vector<int>> Pawns= Field::AllocField2D(nW, nH, 0);
   int nbRows= std::min(D.UI[StartingRows____].I(), nH / 2);
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      if (h < nbRows) StartPawns[w][h]= +1;
-      if (h >= nH - nbRows) StartPawns[w][h]= -1;
+      if (h < nbRows) Pawns[w][h]= +1;
+      if (h >= nH - nbRows) Pawns[w][h]= -1;
     }
   }
 
   // Overwrite with random positions
   if (D.UI[RandomBoard_____].B()) {
     srand(0);
-    StartPawns= Field::AllocField2D(nW, nH, 0);
+    Pawns= Field::AllocField2D(nW, nH, 0);
     for (int player= -1; player <= +1; player+= 2) {
       for (int k= 0; k < nbRows * nW; k++) {
         while (true) {
           const int randW= Random::Val(0, nW - 1);
           const int randH= Random::Val(0, nH - 1);
-          if (StartPawns[randW][randH] == 0) {
-            StartPawns[randW][randH]= player;
+          if (Pawns[randW][randH] == 0) {
+            Pawns[randW][randH]= player;
             break;
           }
         }
@@ -156,13 +162,16 @@ void JumpinPlayerAI::Allocate() {
   if (D.UI[SinglePlayer____].B()) {
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (StartPawns[w][h] == -1)
-          StartPawns[w][h]= 0;
+        if (Pawns[w][h] == -1)
+          Pawns[w][h]= 0;
       }
     }
   }
 
-  RootBoard= CreateBoard(StartPawns, std::array<int, 4>({0, 0, 0, 0}), 0);
+  RootBoard= CreateBoard(Pawns, std::array<int, 4>({-1, -1, -1, -1}), 0);
+  ComputeBoardScore(RootBoard);
+  RootBoard->NashScore= RootBoard->Score;
+  RootBoard->NashNbSteps= 0;
 }
 
 
@@ -259,12 +268,12 @@ void JumpinPlayerAI::Animate() {
       }
       else if (BotStrategy == 2) {
         for (int k= 0; k < (int)RootBoard->SubBoards.size(); k++) {
-          if (IsRedTurn(0) && RootBoard->SubBoards[k]->Score > RootBoard->SubBoards[idxMove]->Score) idxMove= k;
-          if (!IsRedTurn(0) && RootBoard->SubBoards[k]->Score < RootBoard->SubBoards[idxMove]->Score) idxMove= k;
+          if (IsRedTurn(0) && RootBoard->SubBoards[idxMove]->Score < RootBoard->SubBoards[k]->Score) idxMove= k;
+          if (!IsRedTurn(0) && RootBoard->SubBoards[idxMove]->Score > RootBoard->SubBoards[k]->Score) idxMove= k;
         }
       }
       else if (BotStrategy == 3) {
-        idxMove= 0;
+        idxMove= GetIdxNashSubBoard(RootBoard, 0);
       }
       // Execute the move
       std::array<int, 4> SelectedMove= RootBoard->SubBoards[idxMove]->Move;
@@ -301,8 +310,8 @@ void JumpinPlayerAI::Draw() {
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
         const float col= ((w + h) % 2 == 0) ? 0.4f : 0.6f;
-        if (h >= nH - D.UI[StartingRows____].I()) glColor3f(col + 0.2f, col, col);
-        else if (h < D.UI[StartingRows____].I()) glColor3f(col, col, col + 0.2f);
+        if (h < D.UI[StartingRows____].I()) glColor3f(col, col, col + 0.2f);
+        else if (h >= nH - D.UI[StartingRows____].I()) glColor3f(col + 0.2f, col, col);
         else glColor3f(col, col, col);
         glRectf(D.boxMin[1] + float(w) * voxSize, D.boxMin[2] + float(h) * voxSize,
                 D.boxMin[1] + float(w + 1) * voxSize, D.boxMin[2] + float(h + 1) * voxSize);

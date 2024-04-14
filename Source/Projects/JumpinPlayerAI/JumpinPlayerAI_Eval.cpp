@@ -37,7 +37,7 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
     // Reset the score
     ioBoard->Score= 0;
 
-    // Add score for all pawn advance
+    // Add score for total pawn advance
     if (D.UI[ValPushTotal____].I() != 0) {
       for (int w= 0; w < nW; w++) {
         for (int h= 0; h < nH; h++) {
@@ -47,7 +47,7 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
       }
     }
 
-    // Add score for last pawn advance
+    // Add score for lagging pawn advance
     if (D.UI[ValPushLast_____].I() != 0) {
       bool foundLastRed= false;
       for (int h= 0; h < nH && !foundLastRed; h++) {

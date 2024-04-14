@@ -25,6 +25,9 @@ class JumpinPlayerAI
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeBoards___,
+    MoveOrdering____,
+    ABPruning_______,
+    IterDeepening___,
     ______________01,
     ValPushTotal____,
     ValPushLast_____,
@@ -81,12 +84,13 @@ class JumpinPlayerAI
 
   // Search
   void ComputeGameTreeSearch();
-  void RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth);
+  int RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth, int &alpha, int &beta);
   void RecursivePawnMoves(BoardState *ioBoard,
                           const int iPawnW, const int iPawnH,
                           const int iJumpW, const int iJumpH,
                           std::vector<std::vector<bool>> &ioVisit,
                           std::vector<std::array<int, 4>> &ioMoves);
+  int GetIdxNashSubBoard(BoardState *ioBoard, const int iDepth);
   void SortSubBoards(BoardState *ioBoard, const int iDepth);
 
   public:
