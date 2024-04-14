@@ -64,7 +64,7 @@ class JumpinPlayerAI
   int hSel;                        // Coordinates of the currently selected pawn
 
   // Draw
-  void DrawBoardTree(const BoardState *iBoard, const int iDepth,
+  void DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
                      const float px, const float py, const float pz,
                      const float radius, const float arcBeg, const float arcEnd);
   void PlotData();

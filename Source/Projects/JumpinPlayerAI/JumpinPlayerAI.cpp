@@ -372,19 +372,19 @@ void JumpinPlayerAI::Draw() {
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
     glLineWidth(2.0f);
     glBegin(GL_LINES);
-    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -1.0f, std::numbers::pi + 1.0f);
+    DrawBoardTree(RootBoard, 0, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -std::numbers::pi, 0.0f);
     glEnd();
     glLineWidth(1.0f);
-    glPointSize(10.0f);
+    glPointSize(6.0f);
     glBegin(GL_POINTS);
-    DrawBoardTree(RootBoard, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -1.0f, std::numbers::pi + 1.0f);
+    DrawBoardTree(RootBoard, 0, 1, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -std::numbers::pi, 0.0f);
     glEnd();
     glPointSize(1.0f);
   }
 }
 
 
-void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
+void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
                                    const float px, const float py, const float pz,
                                    const float radius, const float arcBeg, const float arcEnd) {
   if (iBoard == nullptr) printf("[ERROR] DrawBoardTree on a null board\n");
@@ -396,12 +396,19 @@ void JumpinPlayerAI::DrawBoardTree(const BoardState *iBoard, const int iDepth,
 
   // Recursively draw the moves
   for (int idxMove= 0; idxMove < (int)iBoard->SubBoards.size(); idxMove++) {
-    float r, g, b;
-    Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
-    glColor3f(r, g, b);
-    glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
-    glVertex3f(px, py + distEnd * std::cos(arcBeg + 0.5f * arcStep + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + 0.5f * arcStep + idxMove * arcStep));
-    DrawBoardTree(iBoard->SubBoards[idxMove], iDepth + 1, px, py, pz, radius, arcBeg + 0.5f * arcStep + (idxMove - 0.5f) * arcStep, arcBeg + 0.5f * arcStep + (idxMove + 0.5f) * arcStep);
+    if (iDrawMode == 0) {
+      float r, g, b;
+      Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
+      glColor3f(r, g, b);
+      glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
+      glVertex3f(px, py + distEnd * std::cos(arcBeg + 0.5f * arcStep + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + 0.5f * arcStep + idxMove * arcStep));
+    }
+    else {
+      if (IsRedTurn(iDepth)) glColor3f(1.0f, 0.0f, 0.0f);
+      else glColor3f(0.0f, 0.0f, 1.0f);
+      glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
+    }
+    DrawBoardTree(iBoard->SubBoards[idxMove], iDepth + 1, iDrawMode, px, py, pz, radius, arcBeg + 0.5f * arcStep + (idxMove - 0.5f) * arcStep, arcBeg + 0.5f * arcStep + (idxMove + 0.5f) * arcStep);
   }
 }
 
