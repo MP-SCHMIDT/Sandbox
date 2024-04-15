@@ -14,6 +14,8 @@ extern Data D;
 
 
 bool JumpinPlayerAI::IsRedTurn(const int iDepth) {
+  // TODO test turn swap imbalence to see (e.g. using %3).
+  // could help with tournament testing by giving edge ton one player and limiting possibility of antigame strat
   return (idxTurn + iDepth) % 2 == 0;
 }
 
@@ -48,6 +50,7 @@ void JumpinPlayerAI::ComputeBoardScore(BoardState *ioBoard) {
     }
 
     // Add score for lagging pawn advance
+    // TODO change for sum of penal on back row
     if (D.UI[ValPushLast_____].I() != 0) {
       bool foundLastRed= false;
       for (int h= 0; h < nH && !foundLastRed; h++) {

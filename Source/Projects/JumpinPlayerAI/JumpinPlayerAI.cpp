@@ -264,6 +264,7 @@ void JumpinPlayerAI::Animate() {
   if (BotStrategy > 0) {
     if (!RootBoard->SubBoards.empty()) {
       // Select the move based on chosen strategy
+      // TODO add stratyegy for mostly nash move with fraction of random moves
       int idxMove= 0;
       if (BotStrategy == 1) {
         idxMove= Random::Val(0, (int)RootBoard->SubBoards.size() - 1);
