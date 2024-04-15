@@ -27,6 +27,7 @@ class JumpinPlayerAI
     MaxTreeBoards___,
     MoveSortScore___,
     MoveSortNash____,
+    MoveSortRand____,
     ABPruning_______,
     IterDeepening___,
     ______________01,
@@ -91,9 +92,9 @@ class JumpinPlayerAI
                           const int iJumpW, const int iJumpH,
                           std::vector<std::vector<bool>> &ioVisit,
                           std::vector<std::array<int, 4>> &ioMoves);
-  int GetIdxNashSubBoard(BoardState *ioBoard, const int iDepth);
-  void SortSubBoardsScore(BoardState *ioBoard, const int iDepth);
-  void SortSubBoardsNash(BoardState *ioBoard, const int iDepth);
+  void SortSubBoards(BoardState *ioBoard, const int iDepth, const int iMode);
+  int GetIdxBestSubBoard(BoardState *ioBoard, const int iDepth, const int iMode);
+  int CompareBoardPair(const BoardState *iBoardA, const BoardState *iBoardB, const int iDepth, const int iMode);
 
   public:
   bool isActivProj;

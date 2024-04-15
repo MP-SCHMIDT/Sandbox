@@ -46,6 +46,7 @@ void JumpinPlayerAI::SetActiveProject() {
     D.UI.push_back(ParamUI("MaxTreeBoards___", 0));
     D.UI.push_back(ParamUI("MoveSortScore___", 0));
     D.UI.push_back(ParamUI("MoveSortNash____", 0));
+    D.UI.push_back(ParamUI("MoveSortRand____", 0));
     D.UI.push_back(ParamUI("ABPruning_______", 0));
     D.UI.push_back(ParamUI("IterDeepening___", 0));
     D.UI.push_back(ParamUI("______________01", NAN));
@@ -94,6 +95,7 @@ bool JumpinPlayerAI::CheckRefresh() {
   if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;
   if (D.UI[MoveSortScore___].hasChanged()) isRefreshed= false;
   if (D.UI[MoveSortNash____].hasChanged()) isRefreshed= false;
+  if (D.UI[MoveSortRand____].hasChanged()) isRefreshed= false;
   if (D.UI[ABPruning_______].hasChanged()) isRefreshed= false;
   if (D.UI[IterDeepening___].hasChanged()) isRefreshed= false;
   if (D.UI[ValPushTotal____].hasChanged()) isRefreshed= false;
@@ -270,13 +272,10 @@ void JumpinPlayerAI::Animate() {
         idxMove= Random::Val(0, (int)RootBoard->SubBoards.size() - 1);
       }
       else if (BotStrategy == 2) {
-        for (int k= 0; k < (int)RootBoard->SubBoards.size(); k++) {
-          if (IsRedTurn(0) && RootBoard->SubBoards[idxMove]->Score < RootBoard->SubBoards[k]->Score) idxMove= k;
-          if (!IsRedTurn(0) && RootBoard->SubBoards[idxMove]->Score > RootBoard->SubBoards[k]->Score) idxMove= k;
-        }
+        idxMove= GetIdxBestSubBoard(RootBoard, 0, 0);
       }
       else if (BotStrategy == 3) {
-        idxMove= GetIdxNashSubBoard(RootBoard, 0);
+        idxMove= GetIdxBestSubBoard(RootBoard, 0, 1);
       }
       // Execute the move
       std::array<int, 4> SelectedMove= RootBoard->SubBoards[idxMove]->Move;
