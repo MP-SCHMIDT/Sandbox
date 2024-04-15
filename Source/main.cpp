@@ -21,6 +21,7 @@
 #include "AlgoTestEnviro/AlgoTestEnviro.hpp"
 #include "FractalCurvDev/FractalCurvDev.hpp"
 #include "FractalElevMap/FractalElevMap.hpp"
+#include "HexBoardGameAI/HexBoardGameAI.hpp"
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
 #include "JumpinPlayerAI/JumpinPlayerAI.hpp"
 #include "MarkovProcGene/MarkovProcGene.hpp"
@@ -79,6 +80,7 @@ AgentSwarmBoid myAgentSwarmBoid;
 AlgoTestEnviro myAlgoTestEnviro;
 FractalCurvDev myFractalCurvDev;
 FractalElevMap myFractalElevMap;
+HexBoardGameAI myHexBoardGameAI;
 ImageExtruMesh myImageExtruMesh;
 JumpinPlayerAI myJumpinPlayerAI;
 MarkovProcGene myMarkovProcGene;
@@ -103,6 +105,7 @@ enum ProjectID
   AlgoTestEnviroID,
   FractalCurvDevID,
   FractalElevMapID,
+  HexBoardGameAIID,
   ImageExtruMeshID,
   JumpinPlayerAIID,
   MarkovProcGeneID,
@@ -131,6 +134,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
   if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
   if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj) myFractalElevMap= FractalElevMap();
+  if (currentProjectID != ProjectID::HexBoardGameAIID && myHexBoardGameAI.isActivProj) myHexBoardGameAI= HexBoardGameAI();
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj) myImageExtruMesh= ImageExtruMesh();
   if (currentProjectID != ProjectID::JumpinPlayerAIID && myJumpinPlayerAI.isActivProj) myJumpinPlayerAI= JumpinPlayerAI();
   if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj) myMarkovProcGene= MarkovProcGene();
@@ -152,6 +156,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.SetActiveProject();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.SetActiveProject();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.SetActiveProject();
+  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.SetActiveProject();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
   if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.SetActiveProject();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.SetActiveProject();
@@ -176,6 +181,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Refresh();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Refresh();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Refresh();
+  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.Refresh();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
   if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Refresh();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Refresh();
@@ -200,6 +206,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Animate();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Animate();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Animate();
+  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.Animate();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
   if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Animate();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Animate();
@@ -224,6 +231,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Draw();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Draw();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Draw();
+  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.Draw();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
   if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Draw();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Draw();
@@ -248,6 +256,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.isRefreshed= false;
+  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.isRefreshed= false;
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
   if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.isRefreshed= false;
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.isRefreshed= false;
@@ -785,6 +794,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(keyUpperCase);
+    if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(keyUpperCase);
@@ -1001,6 +1011,7 @@ void init_menu() {
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
   glutAddMenuEntry("FractalCurvDev", ProjectID::FractalCurvDevID);
   glutAddMenuEntry("FractalElevMap", ProjectID::FractalElevMapID);
+  glutAddMenuEntry("HexBoardGameAI", ProjectID::HexBoardGameAIID);
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
   glutAddMenuEntry("JumpinPlayerAI", ProjectID::JumpinPlayerAIID);
   glutAddMenuEntry("MarkovProcGene", ProjectID::MarkovProcGeneID);
