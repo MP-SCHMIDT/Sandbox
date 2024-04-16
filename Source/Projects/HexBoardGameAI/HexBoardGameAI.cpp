@@ -119,31 +119,20 @@ void HexBoardGameAI::Allocate() {
   thinkTime= 0.0;
 
   // Build the Hex board positions
+  const float wStep= sqrt(3.0f);
+  const float hStep= 3.0f / 2.0f;
+  const float cloudWidth= float(nW - 1) * wStep + float(nH - 1) * 0.5f * hStep + wStep;
+  const float cloudHeight= float(nH - 1) * hStep + hStep;
+  cellSize= 1.0f / std::max(cloudWidth, cloudHeight);
   Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
   for (int w= 0; w < nW; w++)
     for (int h= 0; h < nH; h++)
-      Cells[w][h].set(0.0f, float(w) * sqrt(3.0f) - float(h) * 0.5f * sqrt(3.0f), float(h) * 3.0f / 2.0f);
-  Vec::Vec3<float> boxMin= Cells[0][0];
-  Vec::Vec3<float> boxMax= Cells[0][0];
-  for (int w= 0; w < nW; w++) {
-    for (int h= 0; h < nH; h++) {
-      boxMin= boxMin.cwiseMin(Cells[w][h]);
-      boxMax= boxMax.cwiseMax(Cells[w][h]);
-    }
-  }
-  cellSize= 1.0f / (boxMax - boxMin).maxCoeff();
-  for (int w= 0; w < nW; w++)
-    for (int h= 0; h < nH; h++)
-      Cells[w][h]= Vec::Vec3<float>(0.f, 0.5f, 0.5f) + ((Cells[w][h] - 0.5f * (boxMax + boxMin)) * cellSize);
-  for (int w= 0; w < nW; w++) {
-    for (int h= 0; h < nH; h++) {
-      boxMin= boxMin.cwiseMin(Cells[w][h]);
-      boxMax= boxMax.cwiseMax(Cells[w][h]);
-    }
-  }
+      Cells[w][h].set(0.5f,
+                      0.5f + ((float(w) + 0.5f) * wStep + float(nH - 1 - h) * 0.5f * hStep - 0.5f * cloudWidth) * cellSize,
+                      0.5f - ((float(nH - 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
+  D.boxMin= {0.5, 0.0, 0.0};
+  D.boxMax= {0.5, 1.0, 1.0};
 
   // Create and initialize root board with pawns
   std::vector<std::vector<int>> Pawns= Field::AllocField2D(nW, nH, 0);
