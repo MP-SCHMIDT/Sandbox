@@ -17,10 +17,10 @@ class HexBoardGameAI
   {
     BoardW__________,
     BoardH__________,
-    RandomPawnInit__,
-    ______________00,
     MoveStreakRed___,
     MoveStreakBlu___,
+    RandomPawnInit__,
+    ______________00,
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeBoards___,

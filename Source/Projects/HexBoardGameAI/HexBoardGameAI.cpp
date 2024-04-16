@@ -35,10 +35,10 @@ void HexBoardGameAI::SetActiveProject() {
     D.UI.clear();
     D.UI.push_back(ParamUI("BoardW__________", 5));
     D.UI.push_back(ParamUI("BoardH__________", 5));
-    D.UI.push_back(ParamUI("RandomPawnInit__", 0));
-    D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("MoveStreakRed___", 1));
     D.UI.push_back(ParamUI("MoveStreakBlu___", 1));
+    D.UI.push_back(ParamUI("RandomPawnInit__", 0));
+    D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("MaxSearchDepth__", 4));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
     D.UI.push_back(ParamUI("MaxTreeBoards___", 0));
@@ -80,6 +80,8 @@ void HexBoardGameAI::SetActiveProject() {
 bool HexBoardGameAI::CheckAlloc() {
   if (D.UI[BoardW__________].hasChanged()) isAllocated= false;
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
+  if (D.UI[MoveStreakRed___].hasChanged()) isAllocated= false;
+  if (D.UI[MoveStreakBlu___].hasChanged()) isAllocated= false;
   if (D.UI[RandomPawnInit__].hasChanged()) isAllocated= false;
   return isAllocated;
 }
@@ -87,8 +89,6 @@ bool HexBoardGameAI::CheckAlloc() {
 
 // Check if parameter changes should trigger a refresh
 bool HexBoardGameAI::CheckRefresh() {
-  if (D.UI[MoveStreakRed___].hasChanged()) isRefreshed= false;
-  if (D.UI[MoveStreakBlu___].hasChanged()) isRefreshed= false;
   if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
   if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
   if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;

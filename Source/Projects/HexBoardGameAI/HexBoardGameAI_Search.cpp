@@ -32,7 +32,10 @@ void HexBoardGameAI::ComputeGameTreeSearch() {
   int pruningBeta= INT_MAX;
   if (D.UI[IterDeepening___].B()) {
     for (int iterMaxSearchDepth= 1; iterMaxSearchDepth <= D.UI[MaxSearchDepth__].I(); iterMaxSearchDepth++) {
-      RecursiveTreeSearch(RootBoard, 0, iterMaxSearchDepth, pruningAlpha, pruningBeta);
+      if ((D.UI[MaxThinkTime____].D() == 0.0 || Timer::CheckTimer() < D.UI[MaxThinkTime____].D()) &&
+          (D.UI[MaxTreeBoards___].I() == 0 || nbTreeBoards < D.UI[MaxTreeBoards___].I())) {
+        RecursiveTreeSearch(RootBoard, 0, iterMaxSearchDepth, pruningAlpha, pruningBeta);
+      }
     }
   }
   else {
@@ -47,14 +50,6 @@ void HexBoardGameAI::ComputeGameTreeSearch() {
 int HexBoardGameAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth, int iAlpha, int iBeta) {
   if (ioBoard == nullptr) printf("[ERROR] RecursiveTreeSearch on a null board\n");
 
-  // Handle stopping criterion
-  if ((D.UI[MaxThinkTime____].D() > 0.0 && Timer::CheckTimer() >= D.UI[MaxThinkTime____].D()) ||
-      (D.UI[MaxTreeBoards___].I() > 0 && nbTreeBoards >= D.UI[MaxTreeBoards___].I())) {
-    ioBoard->NashScore= IsRedTurn(iDepth) ? -INT_MAX : INT_MAX;
-    ioBoard->NashNbSteps= INT_MAX;
-    return ioBoard->NashScore;
-  }
-
   // Handle leaf board
   if (iDepth >= iMaxDepth || ioBoard->Score == INT_MAX || ioBoard->Score == -INT_MAX) {
     ioBoard->NashScore= ioBoard->Score;
@@ -66,25 +61,16 @@ int HexBoardGameAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
   if (ioBoard->SubBoards.empty()) {
     // Find all the possible pawn moves from the current turn
     std::vector<std::array<int, 2>> Moves;
-    for (int w= 0; w < nW; w++) {
-      for (int h= 0; h < nH; h++) {
-        if (ioBoard->Pawns[w][h] == 0) {
+    for (int w= 0; w < nW; w++)
+      for (int h= 0; h < nH; h++)
+        if (ioBoard->Pawns[w][h] == 0)
           Moves.push_back(std::array<int, 2>{w, h});
-        }
-      }
-    }
-
-    // Add the turn skip move if no other possible move exists
-    if (Moves.empty())
-      Moves.push_back(std::array<int, 2>{-1, -1});
 
     // Create and score the sub board for each move
     for (std::array<int, 2> move : Moves) {
       BoardState *newBoard= CreateBoard(ioBoard->Pawns, move, iDepth + 1);
-      if (move[0] != -1 && move[1] != -1) {
-        if (IsRedTurn(iDepth)) newBoard->Pawns[move[0]][move[1]]= +1;
-        else newBoard->Pawns[move[0]][move[1]]= -1;
-      }
+      if (IsRedTurn(iDepth)) newBoard->Pawns[move[0]][move[1]]= +1;
+      else newBoard->Pawns[move[0]][move[1]]= -1;
       ComputeBoardScore(newBoard);
       ioBoard->SubBoards.push_back(newBoard);
       nbTreeBoards++;
@@ -103,8 +89,9 @@ int HexBoardGameAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
   // Recursively search the sub boards
   ioBoard->NashScore= IsRedTurn(iDepth) ? -INT_MAX : INT_MAX;
   ioBoard->NashNbSteps= INT_MAX;
+  int prunedMaxDepth= iMaxDepth;
   for (int k= 0; k < (int)ioBoard->SubBoards.size(); k++) {
-    const int score= RecursiveTreeSearch(ioBoard->SubBoards[k], iDepth + 1, iMaxDepth, iAlpha, iBeta);
+    const int score= RecursiveTreeSearch(ioBoard->SubBoards[k], iDepth + 1, prunedMaxDepth, iAlpha, iBeta);
     if ((IsRedTurn(iDepth) && ioBoard->NashScore < score) ||
         (!IsRedTurn(iDepth) && ioBoard->NashScore > score) ||
         (ioBoard->NashScore == score && ioBoard->NashNbSteps > ioBoard->SubBoards[k]->NashNbSteps + 1)) {
@@ -114,11 +101,11 @@ int HexBoardGameAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
     if (D.UI[ABPruning_______].B()) {
       if (IsRedTurn(iDepth)) {
         iAlpha= std::max(iAlpha, ioBoard->NashScore);
-        if (ioBoard->NashScore >= iBeta) break;
+        if (ioBoard->NashScore >= iBeta) prunedMaxDepth= 0;
       }
       else {
         iBeta= std::min(iBeta, ioBoard->NashScore);
-        if (ioBoard->NashScore <= iAlpha) break;
+        if (ioBoard->NashScore <= iAlpha) prunedMaxDepth= 0;
       }
     }
   }
