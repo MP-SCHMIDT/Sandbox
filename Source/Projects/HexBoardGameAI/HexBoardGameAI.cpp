@@ -125,17 +125,17 @@ void HexBoardGameAI::Allocate() {
   thinkTime= 0.0;
 
   // Build the Hex board positions
-  const float wStep= sqrt(3.0f);
-  const float hStep= 3.0f / 2.0f;
-  const float cloudWidth= float(nW - 1) * wStep + float(nH - 1) * 0.5f * hStep + wStep;
-  const float cloudHeight= float(nH - 1) * hStep + hStep;
+  const float wStep= 1.0f;
+  const float hStep= std::sin(std::numbers::pi / 3.0f);
+  const float cloudWidth= float(nW + 1) * wStep + float(nH + 1) * 0.5f * hStep + wStep;
+  const float cloudHeight= float(nH + 1) * hStep + hStep;
   cellSize= 1.0f / std::max(cloudWidth, cloudHeight);
-  Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
-  for (int w= 0; w < nW; w++)
-    for (int h= 0; h < nH; h++)
+  Cells= Field::AllocField2D(nW + 2, nH + 2, Vec::Vec3<float>(0.0, 0.0, 0.0));
+  for (int w= 0; w < nW + 2; w++)
+    for (int h= 0; h < nH + 2; h++)
       Cells[w][h].set(0.5f,
-                      0.5f + ((float(w) + 0.5f) * wStep + float(nH - 1 - h) * 0.5f * hStep - 0.5f * cloudWidth) * cellSize,
-                      0.5f - ((float(nH - 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
+                      0.5f + ((float(w) + 0.5f) * wStep + float(nH + 1 - h) * 0.5f * wStep - 0.5f * cloudWidth) * cellSize,
+                      0.5f - ((float(nH + 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
 
   D.boxMin= {0.5, 0.0, 0.0};
   D.boxMax= {0.5, 1.0, 1.0};
@@ -191,13 +191,13 @@ void HexBoardGameAI::KeyPress(const unsigned char key) {
   int hCursor= 0;
   Vec::Vec3<float> mouseProj(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
   float distMin= (mouseProj - Cells[0][0]).norm();
-  for (int w= 0; w < nW; w++) {
-    for (int h= 0; h < nH; h++) {
+  for (int w= 1; w < nW + 1; w++) {
+    for (int h= 1; h < nH + 1; h++) {
       const float dist= (mouseProj - Cells[w][h]).norm();
       if (distMin > dist) {
         distMin= dist;
-        wCursor= w;
-        hCursor= h;
+        wCursor= w - 1;
+        hCursor= h - 1;
       }
     }
   }
@@ -284,20 +284,23 @@ void HexBoardGameAI::Draw() {
 
   // Draw the pawns
   if (D.displayMode1) {
-    glEnable(GL_LIGHTING);
-    for (int w= 0; w < nW; w++) {
-      for (int h= 0; h < nH; h++) {
-        float r= 0.5f, g= 0.5f, b= 0.5f;
-        if (RootBoard->Pawns[w][h] > 0) r+= 0.4f;
-        if (RootBoard->Pawns[w][h] < 0) b+= 0.4f;
-        glColor3f(r, g, b);
+    for (int w= 0; w < nW + 2; w++) {
+      for (int h= 0; h < nH + 2; h++) {
+        if ((nW + 1 - w) + h < 2 || w + (nH + 1 - h) < 2) continue;
+        if ((w == 0 && h == 0) || (w == 0 && h == nH + 1) || (w == nW + 1 && h == 0) || (w == nW + 1 && h == nH + 1)) continue;
+        glColor3f(0.5f, 0.5f, 0.5f);
+        if (w > 0 && w < nW + 1 && h > 0 && h < nH + 1 && RootBoard->Pawns[w - 1][h - 1] > 0) glColor3f(0.8f, 0.5f, 0.5f);
+        if (w > 0 && w < nW + 1 && h > 0 && h < nH + 1 && RootBoard->Pawns[w - 1][h - 1] < 0) glColor3f(0.5f, 0.5f, 0.8f);
+        if (w == 0 || w == nW + 1) glColor3f(0.2f, 0.2f, 0.5f);
+        if (h == 0 || h == nH + 1) glColor3f(0.5f, 0.2f, 0.2f);
         glPushMatrix();
         glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
-        glutSolidSphere(0.45 * cellSize, 36, 10);
+        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+        glScalef(1.0f, 1.0f, 0.01f);
+        glutSolidSphere(0.5 * cellSize, 6, 2);
         glPopMatrix();
       }
     }
-    glDisable(GL_LIGHTING);
   }
 
   // TODO add cheat mode overlay showing Nash moves
@@ -305,16 +308,16 @@ void HexBoardGameAI::Draw() {
   // Draw the board tree
   if (D.displayMode4) {
     float px= 0.5f * (D.boxMin[0] + D.boxMax[0]);
-    float py= D.boxMax[1] + 0.6f * (D.boxMax[1] - D.boxMin[1]);
+    float py= D.boxMax[1] + 0.1f * (D.boxMax[1] - D.boxMin[1]);
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
     glLineWidth(2.0f);
     glBegin(GL_LINES);
-    DrawBoardTree(RootBoard, 0, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -std::numbers::pi, 0.0f);
+    DrawBoardTree(RootBoard, 0, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -0.5f * std::numbers::pi, 0.5f * std::numbers::pi);
     glEnd();
     glLineWidth(1.0f);
     glPointSize(6.0f);
     glBegin(GL_POINTS);
-    DrawBoardTree(RootBoard, 0, 1, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -std::numbers::pi, 0.0f);
+    DrawBoardTree(RootBoard, 0, 1, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -0.5f * std::numbers::pi, 0.5f * std::numbers::pi);
     glEnd();
     glPointSize(1.0f);
   }
