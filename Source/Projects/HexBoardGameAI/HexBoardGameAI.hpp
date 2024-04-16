@@ -36,6 +36,7 @@ class HexBoardGameAI
     BotStrategyRed__,
     BotStrategyBlu__,
     ______________03,
+    ColorMode_______,
     ColorFactor_____,
     ______________04,
     TestParamHEX_0__,

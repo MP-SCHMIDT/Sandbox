@@ -54,6 +54,7 @@ void HexBoardGameAI::SetActiveProject() {
     D.UI.push_back(ParamUI("BotStrategyRed__", 3));
     D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
     D.UI.push_back(ParamUI("______________03", NAN));
+    D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("______________04", NAN));
     D.UI.push_back(ParamUI("TestParamHEX_0__", 0.0));
@@ -303,7 +304,22 @@ void HexBoardGameAI::Draw() {
     }
   }
 
-  // TODO add cheat mode overlay showing Nash moves
+  // Draw the possible moves
+  if (D.displayMode2) {
+    for (BoardState *subBoard : RootBoard->SubBoards) {
+      float r, g, b;
+      if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->Score), r, g, b);
+      if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->NashScore), r, g, b);
+      if (D.UI[ColorMode_______].I() == 2) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->NashNbSteps), r, g, b);
+      glColor3f(r, g, b);
+      const int w= subBoard->Move[0] + 1;
+      const int h= subBoard->Move[1] + 1;
+      glPushMatrix();
+      glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+      glutWireCube(0.5 * cellSize);
+      glPopMatrix();
+    }
+  }
 
   // Draw the board tree
   if (D.displayMode4) {
@@ -338,7 +354,9 @@ void HexBoardGameAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, c
   for (int idxMove= 0; idxMove < (int)iBoard->SubBoards.size(); idxMove++) {
     if (iDrawMode == 0) {
       float r, g, b;
-      Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
+      if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->Score), r, g, b);
+      if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->NashScore), r, g, b);
+      if (D.UI[ColorMode_______].I() == 2) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(iBoard->SubBoards[idxMove]->NashNbSteps), r, g, b);
       glColor3f(r, g, b);
       glVertex3f(px, py + distBeg * std::cos((arcBeg + arcEnd) / 2.0f), pz + distBeg * std::sin((arcBeg + arcEnd) / 2.0f));
       glVertex3f(px, py + distEnd * std::cos(arcBeg + 0.5f * arcStep + idxMove * arcStep), pz + distEnd * std::sin(arcBeg + 0.5f * arcStep + idxMove * arcStep));
