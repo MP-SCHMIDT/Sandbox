@@ -35,23 +35,24 @@ void HexBoardGameAI::SetActiveProject() {
     D.UI.clear();
     D.UI.push_back(ParamUI("BoardW__________", 5));
     D.UI.push_back(ParamUI("BoardH__________", 5));
-    D.UI.push_back(ParamUI("RandomBoard_____", 0));
-    D.UI.push_back(ParamUI("SinglePlayer____", 0));
+    D.UI.push_back(ParamUI("RandomPawnInit__", 0));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("BotStrategyRed__", 3));
-    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
-    D.UI.push_back(ParamUI("______________01", NAN));
+    D.UI.push_back(ParamUI("MoveStreakRed___", 1));
+    D.UI.push_back(ParamUI("MoveStreakBlu___", 1));
     D.UI.push_back(ParamUI("MaxSearchDepth__", 4));
     D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
     D.UI.push_back(ParamUI("MaxTreeBoards___", 0));
-    D.UI.push_back(ParamUI("MoveSortScore___", 0));
-    D.UI.push_back(ParamUI("MoveSortNash____", 0));
-    D.UI.push_back(ParamUI("MoveSortRand____", 0));
-    D.UI.push_back(ParamUI("ABPruning_______", 0));
-    D.UI.push_back(ParamUI("IterDeepening___", 0));
-    D.UI.push_back(ParamUI("______________02", NAN));
+    D.UI.push_back(ParamUI("MoveSortScore___", 1));
+    D.UI.push_back(ParamUI("MoveSortNash____", 1));
+    D.UI.push_back(ParamUI("MoveSortRand____", 1));
+    D.UI.push_back(ParamUI("ABPruning_______", 1));
+    D.UI.push_back(ParamUI("IterDeepening___", 1));
+    D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("ValEdgeConnect__", 1));
     D.UI.push_back(ParamUI("ValCornConnect__", 2));
+    D.UI.push_back(ParamUI("______________02", NAN));
+    D.UI.push_back(ParamUI("BotStrategyRed__", 3));
+    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
     D.UI.push_back(ParamUI("______________03", NAN));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("______________04", NAN));
@@ -79,14 +80,15 @@ void HexBoardGameAI::SetActiveProject() {
 bool HexBoardGameAI::CheckAlloc() {
   if (D.UI[BoardW__________].hasChanged()) isAllocated= false;
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
-  if (D.UI[RandomBoard_____].hasChanged()) isAllocated= false;
-  if (D.UI[SinglePlayer____].hasChanged()) isAllocated= false;
+  if (D.UI[RandomPawnInit__].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
 
 // Check if parameter changes should trigger a refresh
 bool HexBoardGameAI::CheckRefresh() {
+  if (D.UI[MoveStreakRed___].hasChanged()) isRefreshed= false;
+  if (D.UI[MoveStreakBlu___].hasChanged()) isRefreshed= false;
   if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
   if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
   if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;
@@ -115,6 +117,10 @@ void HexBoardGameAI::Allocate() {
   nW= std::max(D.UI[BoardW__________].I(), 1);
   nH= std::max(D.UI[BoardH__________].I(), 1);
   idxTurn= 0;
+  streakRed= std::max(D.UI[MoveStreakRed___].I(), 0);
+  streakBlu= std::max(D.UI[MoveStreakBlu___].I(), 0);
+  if (streakBlu == 0) streakRed= std::max(streakRed, 1);
+  turnPeriod= streakRed + streakBlu;
   nbTreeBoards= 0;
   thinkTime= 0.0;
 
@@ -136,9 +142,11 @@ void HexBoardGameAI::Allocate() {
 
   // Create and initialize root board with pawns
   std::vector<std::vector<int>> Pawns= Field::AllocField2D(nW, nH, 0);
-  if (D.UI[RandomBoard_____].B()) {
+  if (D.UI[RandomPawnInit__].B()) {
     for (int player= -1; player <= +1; player+= 2) {
-      for (int k= 0; k < D.UI[RandomBoard_____].I(); k++) {
+      if (player == +1 && D.UI[MoveStreakRed___].I() < 1) continue;
+      if (player == -1 && D.UI[MoveStreakBlu___].I() < 1) continue;
+      for (int k= 0; k < D.UI[RandomPawnInit__].I(); k++) {
         while (true) {
           const int randW= Random::Val(0, nW - 1);
           const int randH= Random::Val(0, nH - 1);
@@ -147,16 +155,6 @@ void HexBoardGameAI::Allocate() {
             break;
           }
         }
-      }
-    }
-  }
-
-  // Remove Blu for single player
-  if (D.UI[SinglePlayer____].B()) {
-    for (int w= 0; w < nW; w++) {
-      for (int h= 0; h < nH; h++) {
-        if (Pawns[w][h] == -1)
-          Pawns[w][h]= 0;
       }
     }
   }

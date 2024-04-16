@@ -15,9 +15,7 @@ extern Data D;
 
 
 bool HexBoardGameAI::IsRedTurn(const int iDepth) {
-  // TODO test turn swap imbalence to see (e.g. using %3).
-  // could help with tournament testing by giving edge ton one player and limiting possibility of antigame strat
-  return (idxTurn + iDepth) % 2 == 0;
+  return ((idxTurn + iDepth) % turnPeriod) < streakRed;
 }
 
 

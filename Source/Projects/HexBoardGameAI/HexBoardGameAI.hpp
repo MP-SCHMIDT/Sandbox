@@ -17,12 +17,10 @@ class HexBoardGameAI
   {
     BoardW__________,
     BoardH__________,
-    RandomBoard_____,
-    SinglePlayer____,
+    RandomPawnInit__,
     ______________00,
-    BotStrategyRed__,
-    BotStrategyBlu__,
-    ______________01,
+    MoveStreakRed___,
+    MoveStreakBlu___,
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeBoards___,
@@ -31,9 +29,12 @@ class HexBoardGameAI
     MoveSortRand____,
     ABPruning_______,
     IterDeepening___,
-    ______________02,
+    ______________01,
     ValEdgeConnect__,
     ValCornConnect__,
+    ______________02,
+    BotStrategyRed__,
+    BotStrategyBlu__,
     ______________03,
     ColorFactor_____,
     ______________04,
@@ -61,6 +62,9 @@ class HexBoardGameAI
   int nW;                                            // Dimensions of the board
   int nH;                                            // Dimensions of the board
   int idxTurn;                                       // Counter for the current turn in the game
+  int streakRed;                                     //
+  int streakBlu;                                     //
+  int turnPeriod;                                    //
   int nbTreeBoards;                                  // Counter for the number of boards evaluated in the current search
   double thinkTime;                                  // Time spent in the last search
   BoardState *RootBoard= nullptr;                    // Current state of the board
