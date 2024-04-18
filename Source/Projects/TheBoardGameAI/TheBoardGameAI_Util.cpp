@@ -1,4 +1,4 @@
-#include "JumpinPlayerAI.hpp"
+#include "TheBoardGameAI.hpp"
 
 
 // Standard lib
@@ -13,12 +13,9 @@
 extern Data D;
 
 
-JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::vector<int>> &iPawns,
-                                                        const std::array<int, 4> &iMove,
-                                                        const int iDepth) {
+TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const std::vector<std::vector<int>> &iPawns, const int iDepth) {
   BoardState *newBoard= new BoardState;
   newBoard->Pawns= iPawns;
-  newBoard->Move= iMove;
   newBoard->Score= 0;
   newBoard->NashScore= (IsRedTurn(iDepth)) ? -INT_MAX : INT_MAX;
   newBoard->NashNbSteps= INT_MAX;
@@ -26,7 +23,7 @@ JumpinPlayerAI::BoardState *JumpinPlayerAI::CreateBoard(const std::vector<std::v
 }
 
 
-void JumpinPlayerAI::DeleteBoard(BoardState *ioBoard) {
+void TheBoardGameAI::DeleteBoard(BoardState *ioBoard) {
   if (ioBoard == nullptr) printf("[ERROR] DeleteBoard on a null board\n");
   for (BoardState *subBoard : ioBoard->SubBoards)
     DeleteBoard(subBoard);

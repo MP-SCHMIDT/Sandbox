@@ -21,9 +21,7 @@
 #include "AlgoTestEnviro/AlgoTestEnviro.hpp"
 #include "FractalCurvDev/FractalCurvDev.hpp"
 #include "FractalElevMap/FractalElevMap.hpp"
-#include "HexBoardGameAI/HexBoardGameAI.hpp"
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
-#include "JumpinPlayerAI/JumpinPlayerAI.hpp"
 #include "MarkovProcGene/MarkovProcGene.hpp"
 #include "MassSpringSyst/MassSpringSyst.hpp"
 #include "ParticForceLaw/ParticForceLaw.hpp"
@@ -33,6 +31,7 @@
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
+#include "TheBoardGameAI/TheBoardGameAI.hpp"
 // #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "CompuFluidDyna/CompuFluidDyna.hpp"
@@ -80,9 +79,7 @@ AgentSwarmBoid myAgentSwarmBoid;
 AlgoTestEnviro myAlgoTestEnviro;
 FractalCurvDev myFractalCurvDev;
 FractalElevMap myFractalElevMap;
-HexBoardGameAI myHexBoardGameAI;
 ImageExtruMesh myImageExtruMesh;
-JumpinPlayerAI myJumpinPlayerAI;
 MarkovProcGene myMarkovProcGene;
 MassSpringSyst myMassSpringSyst;
 ParticForceLaw myParticForceLaw;
@@ -92,6 +89,7 @@ SkeletonFolder mySkeletonFolder;
 SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
+TheBoardGameAI myTheBoardGameAI;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 CompuFluidDyna myCompuFluidDyna;
 NonLinMMABench myNonLinMMABench;
@@ -105,9 +103,7 @@ enum ProjectID
   AlgoTestEnviroID,
   FractalCurvDevID,
   FractalElevMapID,
-  HexBoardGameAIID,
   ImageExtruMeshID,
-  JumpinPlayerAIID,
   MarkovProcGeneID,
   MassSpringSystID,
   ParticForceLawID,
@@ -117,6 +113,7 @@ enum ProjectID
   SpaceTimeWorldID,
   StringArtOptimID,
   TerrainErosionID,
+  TheBoardGameAIID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   CompuFluidDynaID,
   NonLinMMABenchID,
@@ -134,9 +131,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
   if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
   if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj) myFractalElevMap= FractalElevMap();
-  if (currentProjectID != ProjectID::HexBoardGameAIID && myHexBoardGameAI.isActivProj) myHexBoardGameAI= HexBoardGameAI();
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj) myImageExtruMesh= ImageExtruMesh();
-  if (currentProjectID != ProjectID::JumpinPlayerAIID && myJumpinPlayerAI.isActivProj) myJumpinPlayerAI= JumpinPlayerAI();
   if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj) myMarkovProcGene= MarkovProcGene();
   if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj) myMassSpringSyst= MassSpringSyst();
   if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj) myParticForceLaw= ParticForceLaw();
@@ -146,6 +141,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj) mySpaceTimeWorld= SpaceTimeWorld();
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
+  if (currentProjectID != ProjectID::TheBoardGameAIID && myTheBoardGameAI.isActivProj) myTheBoardGameAI= TheBoardGameAI();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj) myCompuFluidDyna= CompuFluidDyna();
   if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj) myNonLinMMABench= NonLinMMABench();
@@ -156,9 +152,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.SetActiveProject();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.SetActiveProject();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.SetActiveProject();
-  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.SetActiveProject();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
-  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.SetActiveProject();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.SetActiveProject();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.SetActiveProject();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.SetActiveProject();
@@ -168,6 +162,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.SetActiveProject();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
@@ -181,9 +176,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Refresh();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Refresh();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Refresh();
-  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.Refresh();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
-  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Refresh();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Refresh();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Refresh();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Refresh();
@@ -193,6 +186,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Refresh();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
@@ -206,9 +200,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Animate();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Animate();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Animate();
-  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.Animate();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
-  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Animate();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Animate();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Animate();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Animate();
@@ -218,6 +210,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Animate();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
@@ -231,9 +224,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Draw();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Draw();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Draw();
-  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.Draw();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
-  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.Draw();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Draw();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Draw();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Draw();
@@ -243,6 +234,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Draw();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
@@ -256,9 +248,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.isRefreshed= false;
-  if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.isRefreshed= false;
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
-  if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.isRefreshed= false;
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.isRefreshed= false;
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.isRefreshed= false;
@@ -268,6 +258,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.isRefreshed= false;
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
@@ -794,9 +785,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::HexBoardGameAIID) myHexBoardGameAI.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::JumpinPlayerAIID) myJumpinPlayerAI.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress(keyUpperCase);
@@ -806,6 +795,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
     if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(keyUpperCase);
+    if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress(keyUpperCase);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
     if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(keyUpperCase);
     if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(keyUpperCase);
@@ -1011,9 +1001,7 @@ void init_menu() {
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
   glutAddMenuEntry("FractalCurvDev", ProjectID::FractalCurvDevID);
   glutAddMenuEntry("FractalElevMap", ProjectID::FractalElevMapID);
-  glutAddMenuEntry("HexBoardGameAI", ProjectID::HexBoardGameAIID);
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
-  glutAddMenuEntry("JumpinPlayerAI", ProjectID::JumpinPlayerAIID);
   glutAddMenuEntry("MarkovProcGene", ProjectID::MarkovProcGeneID);
   glutAddMenuEntry("MassSpringSyst", ProjectID::MassSpringSystID);
   glutAddMenuEntry("ParticForceLaw", ProjectID::ParticForceLawID);
@@ -1023,6 +1011,7 @@ void init_menu() {
   glutAddMenuEntry("SpaceTimeWorld", ProjectID::SpaceTimeWorldID);
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
+  glutAddMenuEntry("TheBoardGameAI", ProjectID::TheBoardGameAIID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
   glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);

@@ -1,4 +1,4 @@
-#include "HexBoardGameAI.hpp"
+#include "TheBoardGameAI.hpp"
 
 
 // Standard lib
@@ -22,7 +22,7 @@ extern Data D;
 
 
 // Constructor
-HexBoardGameAI::HexBoardGameAI() {
+TheBoardGameAI::TheBoardGameAI() {
   isActivProj= false;
   isAllocated= false;
   isRefreshed= false;
@@ -30,11 +30,12 @@ HexBoardGameAI::HexBoardGameAI() {
 
 
 // Initialize Project UI parameters
-void HexBoardGameAI::SetActiveProject() {
+void TheBoardGameAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("BoardW__________", 5));
-    D.UI.push_back(ParamUI("BoardH__________", 5));
+    D.UI.push_back(ParamUI("GameMode________", 0));
+    D.UI.push_back(ParamUI("BoardW__________", 6));
+    D.UI.push_back(ParamUI("BoardH__________", 6));
     D.UI.push_back(ParamUI("MoveStreakRed___", 1));
     D.UI.push_back(ParamUI("MoveStreakBlu___", 1));
     D.UI.push_back(ParamUI("RandomPawnInit__", 0));
@@ -46,10 +47,14 @@ void HexBoardGameAI::SetActiveProject() {
     D.UI.push_back(ParamUI("MoveSortNash____", 1));
     D.UI.push_back(ParamUI("MoveSortRand____", 1));
     D.UI.push_back(ParamUI("ABPruning_______", 1));
-    D.UI.push_back(ParamUI("IterDeepening___", 1));
+    D.UI.push_back(ParamUI("IterDeepening___", 0));
     D.UI.push_back(ParamUI("______________01", NAN));
-    D.UI.push_back(ParamUI("ValEdgeConnect__", 1));
-    D.UI.push_back(ParamUI("ValCornConnect__", 2));
+    D.UI.push_back(ParamUI("HexEdgeConnect__", 10));
+    D.UI.push_back(ParamUI("HexCornConnect__", 20));
+    D.UI.push_back(ParamUI("JmpPushTotal____", 1));
+    D.UI.push_back(ParamUI("JmpPushLast_____", 2));
+    D.UI.push_back(ParamUI("JmpSoftStranded_", -4));
+    D.UI.push_back(ParamUI("JmpHardStranded_", -8));
     D.UI.push_back(ParamUI("______________02", NAN));
     D.UI.push_back(ParamUI("BotStrategyRed__", 3));
     D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
@@ -57,12 +62,12 @@ void HexBoardGameAI::SetActiveProject() {
     D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
     D.UI.push_back(ParamUI("______________04", NAN));
-    D.UI.push_back(ParamUI("TestParamHEX_0__", 0.0));
-    D.UI.push_back(ParamUI("TestParamHEX_1__", 0.0));
-    D.UI.push_back(ParamUI("TestParamHEX_2__", 0.0));
-    D.UI.push_back(ParamUI("TestParamHEX_3__", 0.0));
-    D.UI.push_back(ParamUI("TestParamHEX_4__", 0.0));
-    D.UI.push_back(ParamUI("TestParamHEX_5__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_0__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_1__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_2__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_3__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_4__", 0.0));
+    D.UI.push_back(ParamUI("TestParamGAI_5__", 0.0));
     D.UI.push_back(ParamUI("______________05", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
   }
@@ -78,7 +83,8 @@ void HexBoardGameAI::SetActiveProject() {
 
 
 // Check if parameter changes should trigger an allocation
-bool HexBoardGameAI::CheckAlloc() {
+bool TheBoardGameAI::CheckAlloc() {
+  if (D.UI[GameMode________].hasChanged()) isAllocated= false;
   if (D.UI[BoardW__________].hasChanged()) isAllocated= false;
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
   if (D.UI[MoveStreakRed___].hasChanged()) isAllocated= false;
@@ -89,7 +95,7 @@ bool HexBoardGameAI::CheckAlloc() {
 
 
 // Check if parameter changes should trigger a refresh
-bool HexBoardGameAI::CheckRefresh() {
+bool TheBoardGameAI::CheckRefresh() {
   if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
   if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
   if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;
@@ -98,14 +104,19 @@ bool HexBoardGameAI::CheckRefresh() {
   if (D.UI[MoveSortRand____].hasChanged()) isRefreshed= false;
   if (D.UI[ABPruning_______].hasChanged()) isRefreshed= false;
   if (D.UI[IterDeepening___].hasChanged()) isRefreshed= false;
-  if (D.UI[ValEdgeConnect__].hasChanged()) isRefreshed= false;
-  if (D.UI[ValCornConnect__].hasChanged()) isRefreshed= false;
+
+  if (D.UI[HexEdgeConnect__].hasChanged()) isRefreshed= false;
+  if (D.UI[HexCornConnect__].hasChanged()) isRefreshed= false;
+  if (D.UI[JmpPushTotal____].hasChanged()) isRefreshed= false;
+  if (D.UI[JmpPushLast_____].hasChanged()) isRefreshed= false;
+  if (D.UI[JmpSoftStranded_].hasChanged()) isRefreshed= false;
+  if (D.UI[JmpHardStranded_].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
 
 // Allocate the project data
-void HexBoardGameAI::Allocate() {
+void TheBoardGameAI::Allocate() {
   if (!isActivProj) return;
   if (CheckAlloc()) return;
   isRefreshed= false;
@@ -121,28 +132,58 @@ void HexBoardGameAI::Allocate() {
   streakRed= std::max(D.UI[MoveStreakRed___].I(), 0);
   streakBlu= std::max(D.UI[MoveStreakBlu___].I(), 0);
   if (streakBlu == 0) streakRed= std::max(streakRed, 1);
-  turnPeriod= streakRed + streakBlu;
   nbTreeBoards= 0;
   thinkTime= 0.0;
-
-  // Build the Hex board positions
-  const float wStep= 1.0f;
-  const float hStep= std::sin(std::numbers::pi / 3.0f);
-  const float cloudWidth= float(nW + 1) * wStep + float(nH + 1) * 0.5f * hStep + wStep;
-  const float cloudHeight= float(nH + 1) * hStep + hStep;
-  cellSize= 1.0f / std::max(cloudWidth, cloudHeight);
-  Cells= Field::AllocField2D(nW + 2, nH + 2, Vec::Vec3<float>(0.0, 0.0, 0.0));
-  for (int w= 0; w < nW + 2; w++)
-    for (int h= 0; h < nH + 2; h++)
-      Cells[w][h].set(0.5f,
-                      0.5f + ((float(w) + 0.5f) * wStep + float(nH + 1 - h) * 0.5f * wStep - 0.5f * cloudWidth) * cellSize,
-                      0.5f - ((float(nH + 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
+  wSel= -1;
+  hSel= -1;
 
   D.boxMin= {0.5, 0.0, 0.0};
   D.boxMax= {0.5, 1.0, 1.0};
 
+  // Build the board cell positions
+  if (D.UI[GameMode________].I() == 0) {
+    const float wStep= 1.0f;
+    const float hStep= std::sin(std::numbers::pi / 3.0f);
+    const float cloudWidth= float(nW - 1) * wStep + float(nH - 1) * 0.5f * hStep + wStep;
+    const float cloudHeight= float(nH - 1) * hStep + hStep;
+    cellSize= 1.0f / std::max(cloudWidth, cloudHeight);
+    Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
+    for (int w= 0; w < nW; w++)
+      for (int h= 0; h < nH; h++)
+        Cells[w][h].set(0.5f,
+                        0.5f + ((float(w) + 0.5f) * wStep + float(nH - 1 - h) * 0.5f * wStep - 0.5f * cloudWidth) * cellSize,
+                        0.5f - ((float(nH - 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
+  }
+  else if (D.UI[GameMode________].I() == 1) {
+    cellSize= 1.0f / (float)std::max(nW, nH);
+    Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
+    for (int w= 0; w < nW; w++)
+      for (int h= 0; h < nH; h++)
+        Cells[w][h].set(0.5f,
+                        0.5f * cellSize + float(w) * cellSize,
+                        0.5f * cellSize + float(h) * cellSize);
+  }
+  else if (D.UI[GameMode________].I() == 2) {
+  }
+
   // Create and initialize root board with pawns
   std::vector<std::vector<int>> Pawns= Field::AllocField2D(nW, nH, 0);
+  if (D.UI[GameMode________].I() == 0) {
+  }
+  else if (D.UI[GameMode________].I() == 1) {
+    if (!D.UI[RandomPawnInit__].B()) {
+      for (int w= 0; w < nW; w++) {
+        for (int h= 0; h < nH; h++) {
+          if (h < 2) Pawns[w][h]= +1;
+          if (h >= nH - 2) Pawns[w][h]= -1;
+        }
+      }
+    }
+  }
+  else if (D.UI[GameMode________].I() == 2) {
+  }
+
+  // Randomly add a chosen number of pawns for each player
   if (D.UI[RandomPawnInit__].B()) {
     for (int player= -1; player <= +1; player+= 2) {
       if (player == +1 && D.UI[MoveStreakRed___].I() < 1) continue;
@@ -160,15 +201,17 @@ void HexBoardGameAI::Allocate() {
     }
   }
 
-  RootBoard= CreateBoard(Pawns, std::array<int, 2>({-1, -1}), 0);
-  ComputeBoardScore(RootBoard);
+  RootBoard= CreateBoard(Pawns, 0);
+  if (D.UI[GameMode________].I() == 0) ComputeBoardScoreHex(RootBoard);
+  if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
+  if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
   RootBoard->NashScore= RootBoard->Score;
   RootBoard->NashNbSteps= 0;
 }
 
 
 // Refresh the project
-void HexBoardGameAI::Refresh() {
+void TheBoardGameAI::Refresh() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (CheckRefresh()) return;
@@ -183,7 +226,7 @@ void HexBoardGameAI::Refresh() {
 
 
 // Handle keypress
-void HexBoardGameAI::KeyPress(const unsigned char key) {
+void TheBoardGameAI::KeyPress(const unsigned char key) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
@@ -192,13 +235,13 @@ void HexBoardGameAI::KeyPress(const unsigned char key) {
   int hCursor= 0;
   Vec::Vec3<float> mouseProj(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
   float distMin= (mouseProj - Cells[0][0]).norm();
-  for (int w= 1; w < nW + 1; w++) {
-    for (int h= 1; h < nH + 1; h++) {
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
       const float dist= (mouseProj - Cells[w][h]).norm();
       if (distMin > dist) {
         distMin= dist;
-        wCursor= w - 1;
-        hCursor= h - 1;
+        wCursor= w;
+        hCursor= h;
       }
     }
   }
@@ -208,12 +251,14 @@ void HexBoardGameAI::KeyPress(const unsigned char key) {
     if (key == 'R') RootBoard->Pawns[wCursor][hCursor]= +1;
     if (key == 'G') RootBoard->Pawns[wCursor][hCursor]= 0;
     if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= -1;
+    wSel= hSel= -1;
     ComputeGameTreeSearch();
   }
 
   // Skip turn
   if (key == 'C') {
     idxTurn++;
+    wSel= hSel= -1;
     ComputeGameTreeSearch();
   }
 
@@ -224,13 +269,38 @@ void HexBoardGameAI::KeyPress(const unsigned char key) {
     // Run AI to see if it returns to win position in N or more moves
   }
 
+  // Manual pawn selection
+  if (key == 'S') {
+    wSel= wCursor;
+    hSel= hCursor;
+  }
+
   // Manual pawn placement
   if (key == 'D') {
-    if (RootBoard->Pawns[wCursor][hCursor] == 0) {
-      if (IsRedTurn(0)) RootBoard->Pawns[wCursor][hCursor]= +1;
-      else RootBoard->Pawns[wCursor][hCursor]= -1;
-      idxTurn++;
-      ComputeGameTreeSearch();
+    if (D.UI[GameMode________].I() == 0) {
+      if (RootBoard->Pawns[wCursor][hCursor] == 0) {
+        if (IsRedTurn(0)) RootBoard->Pawns[wCursor][hCursor]= +1;
+        else RootBoard->Pawns[wCursor][hCursor]= -1;
+        idxTurn++;
+        ComputeGameTreeSearch();
+      }
+    }
+    else if (D.UI[GameMode________].I() == 1) {
+      if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
+        for (BoardState *subBoard : RootBoard->SubBoards) {
+          if (subBoard->Move[0] == std::array<int, 2>{wSel, hSel} &&
+              subBoard->Move[1] == std::array<int, 2>{wCursor, hCursor}) {
+            RootBoard->Pawns[wCursor][hCursor]= RootBoard->Pawns[wSel][hSel];
+            RootBoard->Pawns[wSel][hSel]= 0;
+            wSel= hSel= -1;
+            idxTurn++;
+            ComputeGameTreeSearch();
+            break;
+          }
+        }
+      }
+    }
+    else if (D.UI[GameMode________].I() == 2) {
     }
   }
 
@@ -240,7 +310,7 @@ void HexBoardGameAI::KeyPress(const unsigned char key) {
 
 
 // Animate the project
-void HexBoardGameAI::Animate() {
+void TheBoardGameAI::Animate() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
@@ -250,7 +320,7 @@ void HexBoardGameAI::Animate() {
   if (BotStrategy > 0) {
     if (!RootBoard->SubBoards.empty()) {
       // Select the move based on chosen strategy
-      // TODO add stratyegy for mostly nash move with fraction of random moves
+      // TODO add strategy for mostly nash move with fraction of random moves
       int idxMove= 0;
       if (BotStrategy == 1) {
         idxMove= Random::Val(0, (int)RootBoard->SubBoards.size() - 1);
@@ -262,10 +332,17 @@ void HexBoardGameAI::Animate() {
         idxMove= GetIdxBestSubBoard(RootBoard, 0, 1);
       }
       // Execute the move
-      std::array<int, 2> SelectedMove= RootBoard->SubBoards[idxMove]->Move;
-      if (SelectedMove[0] != -1 && SelectedMove[1] != -1) {
-        if (IsRedTurn(0)) RootBoard->Pawns[SelectedMove[0]][SelectedMove[1]]= +1;
-        else RootBoard->Pawns[SelectedMove[0]][SelectedMove[1]]= -1;
+      std::vector<std::array<int, 2>> move= RootBoard->SubBoards[idxMove]->Move;
+      if (D.UI[GameMode________].I() == 0) {
+        RootBoard->Pawns[move[0][0]][move[0][1]]= IsRedTurn(0) ? +1 : -1;
+      }
+      else if (D.UI[GameMode________].I() == 1) {
+        if (move[0][0] != -1 && move[0][1] != -1 && move[1][0] != -1 && move[1][1] != -1) {
+          RootBoard->Pawns[move[1][0]][move[1][1]]= RootBoard->Pawns[move[0][0]][move[0][1]];
+          RootBoard->Pawns[move[0][0]][move[0][1]]= 0;
+        }
+      }
+      else if (D.UI[GameMode________].I() == 2) {
       }
     }
     idxTurn++;
@@ -278,42 +355,87 @@ void HexBoardGameAI::Animate() {
 
 
 // Draw the project
-void HexBoardGameAI::Draw() {
+void TheBoardGameAI::Draw() {
   if (!isActivProj) return;
   if (!isAllocated) return;
   if (!isRefreshed) return;
 
-  // Draw the pawns
+  // Draw the board
   if (D.displayMode1) {
-    for (int w= 0; w < nW + 2; w++) {
-      for (int h= 0; h < nH + 2; h++) {
-        if ((nW + 1 - w) + h < 2 || w + (nH + 1 - h) < 2) continue;
-        if ((w == 0 && h == 0) || (w == 0 && h == nH + 1) || (w == nW + 1 && h == 0) || (w == nW + 1 && h == nH + 1)) continue;
-        glColor3f(0.5f, 0.5f, 0.5f);
-        if (w > 0 && w < nW + 1 && h > 0 && h < nH + 1 && RootBoard->Pawns[w - 1][h - 1] > 0) glColor3f(0.8f, 0.5f, 0.5f);
-        if (w > 0 && w < nW + 1 && h > 0 && h < nH + 1 && RootBoard->Pawns[w - 1][h - 1] < 0) glColor3f(0.5f, 0.5f, 0.8f);
-        if (w == 0 || w == nW + 1) glColor3f(0.2f, 0.2f, 0.5f);
-        if (h == 0 || h == nH + 1) glColor3f(0.5f, 0.2f, 0.2f);
-        glPushMatrix();
-        glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
-        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-        glScalef(1.0f, 1.0f, 0.01f);
-        glutSolidSphere(0.5 * cellSize, 6, 2);
-        glPopMatrix();
+    if (D.UI[GameMode________].I() == 0) {
+      glLineWidth(8.0f);
+      glBegin(GL_LINES);
+      glColor3f(1.0f, 0.0f, 0.0f);
+      glVertex3fv((Cells[0][0] - Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells[nW - 1][0] - Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells[0][nH - 1] + Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells[nW - 1][nH - 1] + Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glColor3f(0.0f, 0.0f, 1.0f);
+      glVertex3fv((Cells[0][0] - Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells[0][nH - 1] - Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells[nW - 1][0] + Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells[nW - 1][nH - 1] + Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glEnd();
+      glLineWidth(1.0f);
+      for (int w= 0; w < nW; w++) {
+        for (int h= 0; h < nH; h++) {
+          glColor3f(0.5f, 0.5f, 0.5f);
+          glPushMatrix();
+          glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+          glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+          glScalef(1.0f, 1.0f, 0.01f);
+          glutSolidSphere(0.5 * cellSize, 6, 2);
+          glPopMatrix();
+        }
       }
+    }
+    else if (D.UI[GameMode________].I() == 1) {
+      for (int w= 0; w < nW; w++) {
+        for (int h= 0; h < nH; h++) {
+          const float col= ((w + h) % 2 == 0) ? 0.4f : 0.6f;
+          if (h < 2) glColor3f(col, col, col + 0.2f);
+          else if (h >= nH - 2) glColor3f(col + 0.2f, col, col);
+          else glColor3f(col, col, col);
+          glPushMatrix();
+          glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+          glScalef(0.01f, 1.0f, 1.0f);
+          glutSolidCube(cellSize);
+          glPopMatrix();
+        }
+      }
+    }
+    else if (D.UI[GameMode________].I() == 2) {
     }
   }
 
-  // Draw the possible moves
+  // Draw the pawns
   if (D.displayMode2) {
+    glEnable(GL_LIGHTING);
+    for (int w= 0; w < nW; w++) {
+      for (int h= 0; h < nH; h++) {
+        if (RootBoard->Pawns[w][h] == 0) continue;
+        if (RootBoard->Pawns[w][h] > 0) glColor3f(0.8f, 0.5f, 0.5f);
+        if (RootBoard->Pawns[w][h] < 0) glColor3f(0.5f, 0.5f, 0.8f);
+        glPushMatrix();
+        glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+        glutSolidSphere(0.4 * cellSize, 36, 10);
+        glPopMatrix();
+      }
+    }
+    glDisable(GL_LIGHTING);
+  }
+
+  // Draw the possible moves
+  if (D.displayMode3) {
     for (BoardState *subBoard : RootBoard->SubBoards) {
       float r, g, b;
       if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->Score), r, g, b);
       if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->NashScore), r, g, b);
       if (D.UI[ColorMode_______].I() == 2) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->NashNbSteps), r, g, b);
       glColor3f(r, g, b);
-      const int w= subBoard->Move[0] + 1;
-      const int h= subBoard->Move[1] + 1;
+      const int w= subBoard->Move[subBoard->Move.size() - 1][0];
+      const int h= subBoard->Move[subBoard->Move.size() - 1][1];
       glPushMatrix();
       glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
       glutWireCube(0.5 * cellSize);
@@ -340,7 +462,7 @@ void HexBoardGameAI::Draw() {
 }
 
 
-void HexBoardGameAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
+void TheBoardGameAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
                                    const float px, const float py, const float pz,
                                    const float radius, const float arcBeg, const float arcEnd) {
   if (iBoard == nullptr) printf("[ERROR] DrawBoardTree on a null board\n");
@@ -371,7 +493,7 @@ void HexBoardGameAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, c
 }
 
 
-void HexBoardGameAI::PlotData() {
+void TheBoardGameAI::PlotData() {
   // Plot score evolution
   if (D.Plot.size() < 2) D.Plot.resize(2);
   D.Plot[0].name= "Score";
