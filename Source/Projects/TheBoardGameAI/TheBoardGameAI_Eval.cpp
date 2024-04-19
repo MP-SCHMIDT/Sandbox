@@ -37,12 +37,18 @@ void TheBoardGameAI::ComputeBoardScoreHex(BoardState *ioBoard) {
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
         if (Label[w][h] == 0) {
-          if (w - 1 >= 0 && Label[w - 1][h] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h]) Label[w][h]= Label[w - 1][h];
-          if (w - 1 >= 0 && h - 1 >= 0 && Label[w - 1][h - 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h - 1]) Label[w][h]= Label[w - 1][h - 1];
-          if (h - 1 >= 0 && Label[w][h - 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w][h - 1]) Label[w][h]= Label[w][h - 1];
-          if (w + 1 < nW && Label[w + 1][h] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w + 1][h]) Label[w][h]= Label[w + 1][h];
-          if (w + 1 < nW && h + 1 < nH && Label[w + 1][h + 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w + 1][h + 1]) Label[w][h]= Label[w + 1][h + 1];
-          if (h + 1 < nH && Label[w][h + 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w][h + 1]) Label[w][h]= Label[w][h + 1];
+          if (w - 1 >= 0 && Label[w - 1][h] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h])
+            Label[w][h]= Label[w - 1][h];
+          if (w - 1 >= 0 && h - 1 >= 0 && Label[w - 1][h - 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h - 1])
+            Label[w][h]= Label[w - 1][h - 1];
+          if (h - 1 >= 0 && Label[w][h - 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w][h - 1])
+            Label[w][h]= Label[w][h - 1];
+          if (w + 1 < nW && Label[w + 1][h] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w + 1][h])
+            Label[w][h]= Label[w + 1][h];
+          if (w + 1 < nW && h + 1 < nH && Label[w + 1][h + 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w + 1][h + 1])
+            Label[w][h]= Label[w + 1][h + 1];
+          if (h + 1 < nH && Label[w][h + 1] != 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w][h + 1])
+            Label[w][h]= Label[w][h + 1];
           if (Label[w][h] != 0)
             wasUpdated= true;
         }
@@ -68,9 +74,12 @@ void TheBoardGameAI::ComputeBoardScoreHex(BoardState *ioBoard) {
       for (int w= 0; w < nW; w++) {
         for (int h= 0; h < nH; h++) {
           if (ioBoard->Pawns[w][h] != 0) {
-            if (w > 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h]) ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[HexEdgeConnect__].I();
-            if (h > 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w][h - 1]) ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[HexEdgeConnect__].I();
-            if (w > 0 && h > 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h - 1]) ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[HexEdgeConnect__].I();
+            if (w > 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h])
+              ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[HexEdgeConnect__].I();
+            if (h > 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w][h - 1])
+              ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[HexEdgeConnect__].I();
+            if (w > 0 && h > 0 && ioBoard->Pawns[w][h] == ioBoard->Pawns[w - 1][h - 1])
+              ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[HexEdgeConnect__].I();
           }
         }
       }
@@ -184,4 +193,26 @@ void TheBoardGameAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
 
 void TheBoardGameAI::ComputeBoardScoreChk(BoardState *ioBoard) {
   if (ioBoard == nullptr) printf("[ERROR] ComputeBoardScoreChk on a null board\n");
+
+  // Check for win state
+  bool isWinRed= true;
+  bool isWinBlu= true;
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      if (ioBoard->Pawns[w][h] < 0) isWinRed= false;
+      if (ioBoard->Pawns[w][h] > 0) isWinBlu= false;
+    }
+  }
+
+  if (isWinRed) ioBoard->Score= +INT_MAX;
+  else if (isWinBlu) ioBoard->Score= -INT_MAX;
+  else {
+    // Reset the score
+    ioBoard->Score= 0;
+
+    // Count the material
+    for (int w= 0; w < nW; w++)
+      for (int h= 0; h < nH; h++)
+        if (ioBoard->Pawns[w][h] != 0) ioBoard->Score+= ioBoard->Pawns[w][h] * D.UI[ChkMaterial_____].I();
+  }
 }

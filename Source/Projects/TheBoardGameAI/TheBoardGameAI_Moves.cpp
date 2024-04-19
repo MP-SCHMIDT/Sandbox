@@ -55,6 +55,8 @@ void TheBoardGameAI::FindPossibleMovesChk(BoardState *ioBoard, const int iDepth,
   (void)ioBoard;
   (void)iDepth;
   (void)ioMoves;
+
+  // TODO implement move with recursive jumps and captues
 }
 
 

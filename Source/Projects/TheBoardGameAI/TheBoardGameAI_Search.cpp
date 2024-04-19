@@ -15,7 +15,7 @@
 extern Data D;
 
 
-void TheBoardGameAI::ComputeGameTreeSearch() {
+void TheBoardGameAI::ComputeGameTreeSearch(const int iMaxDepth) {
   // Start the timer and board counter
   Timer::PushTimer();
   nbTreeBoards= 1;
@@ -32,7 +32,7 @@ void TheBoardGameAI::ComputeGameTreeSearch() {
   int pruningAlpha= -INT_MAX;
   int pruningBeta= INT_MAX;
   if (D.UI[IterDeepening___].B()) {
-    for (int iterMaxSearchDepth= 1; iterMaxSearchDepth <= D.UI[MaxSearchDepth__].I(); iterMaxSearchDepth++) {
+    for (int iterMaxSearchDepth= 1; iterMaxSearchDepth <= iMaxDepth; iterMaxSearchDepth++) {
       if ((D.UI[MaxThinkTime____].D() == 0.0 || Timer::CheckTimer() < D.UI[MaxThinkTime____].D()) &&
           (D.UI[MaxTreeBoards___].I() == 0 || nbTreeBoards < D.UI[MaxTreeBoards___].I())) {
         RecursiveTreeSearch(RootBoard, 0, iterMaxSearchDepth, pruningAlpha, pruningBeta);
@@ -40,7 +40,7 @@ void TheBoardGameAI::ComputeGameTreeSearch() {
     }
   }
   else {
-    RecursiveTreeSearch(RootBoard, 0, D.UI[MaxSearchDepth__].I(), pruningAlpha, pruningBeta);
+    RecursiveTreeSearch(RootBoard, 0, iMaxDepth, pruningAlpha, pruningBeta);
   }
 
   // Stop the timer

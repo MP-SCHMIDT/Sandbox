@@ -20,7 +20,6 @@ class TheBoardGameAI
     BoardH__________,
     MoveStreakRed___,
     MoveStreakBlu___,
-    RandomPawnInit__,
     ______________00,
     MaxSearchDepth__,
     MaxThinkTime____,
@@ -37,7 +36,9 @@ class TheBoardGameAI
     JmpPushLast_____,
     JmpSoftStranded_,
     JmpHardStranded_,
+    ChkMaterial_____,
     ______________02,
+    RandomMoves_____,
     BotStrategyRed__,
     BotStrategyBlu__,
     ______________03,
@@ -100,7 +101,7 @@ class TheBoardGameAI
   void ComputeBoardScoreChk(BoardState *ioBoard);
 
   // Search
-  void ComputeGameTreeSearch();
+  void ComputeGameTreeSearch(const int iMaxDepth);
   int RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, const int iMaxDepth, int iAlpha, int iBeta);
   void SortSubBoards(BoardState *ioBoard, const int iDepth, const int iMode);
   int GetIdxBestSubBoard(BoardState *ioBoard, const int iDepth, const int iMode);
