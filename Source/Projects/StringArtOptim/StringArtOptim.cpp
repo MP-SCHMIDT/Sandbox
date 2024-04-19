@@ -216,6 +216,14 @@ void StringArtOptim::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void StringArtOptim::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void StringArtOptim::Animate() {
   if (!isActivProj) return;

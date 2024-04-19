@@ -238,6 +238,14 @@ void ParticForceLaw::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void ParticForceLaw::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void ParticForceLaw::Animate() {
   if (!isActivProj) return;

@@ -239,6 +239,14 @@ void ImageExtruMesh::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void ImageExtruMesh::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void ImageExtruMesh::Animate() {
   if (!isActivProj) return;

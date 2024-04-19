@@ -124,6 +124,14 @@ void AgentSwarmBoid::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void AgentSwarmBoid::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void AgentSwarmBoid::Animate() {
   if (!isActivProj) return;

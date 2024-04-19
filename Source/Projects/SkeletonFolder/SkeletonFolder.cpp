@@ -92,6 +92,14 @@ void SkeletonFolder::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void SkeletonFolder::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void SkeletonFolder::Animate() {
   if (!isActivProj) return;

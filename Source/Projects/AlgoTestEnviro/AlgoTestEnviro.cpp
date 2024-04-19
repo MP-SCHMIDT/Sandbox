@@ -211,6 +211,14 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void AlgoTestEnviro::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void AlgoTestEnviro::Animate() {
   if (!isActivProj) return;

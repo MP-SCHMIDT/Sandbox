@@ -188,6 +188,14 @@ void FractalElevMap::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void FractalElevMap::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void FractalElevMap::Animate() {
   if (!isActivProj) return;

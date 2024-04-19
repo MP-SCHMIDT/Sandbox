@@ -59,8 +59,9 @@ class PosiBasedDynam
   bool CheckAlloc();
   bool CheckRefresh();
   void Allocate();
-  void KeyPress(const unsigned char key);
   void Refresh();
+  void KeyPress(const unsigned char key);
+  void MousePress(const unsigned char mouse);
   void Animate();
   void Draw();
 };

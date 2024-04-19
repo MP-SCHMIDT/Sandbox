@@ -168,6 +168,14 @@ void MassSpringSyst::KeyPress(const unsigned char key) {
 }
 
 
+// Handle mouse action
+void MassSpringSyst::MousePress(const unsigned char mouse) {
+  if (!isActivProj) return;
+  if (!CheckAlloc()) Allocate();
+  (void)mouse;  // Disable warning unused variable
+}
+
+
 // Animate the project
 void MassSpringSyst::Animate() {
   if (!isActivProj) return;

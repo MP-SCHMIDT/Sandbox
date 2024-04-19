@@ -48,6 +48,7 @@ static int currentProjectID;
 static bool isDarkMode;
 static bool isSmoothDraw;
 static bool isCursorDraw;
+static bool isMiddleMousePressed;
 Camera *cam;
 
 // Global constants used by the display
@@ -194,6 +195,53 @@ void project_Refresh() {
 #endif
 }
 
+
+void project_KeyPress(const unsigned char key) {
+  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress(key);
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(key);
+  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(key);
+  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(key);
+  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(key);
+  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(key);
+  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress(key);
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress(key);
+  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress(key);
+  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress(key);
+  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.KeyPress(key);
+  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress(key);
+  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(key);
+  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(key);
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress(key);
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(key);
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(key);
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress(key);
+#endif
+}
+
+
+void project_MousePress(const unsigned char mouse) {
+  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.MousePress(mouse);
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.MousePress(mouse);
+  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.MousePress(mouse);
+  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.MousePress(mouse);
+  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.MousePress(mouse);
+  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.MousePress(mouse);
+  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.MousePress(mouse);
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.MousePress(mouse);
+  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.MousePress(mouse);
+  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.MousePress(mouse);
+  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.MousePress(mouse);
+  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.MousePress(mouse);
+  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress(mouse);
+  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress(mouse);
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.MousePress(mouse);
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.MousePress(mouse);
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress(mouse);
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.MousePress(mouse);
+#endif
+}
 
 void project_Animate() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Animate();
@@ -781,26 +829,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if ((key >= 'A' && key <= 'Z') || (key >= 'a' && key <= 'z')) {
     ComputeMouseIn3D(x, y);
     const unsigned char keyUpperCase= (key >= 'a' && key <= 'z') ? (key - ('a' - 'A')) : (key);
-    if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress(keyUpperCase);
-#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
-    if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(keyUpperCase);
-    if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress(keyUpperCase);
-#endif
+    project_KeyPress(keyUpperCase);
   }
 
   // Compute refresh
@@ -863,6 +892,17 @@ void callback_mouse_click(int button, int state, int x, int y) {
   if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) cam->endZoom();
   if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) cam->endPan();
 
+  if (state == GLUT_DOWN && button == GLUT_MIDDLE_BUTTON) {
+    ComputeMouseIn3D(x, y);
+    project_MousePress(1);
+    isMiddleMousePressed= true;
+  }
+  if (state == GLUT_UP && button == GLUT_MIDDLE_BUTTON) {
+    ComputeMouseIn3D(x, y);
+    project_MousePress(3);
+    isMiddleMousePressed= false;
+  }
+
   if (state == GLUT_UP && (button == 3 || button == 4)) {
     if (!D.UI.empty()) {
       if (x > (paramLabelNbChar + paramSpaceNbChar) * charWidth) {
@@ -897,7 +937,8 @@ void callback_mouse_click(int button, int state, int x, int y) {
 void callback_mouse_motion(int x, int y) {
   cam->setCurrentMousePos(float(x), float(y));
 
-  if (isCursorDraw) ComputeMouseIn3D(x, y);
+  if (isCursorDraw || isMiddleMousePressed) ComputeMouseIn3D(x, y);
+  if (isMiddleMousePressed) project_MousePress(2);
 
   glutPostRedisplay();
 }
@@ -1035,6 +1076,7 @@ void init_GL() {
   isDarkMode= true;
   isSmoothDraw= true;
   isCursorDraw= false;
+  isMiddleMousePressed= false;
 
   // Set background color
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
