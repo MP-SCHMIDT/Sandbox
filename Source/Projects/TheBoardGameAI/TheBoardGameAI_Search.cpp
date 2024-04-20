@@ -23,7 +23,7 @@ void TheBoardGameAI::ComputeGameTreeSearch(const int iMaxDepth) {
   // Reset root board
   std::vector<std::vector<int>> Pawns= RootBoard->Pawns;
   DeleteBoard(RootBoard);
-  RootBoard= CreateBoard(Pawns, 0);
+  RootBoard= CreateBoard(Pawns, std::vector<std::array<int, 2>>(), 0);
   if (D.UI[GameMode________].I() == 0) ComputeBoardScoreHex(RootBoard);
   if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
   if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
@@ -68,35 +68,21 @@ int TheBoardGameAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
 
     // Create and score the sub board for each move
     for (std::vector<std::array<int, 2>> move : Moves) {
+      BoardState *newBoard= CreateBoard(ioBoard->Pawns, move, iDepth + 1);
       if (D.UI[GameMode________].I() == 0) {
-        BoardState *newBoard= CreateBoard(ioBoard->Pawns, iDepth + 1);
-        newBoard->Move.push_back(move[0]);
-        newBoard->Pawns[move[0][0]][move[0][1]]= IsRedTurn(iDepth) ? +1 : -1;
+        ExecuteMoveHex(newBoard, iDepth);
         ComputeBoardScoreHex(newBoard);
-        ioBoard->SubBoards.push_back(newBoard);
-        nbTreeBoards++;
       }
-      else if (D.UI[GameMode________].I() == 1) {
-        for (int idxDestinaton= 1; idxDestinaton < (int)move.size(); idxDestinaton++) {
-          BoardState *newBoard= CreateBoard(ioBoard->Pawns, iDepth + 1);
-          newBoard->Move.push_back(move[0]);
-          newBoard->Move.push_back(move[idxDestinaton]);
-          if (move[0][0] != -1 && move[0][1] != -1 && move[idxDestinaton][0] != -1 && move[idxDestinaton][1] != -1) {
-            newBoard->Pawns[move[idxDestinaton][0]][move[idxDestinaton][1]]= newBoard->Pawns[move[0][0]][move[0][1]];
-            newBoard->Pawns[move[0][0]][move[0][1]]= 0;
-          }
-          ComputeBoardScoreJmp(newBoard);
-          ioBoard->SubBoards.push_back(newBoard);
-          nbTreeBoards++;
-        }
+      if (D.UI[GameMode________].I() == 1) {
+        ExecuteMoveJmp(newBoard, iDepth);
+        ComputeBoardScoreJmp(newBoard);
       }
-      else if (D.UI[GameMode________].I() == 2) {
-        BoardState *newBoard= CreateBoard(ioBoard->Pawns, iDepth + 1);
-        newBoard->Move.push_back(move[0]);
+      if (D.UI[GameMode________].I() == 2) {
+        ExecuteMoveChk(newBoard, iDepth);
         ComputeBoardScoreChk(newBoard);
-        ioBoard->SubBoards.push_back(newBoard);
-        nbTreeBoards++;
       }
+      ioBoard->SubBoards.push_back(newBoard);
+      nbTreeBoards++;
     }
 
     // Sort the sub boards according to score
@@ -137,6 +123,7 @@ int TheBoardGameAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
 }
 
 
+// Sort the sub boards for the picked comparison mode
 void TheBoardGameAI::SortSubBoards(BoardState *ioBoard, const int iDepth, const int iMode) {
   if (ioBoard == nullptr) printf("[ERROR] SortSubBoards on a null board\n");
 
@@ -158,6 +145,7 @@ void TheBoardGameAI::SortSubBoards(BoardState *ioBoard, const int iDepth, const 
 }
 
 
+// Get the index of the best sub board for the picked comparison mode
 int TheBoardGameAI::GetIdxBestSubBoard(BoardState *ioBoard, const int iDepth, const int iMode) {
   if (ioBoard == nullptr) printf("[ERROR] GetIdxBestSubBoard on a null board\n");
 
@@ -172,6 +160,7 @@ int TheBoardGameAI::GetIdxBestSubBoard(BoardState *ioBoard, const int iDepth, co
 }
 
 
+// Compare a board pair for the picked comparison mode
 // A best= +1, B best= -1, Equal= 0
 int TheBoardGameAI::CompareBoardPair(const BoardState *iBoardA, const BoardState *iBoardB, const int iDepth, const int iMode) {
   if (iBoardA == nullptr || iBoardB == nullptr) printf("[ERROR] CompareBoardPair on a null board\n");

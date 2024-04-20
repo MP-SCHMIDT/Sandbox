@@ -82,16 +82,15 @@ class TheBoardGameAI
   float cellSize;                                    // Size of a cell
 
   // Draw
-  void DrawBoardHex();
-  void DrawBoardJmp();
-  void DrawBoardChk();
   void DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
                      const float px, const float py, const float pz,
                      const float radius, const float arcBeg, const float arcEnd);
   void PlotData();
 
   // Board creation and destruction
-  BoardState *CreateBoard(const std::vector<std::vector<int>> &iPawns, const int iDepth);
+  BoardState *CreateBoard(const std::vector<std::vector<int>> &iPawns,
+                          const std::vector<std::array<int, 2>> &iMove,
+                          const int iDepth);
   void DeleteBoard(BoardState *ioBoard);
 
   // Evaluation
@@ -115,6 +114,9 @@ class TheBoardGameAI
                              const int iJumpW, const int iJumpH,
                              std::vector<std::vector<bool>> &ioVisit,
                              std::vector<std::array<int, 2>> &ioDestinations);
+  void ExecuteMoveHex(BoardState *ioBoard, const int iDepth);
+  void ExecuteMoveJmp(BoardState *ioBoard, const int iDepth);
+  void ExecuteMoveChk(BoardState *ioBoard, const int iDepth);
 
   public:
   bool isActivProj;

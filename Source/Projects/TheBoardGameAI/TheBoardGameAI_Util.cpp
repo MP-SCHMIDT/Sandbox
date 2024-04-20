@@ -13,9 +13,12 @@
 extern Data D;
 
 
-TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const std::vector<std::vector<int>> &iPawns, const int iDepth) {
+TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const std::vector<std::vector<int>> &iPawns,
+                                                        const std::vector<std::array<int, 2>> &iMove,
+                                                        const int iDepth) {
   BoardState *newBoard= new BoardState;
   newBoard->Pawns= iPawns;
+  newBoard->Move= iMove;
   newBoard->Score= 0;
   newBoard->NashScore= (IsRedTurn(iDepth)) ? -INT_MAX : INT_MAX;
   newBoard->NashNbSteps= INT_MAX;

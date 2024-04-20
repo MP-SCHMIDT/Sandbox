@@ -46,14 +46,14 @@ void TheBoardGameAI::SetActiveProject() {
     D.UI.push_back(ParamUI("MoveSortNash____", 1));
     D.UI.push_back(ParamUI("MoveSortRand____", 1));
     D.UI.push_back(ParamUI("ABPruning_______", 1));
-    D.UI.push_back(ParamUI("IterDeepening___", 0));
+    D.UI.push_back(ParamUI("IterDeepening___", 1));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("HexEdgeConnect__", 10));
     D.UI.push_back(ParamUI("HexCornConnect__", 25));
     D.UI.push_back(ParamUI("JmpPushTotal____", 1));
-    D.UI.push_back(ParamUI("JmpPushLast_____", 2));
-    D.UI.push_back(ParamUI("JmpSoftStranded_", -4));
-    D.UI.push_back(ParamUI("JmpHardStranded_", -8));
+    D.UI.push_back(ParamUI("JmpPushLast_____", 0));
+    D.UI.push_back(ParamUI("JmpSoftStranded_", 0));
+    D.UI.push_back(ParamUI("JmpHardStranded_", 0));
     D.UI.push_back(ParamUI("ChkMaterial_____", 10));
     D.UI.push_back(ParamUI("______________02", NAN));
     D.UI.push_back(ParamUI("RandomMoves_____", 0));
@@ -111,6 +111,7 @@ bool TheBoardGameAI::CheckRefresh() {
   if (D.UI[JmpPushLast_____].hasChanged()) isRefreshed= false;
   if (D.UI[JmpSoftStranded_].hasChanged()) isRefreshed= false;
   if (D.UI[JmpHardStranded_].hasChanged()) isRefreshed= false;
+  if (D.UI[ChkMaterial_____].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
@@ -180,8 +181,8 @@ void TheBoardGameAI::Allocate() {
       if (D.UI[GameMode________].I() == 0) {
       }
       else if (D.UI[GameMode________].I() == 1) {
-        if (h < 2) Pawns[w][h]= +1;
-        if (h >= nH - 2) Pawns[w][h]= -1;
+        if (streakRed > 0 && h < 2) Pawns[w][h]= +1;
+        if (streakBlu > 0 && h >= nH - 2) Pawns[w][h]= -1;
       }
       else if (D.UI[GameMode________].I() == 2) {
         if ((w + h) % 2 == 0) {
@@ -193,7 +194,7 @@ void TheBoardGameAI::Allocate() {
   }
 
   // Create the root board
-  RootBoard= CreateBoard(Pawns, 0);
+  RootBoard= CreateBoard(Pawns, std::vector<std::array<int, 2>>(), 0);
   if (D.UI[GameMode________].I() == 0) ComputeBoardScoreHex(RootBoard);
   if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
   if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
@@ -254,24 +255,16 @@ void TheBoardGameAI::KeyPress(const unsigned char key) {
     ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
   }
 
-  // Skip turn
+  // Play a sequence random moves
   if (key == 'A') {
     for (int k= 0; k < D.UI[RandomMoves_____].I(); k++) {
       ComputeGameTreeSearch(1);
       if (!RootBoard->SubBoards.empty()) {
         const int idxMove= Random::Val(0, (int)RootBoard->SubBoards.size() - 1);
-        std::vector<std::array<int, 2>> move= RootBoard->SubBoards[idxMove]->Move;
-        if (D.UI[GameMode________].I() == 0) {
-          RootBoard->Pawns[move[0][0]][move[0][1]]= IsRedTurn(0) ? +1 : -1;
-        }
-        else if (D.UI[GameMode________].I() == 1) {
-          if (move[0][0] != -1 && move[0][1] != -1 && move[1][0] != -1 && move[1][1] != -1) {
-            RootBoard->Pawns[move[1][0]][move[1][1]]= RootBoard->Pawns[move[0][0]][move[0][1]];
-            RootBoard->Pawns[move[0][0]][move[0][1]]= 0;
-          }
-        }
-        else if (D.UI[GameMode________].I() == 2) {
-        }
+        RootBoard->Move= RootBoard->SubBoards[idxMove]->Move;
+        if (D.UI[GameMode________].I() == 0) ExecuteMoveHex(RootBoard, 0);
+        else if (D.UI[GameMode________].I() == 1) ExecuteMoveJmp(RootBoard, 0);
+        else if (D.UI[GameMode________].I() == 2) ExecuteMoveChk(RootBoard, 0);
       }
       idxTurn++;
     }
@@ -293,30 +286,23 @@ void TheBoardGameAI::KeyPress(const unsigned char key) {
 
   // Manual pawn placement
   if (key == 'D') {
-    if (D.UI[GameMode________].I() == 0) {
-      if (RootBoard->Pawns[wCursor][hCursor] == 0) {
-        if (IsRedTurn(0)) RootBoard->Pawns[wCursor][hCursor]= +1;
-        else RootBoard->Pawns[wCursor][hCursor]= -1;
+    // Find and execute the first move that matches the selection
+    for (BoardState *subBoard : RootBoard->SubBoards) {
+      if (D.UI[GameMode________].I() == 0) {
+        wSel= subBoard->Move[0][0];
+        hSel= subBoard->Move[0][1];
+      }
+      if (subBoard->Move[0] == std::array<int, 2>{wSel, hSel} &&
+          subBoard->Move[subBoard->Move.size() - 1] == std::array<int, 2>{wCursor, hCursor}) {
+        RootBoard->Move= subBoard->Move;
+        if (D.UI[GameMode________].I() == 0) ExecuteMoveHex(RootBoard, 0);
+        else if (D.UI[GameMode________].I() == 1) ExecuteMoveJmp(RootBoard, 0);
+        else if (D.UI[GameMode________].I() == 2) ExecuteMoveChk(RootBoard, 0);
+        wSel= hSel= -1;
         idxTurn++;
         ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
+        break;
       }
-    }
-    else if (D.UI[GameMode________].I() == 1) {
-      if (wSel >= 0 && wSel < nW && hSel >= 0 && hSel < nH) {
-        for (BoardState *subBoard : RootBoard->SubBoards) {
-          if (subBoard->Move[0] == std::array<int, 2>{wSel, hSel} &&
-              subBoard->Move[1] == std::array<int, 2>{wCursor, hCursor}) {
-            RootBoard->Pawns[wCursor][hCursor]= RootBoard->Pawns[wSel][hSel];
-            RootBoard->Pawns[wSel][hSel]= 0;
-            wSel= hSel= -1;
-            idxTurn++;
-            ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
-            break;
-          }
-        }
-      }
-    }
-    else if (D.UI[GameMode________].I() == 2) {
     }
   }
 
@@ -356,17 +342,18 @@ void TheBoardGameAI::Animate() {
         idxMove= GetIdxBestSubBoard(RootBoard, 0, 1);
       }
       // Execute the move
-      std::vector<std::array<int, 2>> move= RootBoard->SubBoards[idxMove]->Move;
+      RootBoard->Move= RootBoard->SubBoards[idxMove]->Move;
       if (D.UI[GameMode________].I() == 0) {
-        RootBoard->Pawns[move[0][0]][move[0][1]]= IsRedTurn(0) ? +1 : -1;
+        ExecuteMoveHex(RootBoard, 0);
+        ComputeBoardScoreHex(RootBoard);
       }
-      else if (D.UI[GameMode________].I() == 1) {
-        if (move[0][0] != -1 && move[0][1] != -1 && move[1][0] != -1 && move[1][1] != -1) {
-          RootBoard->Pawns[move[1][0]][move[1][1]]= RootBoard->Pawns[move[0][0]][move[0][1]];
-          RootBoard->Pawns[move[0][0]][move[0][1]]= 0;
-        }
+      if (D.UI[GameMode________].I() == 1) {
+        ExecuteMoveJmp(RootBoard, 0);
+        ComputeBoardScoreJmp(RootBoard);
       }
-      else if (D.UI[GameMode________].I() == 2) {
+      if (D.UI[GameMode________].I() == 2) {
+        ExecuteMoveChk(RootBoard, 0);
+        ComputeBoardScoreChk(RootBoard);
       }
     }
     idxTurn++;
