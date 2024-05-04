@@ -22,6 +22,8 @@ class WaveEquationFD
     ResolutionY_____,
     ResolutionZ_____,
     VoxelSize_______,
+    ScenarioPreset__,
+    ScenarioFileID__,
     ______________00,
     TimeStep________,
     MaxWaveSpeed____,

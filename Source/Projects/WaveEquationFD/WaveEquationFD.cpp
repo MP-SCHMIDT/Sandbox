@@ -10,6 +10,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
+#include "FileIO/FileInput.hpp"
 #include "Geom/BoxGrid.hpp"
 #include "Math/Field.hpp"
 #include "Math/Functions.hpp"
@@ -40,12 +41,14 @@ void WaveEquationFD::SetActiveProject() {
     D.UI.push_back(ParamUI("ResolutionY_____", 100));
     D.UI.push_back(ParamUI("ResolutionZ_____", 100));
     D.UI.push_back(ParamUI("VoxelSize_______", 0.01));
+    D.UI.push_back(ParamUI("ScenarioPreset__", 0));
+    D.UI.push_back(ParamUI("ScenarioFileID__", 0));
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("TimeStep________", 0.05));
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
-    D.UI.push_back(ParamUI("MaxAmplitude____", 0.5));
+    D.UI.push_back(ParamUI("MaxAmplitude____", 1.0));
     D.UI.push_back(ParamUI("Multithread_____", 0));
-    D.UI.push_back(ParamUI("BrushRadius_____", 0.1));
+    D.UI.push_back(ParamUI("BrushRadius_____", 0.04));
     D.UI.push_back(ParamUI("BrushBorder_____", 0.04));
     D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
@@ -83,6 +86,8 @@ bool WaveEquationFD::CheckAlloc() {
   if (D.UI[ResolutionY_____].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionZ_____].hasChanged()) isAllocated= false;
   if (D.UI[VoxelSize_______].hasChanged()) isAllocated= false;
+  if (D.UI[ScenarioPreset__].hasChanged()) isAllocated= false;
+  if (D.UI[ScenarioFileID__].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -126,17 +131,40 @@ void WaveEquationFD::Refresh() {
   if (CheckRefresh()) return;
   isRefreshed= true;
 
+
+  // Get scenario ID and optionally load bitmap file
+  std::vector<std::vector<std::array<float, 4>>> imageRGBA;
+  if (D.UI[ScenarioPreset__].I() == 0) {
+    if (D.UI[ScenarioFileID__].I() == 0) FileInput::LoadImageBMPFile("./FileInput/Images/LensConvex.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 1) FileInput::LoadImageBMPFile("./FileInput/Images/LensConcave.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 2) FileInput::LoadImageBMPFile("./FileInput/Images/Bimaterial.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 3) FileInput::LoadImageBMPFile("./FileInput/Images/Ellipse.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 4) FileInput::LoadImageBMPFile("./FileInput/Images/DoubleSlit.bmp", imageRGBA, false);
+  }
   // Initialize scenario values
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
-        UNew[x][y][z]= 0.0;
-        UCur[x][y][z]= 0.0;
-        UOld[x][y][z]= 0.0;
-        Speed[x][y][z]= 1.0;
-        if (nX > 1 && (x == 0 || x == nX - 1)) Speed[x][y][z]= 0.0;
-        if (nY > 1 && (y == 0 || y == nY - 1)) Speed[x][y][z]= 0.0;
-        if (nZ > 1 && (z == 0 || z == nZ - 1)) Speed[x][y][z]= 0.0;
+        // Scenario from loaded BMP file
+        if (D.UI[ScenarioPreset__].I() == 0 && !imageRGBA.empty()) {
+          const double posW= (double)(imageRGBA.size() - 1) * ((double)y + 0.5) / (double)nY;
+          const double posH= (double)(imageRGBA[0].size() - 1) * ((double)z + 0.5) / (double)nZ;
+          const int idxPixelW= std::min(std::max((int)std::round(posW), 0), (int)imageRGBA.size() - 1);
+          const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
+          const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
+          Speed[x][y][z]= (colRGBA[0] + colRGBA[1] + colRGBA[2]) / 3.0;
+        }
+
+        // Simple box domain
+        if (D.UI[ScenarioPreset__].I() == 1) {
+          UNew[x][y][z]= 0.0;
+          UCur[x][y][z]= 0.0;
+          UOld[x][y][z]= 0.0;
+          Speed[x][y][z]= 1.0;
+          if (nX > 1 && (x == 0 || x == nX - 1)) Speed[x][y][z]= 0.0;
+          if (nY > 1 && (y == 0 || y == nY - 1)) Speed[x][y][z]= 0.0;
+          if (nZ > 1 && (z == 0 || z == nZ - 1)) Speed[x][y][z]= 0.0;
+        }
       }
     }
   }
@@ -157,7 +185,7 @@ void WaveEquationFD::MousePress(const unsigned char mouse) {
   if (!CheckAlloc()) Allocate();
   (void)mouse;  // Disable warning unused variable
 
-  // Set the target voxel
+  // Set the target voxels
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
@@ -218,7 +246,7 @@ void WaveEquationFD::Draw() {
 
 
   // Draw the scalar fields
-  if (D.displayMode2) {
+  if (D.displayMode1) {
     // Set the scene transformation
     glPushMatrix();
     glTranslatef(D.boxMin[0] + 0.5 * D.UI[VoxelSize_______].D(),
@@ -233,11 +261,39 @@ void WaveEquationFD::Draw() {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
           float r= 0.0, g= 0.0, b= 0.0;
-          Colormap::RatioToJetBrightSmooth(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
+          Colormap::RatioToViridis(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
           glColor3f(r, g, b);
           glPushMatrix();
           glTranslatef((double)x, (double)y, (double)z);
           glutSolidCube(1.0);
+          glPopMatrix();
+        }
+      }
+    }
+    glPopMatrix();
+  }
+
+
+  // Draw the porosity field
+  if (D.displayMode2) {
+    // Set the scene transformation
+    glPushMatrix();
+    glTranslatef(D.boxMin[0] + 0.5 * D.UI[VoxelSize_______].D(),
+                 D.boxMin[1] + 0.5 * D.UI[VoxelSize_______].D(),
+                 D.boxMin[2] + 0.5 * D.UI[VoxelSize_______].D());
+    glScalef(D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D());
+    // Sweep the field
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          // Set the voxel color components
+          float r, g, b;
+          Colormap::RatioToGrayscale(Speed[x][y][z], r, g, b);
+          // Draw the cube
+          glColor3f(r, g, b);
+          glPushMatrix();
+          glTranslatef((double)x, (double)y, (double)z);
+          glutWireCube(1.0);
           glPopMatrix();
         }
       }
