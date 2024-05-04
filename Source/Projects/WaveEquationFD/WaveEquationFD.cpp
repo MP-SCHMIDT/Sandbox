@@ -12,6 +12,9 @@
 #include "Draw/Colormap.hpp"
 #include "Geom/BoxGrid.hpp"
 #include "Math/Field.hpp"
+#include "Math/Functions.hpp"
+#include "Math/Vec.hpp"
+
 
 // Global headers
 #include "Data.hpp"
@@ -37,10 +40,13 @@ void WaveEquationFD::SetActiveProject() {
     D.UI.push_back(ParamUI("ResolutionY_____", 100));
     D.UI.push_back(ParamUI("ResolutionZ_____", 100));
     D.UI.push_back(ParamUI("VoxelSize_______", 0.01));
-    D.UI.push_back(ParamUI("TimeStep________", 0.01));
-    D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.01));
     D.UI.push_back(ParamUI("______________00", NAN));
+    D.UI.push_back(ParamUI("TimeStep________", 0.05));
+    D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
+    D.UI.push_back(ParamUI("MaxAmplitude____", 0.5));
     D.UI.push_back(ParamUI("Multithread_____", 0));
+    D.UI.push_back(ParamUI("BrushRadius_____", 0.1));
+    D.UI.push_back(ParamUI("BrushBorder_____", 0.04));
     D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("______________01", NAN));
@@ -151,18 +157,22 @@ void WaveEquationFD::MousePress(const unsigned char mouse) {
   if (!CheckAlloc()) Allocate();
   (void)mouse;  // Disable warning unused variable
 
-  // Get cursor coordinates in the field
-  const int xCursor= (int)std::floor((double)nX * (D.mouseProjX[0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0]));
-  const int yCursor= (int)std::floor((double)nY * (D.mouseProjX[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1]));
-  const int zCursor= (int)std::floor((double)nZ * (D.mouseProjX[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2]));
-  if (xCursor < 0 || xCursor >= nX) return;
-  if (yCursor < 0 || yCursor >= nY) return;
-  if (zCursor < 0 || zCursor >= nZ) return;
-
   // Set the target voxel
-  if (D.UI[TestParamWAV_0__].B()) UNew[xCursor][yCursor][zCursor]= 1.0;
-  if (D.UI[TestParamWAV_1__].B()) UCur[xCursor][yCursor][zCursor]= 1.0;
-  if (D.UI[TestParamWAV_2__].B()) UOld[xCursor][yCursor][zCursor]= 1.0;
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        Vec::Vec3 cursor(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
+        Vec::Vec3 pos(D.boxMin[0] + (double(x) + 0.5) * D.UI[VoxelSize_______].D(),
+                      D.boxMin[1] + (double(y) + 0.5) * D.UI[VoxelSize_______].D(),
+                      D.boxMin[2] + (double(z) + 0.5) * D.UI[VoxelSize_______].D());
+        const double dist= D.UI[BrushRadius_____].D() - (pos - cursor).norm();
+        const double val= 2.0 * Functions::SmoothHeaviside(dist, D.UI[BrushBorder_____].D()) - 1.0;
+        UNew[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UNew[x][y][z]);
+        UCur[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UCur[x][y][z]);
+        UOld[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UOld[x][y][z]);
+      }
+    }
+  }
 }
 
 
@@ -223,7 +233,7 @@ void WaveEquationFD::Draw() {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
           float r= 0.0, g= 0.0, b= 0.0;
-          Colormap::RatioToViridis(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
+          Colormap::RatioToJetBrightSmooth(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
           glColor3f(r, g, b);
           glPushMatrix();
           glTranslatef((double)x, (double)y, (double)z);
