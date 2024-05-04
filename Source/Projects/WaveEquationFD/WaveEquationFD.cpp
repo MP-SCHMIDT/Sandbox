@@ -37,20 +37,20 @@ WaveEquationFD::WaveEquationFD() {
 void WaveEquationFD::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
+    D.UI.push_back(ParamUI("ScenarioPreset__", 0));
+    D.UI.push_back(ParamUI("ScenarioFileID__", 0));
     D.UI.push_back(ParamUI("ResolutionX_____", 1));
     D.UI.push_back(ParamUI("ResolutionY_____", 100));
     D.UI.push_back(ParamUI("ResolutionZ_____", 100));
     D.UI.push_back(ParamUI("VoxelSize_______", 0.01));
-    D.UI.push_back(ParamUI("ScenarioPreset__", 0));
-    D.UI.push_back(ParamUI("ScenarioFileID__", 0));
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("TimeStep________", 0.05));
+    D.UI.push_back(ParamUI("Parallelize_____", 0));
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
     D.UI.push_back(ParamUI("MaxAmplitude____", 1.0));
-    D.UI.push_back(ParamUI("Multithread_____", 0));
     D.UI.push_back(ParamUI("BrushRadius_____", 0.04));
     D.UI.push_back(ParamUI("BrushBorder_____", 0.04));
-    D.UI.push_back(ParamUI("ColorMode_______", 0));
+    D.UI.push_back(ParamUI("ColorMode_______", 1));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("TestParamWAV_0__", 0.0));
@@ -82,12 +82,12 @@ void WaveEquationFD::SetActiveProject() {
 
 // Check if parameter changes should trigger an allocation
 bool WaveEquationFD::CheckAlloc() {
+  if (D.UI[ScenarioPreset__].hasChanged()) isAllocated= false;
+  if (D.UI[ScenarioFileID__].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionX_____].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionY_____].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionZ_____].hasChanged()) isAllocated= false;
   if (D.UI[VoxelSize_______].hasChanged()) isAllocated= false;
-  if (D.UI[ScenarioPreset__].hasChanged()) isAllocated= false;
-  if (D.UI[ScenarioFileID__].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -108,8 +108,8 @@ void WaveEquationFD::Allocate() {
   nX= std::max(D.UI[ResolutionX_____].I(), 1);
   nY= std::max(D.UI[ResolutionY_____].I(), 1);
   nZ= std::max(D.UI[ResolutionZ_____].I(), 1);
-
   simTime= 0;
+
   UNew= Field::AllocField3D(nX, nY, nZ, 0.0);
   UCur= Field::AllocField3D(nX, nY, nZ, 0.0);
   UOld= Field::AllocField3D(nX, nY, nZ, 0.0);
@@ -145,6 +145,12 @@ void WaveEquationFD::Refresh() {
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
+        // Reset values
+        UNew[x][y][z]= 0.0;
+        UCur[x][y][z]= 0.0;
+        UOld[x][y][z]= 0.0;
+        Speed[x][y][z]= 1.0;
+
         // Scenario from loaded BMP file
         if (D.UI[ScenarioPreset__].I() == 0 && !imageRGBA.empty()) {
           const double posW= (double)(imageRGBA.size() - 1) * ((double)y + 0.5) / (double)nY;
@@ -157,13 +163,16 @@ void WaveEquationFD::Refresh() {
 
         // Simple box domain
         if (D.UI[ScenarioPreset__].I() == 1) {
-          UNew[x][y][z]= 0.0;
-          UCur[x][y][z]= 0.0;
-          UOld[x][y][z]= 0.0;
-          Speed[x][y][z]= 1.0;
-          if (nX > 1 && (x == 0 || x == nX - 1)) Speed[x][y][z]= 0.0;
-          if (nY > 1 && (y == 0 || y == nY - 1)) Speed[x][y][z]= 0.0;
-          if (nZ > 1 && (z == 0 || z == nZ - 1)) Speed[x][y][z]= 0.0;
+          if ((nX > 1 && (x == 0 || x == nX - 1)) ||
+              (nY > 1 && (y == 0 || y == nY - 1)) ||
+              (nZ > 1 && (z == 0 || z == nZ - 1)))
+            Speed[x][y][z]= 0.0;
+        }
+
+        // Simple sphere domain
+        if (D.UI[ScenarioPreset__].I() == 2) {
+          const int radius= std::max(nX, std::max(nY, nZ)) / 2;
+          if (std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed[x][y][z]= 0.0;
         }
       }
     }
@@ -213,7 +222,7 @@ void WaveEquationFD::Animate() {
   // Update field values
   UOld= UCur;
   UCur= UNew;
-#pragma omp parallel for collapse(3) if (D.UI[Multithread_____].B())
+#pragma omp parallel for collapse(3) if (D.UI[Parallelize_____].B())
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
@@ -261,7 +270,8 @@ void WaveEquationFD::Draw() {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
           float r= 0.0, g= 0.0, b= 0.0;
-          Colormap::RatioToViridis(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
+          if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(Speed[x][y][z], r, g, b);
+          if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToViridis(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
           glColor3f(r, g, b);
           glPushMatrix();
           glTranslatef((double)x, (double)y, (double)z);

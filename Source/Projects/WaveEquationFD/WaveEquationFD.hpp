@@ -18,17 +18,17 @@ class WaveEquationFD
   // List of UI parameters for this project
   enum ParamType
   {
+    ScenarioPreset__,
+    ScenarioFileID__,
     ResolutionX_____,
     ResolutionY_____,
     ResolutionZ_____,
     VoxelSize_______,
-    ScenarioPreset__,
-    ScenarioFileID__,
     ______________00,
     TimeStep________,
+    Parallelize_____,
     MaxWaveSpeed____,
     MaxAmplitude____,
-    Multithread_____,
     BrushRadius_____,
     BrushBorder_____,
     ColorMode_______,
