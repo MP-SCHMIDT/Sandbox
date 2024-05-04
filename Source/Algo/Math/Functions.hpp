@@ -18,4 +18,11 @@ namespace Functions {
     if (iDeriv) return (coeff + 1.0) / ((coeff * iVal - coeff - 1.0) * (coeff * iVal - coeff - 1.0));  // y= (c+1) / (cx-c-1)^2
     else return iVal / (1.0 + coeff - coeff * iVal);                                                   // y= x / (1+c-cx)
   }
+
+  // Smooth Heaviside function [-∞ ; +∞] ⇒ [0 ; 1]
+  template <std::floating_point element_type>
+  inline element_type SmoothHeaviside(element_type const iVal, element_type const iBandWidth) {
+    if (iBandWidth > 0.0) return 1.0 - 1.0 / (1.0 + std::exp(5.0 * iVal / iBandWidth));
+    else return (iVal > 0.0) ? 1.0 : 0.0;
+  }
 }  // namespace Functions
