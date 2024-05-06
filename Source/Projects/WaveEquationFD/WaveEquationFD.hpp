@@ -27,6 +27,7 @@ class WaveEquationFD
     ______________00,
     TimeStep________,
     Parallelize_____,
+    NbSubsteps______,
     MaxWaveSpeed____,
     MaxAmplitude____,
     BrushRadius_____,
@@ -58,6 +59,7 @@ class WaveEquationFD
   std::vector<std::vector<std::vector<double>>> UOld;   // Field value at previous time
   std::vector<std::vector<std::vector<double>>> Speed;  // Wave propagation speed
 
+  void StepSimulation();
 
   public:
   bool isActivProj;

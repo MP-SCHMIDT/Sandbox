@@ -46,11 +46,12 @@ void WaveEquationFD::SetActiveProject() {
     D.UI.push_back(ParamUI("______________00", NAN));
     D.UI.push_back(ParamUI("TimeStep________", 0.05));
     D.UI.push_back(ParamUI("Parallelize_____", 0));
+    D.UI.push_back(ParamUI("NbSubsteps______", 1));
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
     D.UI.push_back(ParamUI("MaxAmplitude____", 1.0));
     D.UI.push_back(ParamUI("BrushRadius_____", 0.04));
     D.UI.push_back(ParamUI("BrushBorder_____", 0.04));
-    D.UI.push_back(ParamUI("ColorMode_______", 1));
+    D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("TestParamWAV_0__", 0.0));
@@ -135,11 +136,12 @@ void WaveEquationFD::Refresh() {
   // Get scenario ID and optionally load bitmap file
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
   if (D.UI[ScenarioPreset__].I() == 0) {
-    if (D.UI[ScenarioFileID__].I() == 0) FileInput::LoadImageBMPFile("./FileInput/Images/LensConvex.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 1) FileInput::LoadImageBMPFile("./FileInput/Images/LensConcave.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 2) FileInput::LoadImageBMPFile("./FileInput/Images/Bimaterial.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 3) FileInput::LoadImageBMPFile("./FileInput/Images/Ellipse.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 4) FileInput::LoadImageBMPFile("./FileInput/Images/DoubleSlit.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 0) FileInput::LoadImageBMPFile("./FileInput/Images/DoubleSlit.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 1) FileInput::LoadImageBMPFile("./FileInput/Images/LensConvex.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 2) FileInput::LoadImageBMPFile("./FileInput/Images/LensConcave.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 3) FileInput::LoadImageBMPFile("./FileInput/Images/Bimaterial.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 4) FileInput::LoadImageBMPFile("./FileInput/Images/SimpleSmile.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 5) FileInput::LoadImageBMPFile("./FileInput/Images/Logo.bmp", imageRGBA, false);
   }
   // Initialize scenario values
   for (int x= 0; x < nX; x++) {
@@ -161,7 +163,7 @@ void WaveEquationFD::Refresh() {
           Speed[x][y][z]= (colRGBA[0] + colRGBA[1] + colRGBA[2]) / 3.0;
         }
 
-        // Simple box domain
+        // Empty box domain with Dirichlet boundary
         if (D.UI[ScenarioPreset__].I() == 1) {
           if ((nX > 1 && (x == 0 || x == nX - 1)) ||
               (nY > 1 && (y == 0 || y == nY - 1)) ||
@@ -173,6 +175,12 @@ void WaveEquationFD::Refresh() {
         if (D.UI[ScenarioPreset__].I() == 2) {
           const int radius= std::max(nX, std::max(nY, nZ)) / 2;
           if (std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed[x][y][z]= 0.0;
+        }
+
+        // Simple ellipse domain
+        if (D.UI[ScenarioPreset__].I() == 3) {
+          const int radius= std::max(nX, std::max(nY, nZ)) / 2;
+          if (2.0 * std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + 2.0 * std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed[x][y][z]= 0.0;
         }
       }
     }
@@ -195,13 +203,13 @@ void WaveEquationFD::MousePress(const unsigned char mouse) {
   (void)mouse;  // Disable warning unused variable
 
   // Set the target voxels
+  const Vec::Vec3 cursor(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
-        Vec::Vec3 cursor(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
-        Vec::Vec3 pos(D.boxMin[0] + (double(x) + 0.5) * D.UI[VoxelSize_______].D(),
-                      D.boxMin[1] + (double(y) + 0.5) * D.UI[VoxelSize_______].D(),
-                      D.boxMin[2] + (double(z) + 0.5) * D.UI[VoxelSize_______].D());
+        const Vec::Vec3 pos(D.boxMin[0] + (double(x) + 0.5) * D.UI[VoxelSize_______].D(),
+                            D.boxMin[1] + (double(y) + 0.5) * D.UI[VoxelSize_______].D(),
+                            D.boxMin[2] + (double(z) + 0.5) * D.UI[VoxelSize_______].D());
         const double dist= D.UI[BrushRadius_____].D() - (pos - cursor).norm();
         const double val= 2.0 * Functions::SmoothHeaviside(dist, D.UI[BrushBorder_____].D()) - 1.0;
         UNew[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UNew[x][y][z]);
@@ -219,7 +227,100 @@ void WaveEquationFD::Animate() {
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
 
-  // Update field values
+  for (int k= 0; k < std::max(D.UI[NbSubsteps______].I(), 1); k++) {
+    // Update field values
+    StepSimulation();
+
+    // Advance time
+    simTime+= D.UI[TimeStep________].D();
+  }
+
+  // Draw the plot data
+  D.Plot.resize(2);
+  D.Plot[0].name= "USum";
+  D.Plot[1].name= "USumAbs";
+  for (int k= 0; k < (int)D.Plot.size(); k++)
+    D.Plot[k].val.push_back(0.0);
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        D.Plot[0].val[D.Plot[0].val.size() - 1]+= UNew[x][y][z];
+        D.Plot[1].val[D.Plot[1].val.size() - 1]+= std::abs(UNew[x][y][z]);
+      }
+    }
+  }
+
+  // Write the status
+  if ((int)D.Status.size() != 1) D.Status.resize(1);
+  D.Status[0]= std::string{"SimTime: "} + std::to_string(simTime);
+}
+
+
+// Draw the project
+void WaveEquationFD::Draw() {
+  if (!isActivProj) return;
+  if (!isAllocated) return;
+  if (!isRefreshed) return;
+
+  // Draw the scalar fields
+  if (D.displayMode1 || D.displayMode2) {
+    glPushMatrix();
+    glTranslatef(D.boxMin[0] + 0.5 * D.UI[VoxelSize_______].D(),
+                 D.boxMin[1] + 0.5 * D.UI[VoxelSize_______].D(),
+                 D.boxMin[2] + 0.5 * D.UI[VoxelSize_______].D());
+    glScalef(D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D());
+    if (nX == 1 || nY == 1 || nZ == 1) glBegin(GL_QUADS);
+    for (int k= 0; k < 2; k++) {
+      if (k == 0 && !D.displayMode1) continue;
+      if (k == 1 && !D.displayMode2) continue;
+      for (int x= 0; x < nX; x++) {
+        for (int y= 0; y < nY; y++) {
+          for (int z= 0; z < nZ; z++) {
+            float r= 0.0, g= 0.0, b= 0.0, a= 1.0, offset= 0.0f;
+            if (k == 0) {
+              if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToTurbo(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
+            }
+            if (k == 1) {
+              Colormap::RatioToGrayscale(Speed[x][y][z], r, g, b);
+              a= 0.2f;
+              offset= 0.5f;
+            }
+            glColor4f(r, g, b, a);
+            if (nX == 1 && nY > 1 && nZ > 1) {
+              glVertex3f(x + offset, y - 0.5f, z - 0.5f);
+              glVertex3f(x + offset, y + 0.5f, z - 0.5f);
+              glVertex3f(x + offset, y + 0.5f, z + 0.5f);
+              glVertex3f(x + offset, y - 0.5f, z + 0.5f);
+            }
+            else if (nX > 1 && nY > 1 && nZ == 1) {
+              glVertex3f(x - 0.5f, y + offset, z - 0.5f);
+              glVertex3f(x + 0.5f, y + offset, z - 0.5f);
+              glVertex3f(x + 0.5f, y + offset, z + 0.5f);
+              glVertex3f(x - 0.5f, y + offset, z + 0.5f);
+            }
+            else if (nX > 1 && nY > 1 && nZ == 1) {
+              glVertex3f(x - 0.5f, y - 0.5f, z + offset);
+              glVertex3f(x + 0.5f, y - 0.5f, z + offset);
+              glVertex3f(x + 0.5f, y + 0.5f, z + offset);
+              glVertex3f(x - 0.5f, y + 0.5f, z + offset);
+            }
+            else {
+              glPushMatrix();
+              glTranslatef(x, y, z);
+              glutSolidCube(1.0);
+              glPopMatrix();
+            }
+          }
+        }
+      }
+    }
+    if (nX == 1 || nX == 1 || nX == 1) glEnd();
+    glPopMatrix();
+  }
+}
+
+
+void WaveEquationFD::StepSimulation() {
   UOld= UCur;
   UCur= UNew;
 #pragma omp parallel for collapse(3) if (D.UI[Parallelize_____].B())
@@ -240,74 +341,5 @@ void WaveEquationFD::Animate() {
         UNew[x][y][z]= 2.0 * UCur[x][y][z] - UOld[x][y][z] + gamma * gamma * (sum - (double)count * UCur[x][y][z]);
       }
     }
-  }
-
-  // Advance time
-  simTime+= D.UI[TimeStep________].D();
-}
-
-
-// Draw the project
-void WaveEquationFD::Draw() {
-  if (!isActivProj) return;
-  if (!isAllocated) return;
-  if (!isRefreshed) return;
-
-
-  // Draw the scalar fields
-  if (D.displayMode1) {
-    // Set the scene transformation
-    glPushMatrix();
-    glTranslatef(D.boxMin[0] + 0.5 * D.UI[VoxelSize_______].D(),
-                 D.boxMin[1] + 0.5 * D.UI[VoxelSize_______].D(),
-                 D.boxMin[2] + 0.5 * D.UI[VoxelSize_______].D());
-    glScalef(D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D());
-    if (nX == 1) glScalef(0.1, 1.0, 1.0);
-    if (nY == 1) glScalef(1.0, 0.1, 1.0);
-    if (nZ == 1) glScalef(1.0, 1.0, 0.1);
-    // Sweep the field
-    for (int x= 0; x < nX; x++) {
-      for (int y= 0; y < nY; y++) {
-        for (int z= 0; z < nZ; z++) {
-          float r= 0.0, g= 0.0, b= 0.0;
-          if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(Speed[x][y][z], r, g, b);
-          if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToViridis(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
-          glColor3f(r, g, b);
-          glPushMatrix();
-          glTranslatef((double)x, (double)y, (double)z);
-          glutSolidCube(1.0);
-          glPopMatrix();
-        }
-      }
-    }
-    glPopMatrix();
-  }
-
-
-  // Draw the porosity field
-  if (D.displayMode2) {
-    // Set the scene transformation
-    glPushMatrix();
-    glTranslatef(D.boxMin[0] + 0.5 * D.UI[VoxelSize_______].D(),
-                 D.boxMin[1] + 0.5 * D.UI[VoxelSize_______].D(),
-                 D.boxMin[2] + 0.5 * D.UI[VoxelSize_______].D());
-    glScalef(D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D());
-    // Sweep the field
-    for (int x= 0; x < nX; x++) {
-      for (int y= 0; y < nY; y++) {
-        for (int z= 0; z < nZ; z++) {
-          // Set the voxel color components
-          float r, g, b;
-          Colormap::RatioToGrayscale(Speed[x][y][z], r, g, b);
-          // Draw the cube
-          glColor3f(r, g, b);
-          glPushMatrix();
-          glTranslatef((double)x, (double)y, (double)z);
-          glutWireCube(1.0);
-          glPopMatrix();
-        }
-      }
-    }
-    glPopMatrix();
   }
 }
