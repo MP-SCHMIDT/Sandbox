@@ -1,4 +1,4 @@
-#include "WaveEquationFD.hpp"
+#include "WavePropagSimu.hpp"
 
 
 // Standard lib
@@ -10,6 +10,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
+#include "Draw/DrawField.hpp"
 #include "FileIO/FileInput.hpp"
 #include "Geom/BoxGrid.hpp"
 #include "Math/Field.hpp"
@@ -26,7 +27,7 @@ extern Data D;
 
 
 // Constructor
-WaveEquationFD::WaveEquationFD() {
+WavePropagSimu::WavePropagSimu() {
   isActivProj= false;
   isAllocated= false;
   isRefreshed= false;
@@ -34,7 +35,7 @@ WaveEquationFD::WaveEquationFD() {
 
 
 // Initialize Project UI parameters
-void WaveEquationFD::SetActiveProject() {
+void WavePropagSimu::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("ScenarioPreset__", 0));
@@ -49,11 +50,18 @@ void WaveEquationFD::SetActiveProject() {
     D.UI.push_back(ParamUI("NbSubsteps______", 1));
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
     D.UI.push_back(ParamUI("MaxAmplitude____", 1.0));
-    D.UI.push_back(ParamUI("BrushRadius_____", 0.04));
+    D.UI.push_back(ParamUI("BrushRadius_____", 0.05));
     D.UI.push_back(ParamUI("BrushBorder_____", 0.04));
-    D.UI.push_back(ParamUI("ColorMode_______", 0));
-    D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("______________01", NAN));
+    D.UI.push_back(ParamUI("SliceDim________", 0));
+    D.UI.push_back(ParamUI("SliceRelPosX____", 0.5));
+    D.UI.push_back(ParamUI("SliceRelPosY____", 0.5));
+    D.UI.push_back(ParamUI("SliceRelPosZ____", 0.5));
+    D.UI.push_back(ParamUI("ColorMode_______", 0));
+    D.UI.push_back(ParamUI("ColorFactor_____", 8.0));
+    D.UI.push_back(ParamUI("ScaleFactor_____", 0.1));
+    D.UI.push_back(ParamUI("AlphaFactor_____", 0.0));
+    D.UI.push_back(ParamUI("______________02", NAN));
     D.UI.push_back(ParamUI("TestParamWAV_0__", 0.0));
     D.UI.push_back(ParamUI("TestParamWAV_1__", 0.0));
     D.UI.push_back(ParamUI("TestParamWAV_2__", 0.0));
@@ -64,7 +72,7 @@ void WaveEquationFD::SetActiveProject() {
     D.UI.push_back(ParamUI("TestParamWAV_7__", 0.0));
     D.UI.push_back(ParamUI("TestParamWAV_8__", 0.0));
     D.UI.push_back(ParamUI("TestParamWAV_9__", 0.0));
-    D.UI.push_back(ParamUI("______________02", NAN));
+    D.UI.push_back(ParamUI("______________03", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
   }
 
@@ -82,7 +90,7 @@ void WaveEquationFD::SetActiveProject() {
 
 
 // Check if parameter changes should trigger an allocation
-bool WaveEquationFD::CheckAlloc() {
+bool WavePropagSimu::CheckAlloc() {
   if (D.UI[ScenarioPreset__].hasChanged()) isAllocated= false;
   if (D.UI[ScenarioFileID__].hasChanged()) isAllocated= false;
   if (D.UI[ResolutionX_____].hasChanged()) isAllocated= false;
@@ -94,13 +102,13 @@ bool WaveEquationFD::CheckAlloc() {
 
 
 // Check if parameter changes should trigger a refresh
-bool WaveEquationFD::CheckRefresh() {
+bool WavePropagSimu::CheckRefresh() {
   return isRefreshed;
 }
 
 
 // Allocate the project data
-void WaveEquationFD::Allocate() {
+void WavePropagSimu::Allocate() {
   if (!isActivProj) return;
   if (CheckAlloc()) return;
   isRefreshed= false;
@@ -126,7 +134,7 @@ void WaveEquationFD::Allocate() {
 
 
 // Refresh the project
-void WaveEquationFD::Refresh() {
+void WavePropagSimu::Refresh() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (CheckRefresh()) return;
@@ -189,7 +197,7 @@ void WaveEquationFD::Refresh() {
 
 
 // Handle keypress
-void WaveEquationFD::KeyPress(const unsigned char key) {
+void WavePropagSimu::KeyPress(const unsigned char key) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   (void)key;  // Disable warning unused variable
@@ -197,7 +205,7 @@ void WaveEquationFD::KeyPress(const unsigned char key) {
 
 
 // Handle mouse action
-void WaveEquationFD::MousePress(const unsigned char mouse) {
+void WavePropagSimu::MousePress(const unsigned char mouse) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   (void)mouse;  // Disable warning unused variable
@@ -222,7 +230,7 @@ void WaveEquationFD::MousePress(const unsigned char mouse) {
 
 
 // Animate the project
-void WaveEquationFD::Animate() {
+void WavePropagSimu::Animate() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
@@ -251,94 +259,139 @@ void WaveEquationFD::Animate() {
   }
 
   // Write the status
-  if ((int)D.Status.size() != 1) D.Status.resize(1);
+  if ((int)D.Status.size() != 2) D.Status.resize(2);
   D.Status[0]= std::string{"SimTime: "} + std::to_string(simTime);
+  D.Status[1]= std::string{"CFL: "} + std::to_string(D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D());
 }
 
 
 // Draw the project
-void WaveEquationFD::Draw() {
+void WavePropagSimu::Draw() {
   if (!isActivProj) return;
   if (!isAllocated) return;
   if (!isRefreshed) return;
 
-  // Draw the scalar fields
+  // Draw the wave field
   if (D.displayMode1 || D.displayMode2) {
-    glPushMatrix();
-    glTranslatef(D.boxMin[0] + 0.5 * D.UI[VoxelSize_______].D(),
-                 D.boxMin[1] + 0.5 * D.UI[VoxelSize_______].D(),
-                 D.boxMin[2] + 0.5 * D.UI[VoxelSize_______].D());
-    glScalef(D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D(), D.UI[VoxelSize_______].D());
-    if (nX == 1 || nY == 1 || nZ == 1) glBegin(GL_QUADS);
-    for (int k= 0; k < 2; k++) {
-      if (k == 0 && !D.displayMode1) continue;
-      if (k == 1 && !D.displayMode2) continue;
-      for (int x= 0; x < nX; x++) {
-        for (int y= 0; y < nY; y++) {
-          for (int z= 0; z < nZ; z++) {
-            float r= 0.0, g= 0.0, b= 0.0, a= 1.0, offset= 0.0f;
-            if (k == 0) {
-              if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToTurbo(0.5 + UCur[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
-            }
-            if (k == 1) {
-              Colormap::RatioToGrayscale(Speed[x][y][z], r, g, b);
-              a= 0.2f;
-              offset= 0.5f;
-            }
-            glColor4f(r, g, b, a);
-            if (nX == 1 && nY > 1 && nZ > 1) {
-              glVertex3f(x + offset, y - 0.5f, z - 0.5f);
-              glVertex3f(x + offset, y + 0.5f, z - 0.5f);
-              glVertex3f(x + offset, y + 0.5f, z + 0.5f);
-              glVertex3f(x + offset, y - 0.5f, z + 0.5f);
-            }
-            else if (nX > 1 && nY > 1 && nZ == 1) {
-              glVertex3f(x - 0.5f, y + offset, z - 0.5f);
-              glVertex3f(x + 0.5f, y + offset, z - 0.5f);
-              glVertex3f(x + 0.5f, y + offset, z + 0.5f);
-              glVertex3f(x - 0.5f, y + offset, z + 0.5f);
-            }
-            else if (nX > 1 && nY > 1 && nZ == 1) {
-              glVertex3f(x - 0.5f, y - 0.5f, z + offset);
-              glVertex3f(x + 0.5f, y - 0.5f, z + offset);
-              glVertex3f(x + 0.5f, y + 0.5f, z + offset);
-              glVertex3f(x - 0.5f, y + 0.5f, z + offset);
-            }
-            else {
-              glPushMatrix();
-              glTranslatef(x, y, z);
-              glutSolidCube(1.0);
-              glPopMatrix();
-            }
+    std::vector<std::vector<std::vector<bool>>> Show= Field::AllocField3D(nX, nY, nZ, true);
+    std::vector<std::vector<std::vector<std::array<float, 4>>>> Color= Field::AllocField3D(nX, nY, nZ, std::array<float, 4>{0.0, 0.0, 0.0, 1.0});
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          if (D.UI[SliceDim________].I() == 1 && x != (int)std::round(D.UI[SliceRelPosX____].D() * nX)) Show[x][y][z]= false;
+          if (D.UI[SliceDim________].I() == 2 && y != (int)std::round(D.UI[SliceRelPosY____].D() * nY)) Show[x][y][z]= false;
+          if (D.UI[SliceDim________].I() == 3 && z != (int)std::round(D.UI[SliceRelPosZ____].D() * nZ)) Show[x][y][z]= false;
+          if (!Show[x][y][z]) continue;
+
+          // Color by wave value
+          if (D.displayMode1) {
+            float r= 0.0, g= 0.0, b= 0.0;
+            if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(0.5 + UNew[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
+            if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew[x][y][z]) * D.UI[ColorFactor_____].D(), r, g, b);
+            Color[x][y][z]= {r, g, b, (float)std::abs(UNew[x][y][z])};
           }
+
+          // Add shading to visualize wave speed field
+          if (D.displayMode2) {
+            float r= 0.0, g= 0.0, b= 0.0;
+            Colormap::RatioToGrayscale(Speed[x][y][z], r, g, b);
+            if (D.displayMode1) Color[x][y][z]= {0.6f * Color[x][y][z][0] + 0.4f * r,
+                                                 0.6f * Color[x][y][z][1] + 0.4f * g,
+                                                 0.6f * Color[x][y][z][2] + 0.4f * b, Color[x][y][z][3]};
+            else Color[x][y][z]= {r, g, b, Color[x][y][z][2]};
+          }
+
+          // Apply transparency settings
+          if (D.UI[AlphaFactor_____].F() > 0.0f)
+            Color[x][y][z][3]*= D.UI[AlphaFactor_____].F();
+          else
+            Color[x][y][z][3]= 1.0f;
         }
       }
     }
-    if (nX == 1 || nX == 1 || nX == 1) glEnd();
-    glPopMatrix();
+    DrawField::DrawColored3DField(Show, Color, D.boxMin, D.boxMax, D.camDir, false, false, true);
+  }
+
+  // Draw the wave field as a 2.5D elevation map
+  if (D.displayMode3) {
+    if (nX == 1 && nY > 1 && nZ > 1) {
+      std::vector<std::vector<Vec::Vec3<float>>> terrainPos= Field::AllocField2D(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
+      std::vector<std::vector<Vec::Vec3<float>>> terrainCol= Field::AllocField2D(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
+      std::vector<std::vector<Vec::Vec3<float>>> terrainNor= Field::AllocField2D(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          terrainPos[y][z].set(0.5f * (D.boxMin[0] + D.boxMax[0]) + UNew[0][y][z] * D.UI[ScaleFactor_____].F(),
+                               D.boxMin[1] + ((float)y + 0.5f) * D.UI[VoxelSize_______].F(),
+                               D.boxMin[2] + ((float)z + 0.5f) * D.UI[VoxelSize_______].F());
+          float r, g, b;
+          if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(0.5f + 0.5f * UNew[0][y][z] * D.UI[ColorFactor_____].F(), r, g, b);
+          if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew[0][y][z]) * D.UI[ColorFactor_____].F(), r, g, b);
+          terrainCol[y][z].set(r, g, b);
+        }
+      }
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          if (y > 0 && z > 0) terrainNor[y][z]+= ((terrainPos[y - 1][z] - terrainPos[y][z]).cross(terrainPos[y][z - 1] - terrainPos[y][z])).normalized();
+          if (y < nY - 1 && z > 0) terrainNor[y][z]+= ((terrainPos[y][z - 1] - terrainPos[y][z]).cross(terrainPos[y + 1][z] - terrainPos[y][z])).normalized();
+          if (y < nY - 1 && z < nZ - 1) terrainNor[y][z]+= ((terrainPos[y + 1][z] - terrainPos[y][z]).cross(terrainPos[y][z + 1] - terrainPos[y][z])).normalized();
+          if (y > 0 && z < nZ - 1) terrainNor[y][z]+= ((terrainPos[y][z + 1] - terrainPos[y][z]).cross(terrainPos[y - 1][z] - terrainPos[y][z])).normalized();
+          terrainNor[y][z].normalize();
+        }
+      }
+      glEnable(GL_LIGHTING);
+      glBegin(GL_QUADS);
+      for (int y= 0; y < nY - 1; y++) {
+        for (int z= 0; z < nZ - 1; z++) {
+          if (Speed[0][y][z] == 0.0 && Speed[0][y][z + 1] == 0.0 && Speed[0][y + 1][z] == 0.0 && Speed[0][y + 1][z + 1] == 0.0) continue;
+          Vec::Vec3<float> flatNormal= (terrainNor[y][z] + terrainNor[y + 1][z] + terrainNor[y + 1][z + 1] + terrainNor[y][z + 1]).normalized();
+          Vec::Vec3<float> flatColor= (terrainCol[y][z] + terrainCol[y + 1][z] + terrainCol[y + 1][z + 1] + terrainCol[y][z + 1]) / 4.0f;
+          glColor3fv(flatColor.array());
+          glNormal3fv(flatNormal.array());
+          glVertex3fv(terrainPos[y][z].array());
+          glVertex3fv(terrainPos[y + 1][z].array());
+          glVertex3fv(terrainPos[y + 1][z + 1].array());
+          glVertex3fv(terrainPos[y][z + 1].array());
+        }
+      }
+      glEnd();
+      glDisable(GL_LIGHTING);
+    }
   }
 }
 
 
-void WaveEquationFD::StepSimulation() {
+void WavePropagSimu::StepSimulation() {
   UOld= UCur;
   UCur= UNew;
 #pragma omp parallel for collapse(3) if (D.UI[Parallelize_____].B())
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
+        // Reset and precompute
         UNew[x][y][z]= 0.0;
         if (Speed[x][y][z] == 0.0) continue;
-        int count= 0;
-        double sum= 0.0;
-        if (x - 1 >= 0 && ++count) sum+= UCur[x - 1][y][z];
-        if (y - 1 >= 0 && ++count) sum+= UCur[x][y - 1][z];
-        if (z - 1 >= 0 && ++count) sum+= UCur[x][y][z - 1];
-        if (x + 1 < nX && ++count) sum+= UCur[x + 1][y][z];
-        if (y + 1 < nY && ++count) sum+= UCur[x][y + 1][z];
-        if (z + 1 < nZ && ++count) sum+= UCur[x][y][z + 1];
         const double gamma= D.UI[MaxWaveSpeed____].D() * Speed[x][y][z] * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D();
-        UNew[x][y][z]= 2.0 * UCur[x][y][z] - UOld[x][y][z] + gamma * gamma * (sum - (double)count * UCur[x][y][z]);
+
+        // Update the field values with dicretized wave equation
+        double sum= 0.0;
+        sum+= (x - 1 >= 0) ? (UCur[x - 1][y][z]) : (UCur[x][y][z]);
+        sum+= (y - 1 >= 0) ? (UCur[x][y - 1][z]) : (UCur[x][y][z]);
+        sum+= (z - 1 >= 0) ? (UCur[x][y][z - 1]) : (UCur[x][y][z]);
+        sum+= (x + 1 < nX) ? (UCur[x + 1][y][z]) : (UCur[x][y][z]);
+        sum+= (y + 1 < nY) ? (UCur[x][y + 1][z]) : (UCur[x][y][z]);
+        sum+= (z + 1 < nZ) ? (UCur[x][y][z + 1]) : (UCur[x][y][z]);
+        UNew[x][y][z]= 2.0 * UCur[x][y][z] - UOld[x][y][z] + gamma * gamma * (sum - 6.0 * UCur[x][y][z]);
+
+        // Apply the absorbing boundary conditions with Perfectly Matched Layer on domain faces
+        // https://en.wikipedia.org/wiki/Perfectly_matched_layer
+        // https://hal.science/hal-01374183
+        // https://www.idpoisson.fr/berglund/wave_billiard.c
+        if (nX >= 3 && x == nX - 1) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x - 1][y][z]);
+        else if (nX >= 3 && x == 0) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x + 1][y][z]);
+        if (nY >= 3 && y == nY - 1) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y - 1][z]);
+        else if (nY >= 3 && y == 0) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y + 1][z]);
+        if (nZ >= 3 && z == nZ - 1) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z - 1]);
+        else if (nZ >= 3 && z == 0) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z + 1]);
       }
     }
   }

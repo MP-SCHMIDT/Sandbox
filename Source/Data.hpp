@@ -93,6 +93,8 @@ class Data
   std::array<double, 3> boxMin= {0.0, 0.0, 0.0};
   std::array<double, 3> boxMax= {1.0, 1.0, 1.0};
 
+  std::array<double, 3> camDir= {0.0, 0.0, 0.0};
+
   std::array<double, 3> mouseNear= {0.0, 0.0, 0.0};
   std::array<double, 3> mouseFar= {0.0, 0.0, 0.0};
   std::array<double, 3> mouseProjX= {0.0, 0.0, 0.0};

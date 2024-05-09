@@ -10,9 +10,16 @@
 // - ∂²u/∂t² = c² ∂²u/∂x²
 // - Explicit integration
 // - Centered finite difference discretization of operators
+// - Reflection BC with Dirichlet
+// - Absorption BC with Perfectly Matched Layer
+// - Spatially varying wave speed
 // https://vitalitylearning.medium.com/solving-the-1d-wave-equation-numerical-discretization-190a92c917bc
 // https://en.wikipedia.org/wiki/Wave_equation
-class WaveEquationFD
+// https://en.wikipedia.org/wiki/Perfectly_matched_layer
+// https://hal.science/hal-01374183
+// https://www.idpoisson.fr/berglund/wave_billiard.c
+// https://www.youtube.com/watch?v=pN-gi_omIVE
+class WavePropagSimu
 {
   private:
   // List of UI parameters for this project
@@ -32,9 +39,16 @@ class WaveEquationFD
     MaxAmplitude____,
     BrushRadius_____,
     BrushBorder_____,
+    ______________01,
+    SliceDim________,
+    SliceRelPosX____,
+    SliceRelPosY____,
+    SliceRelPosZ____,
     ColorMode_______,
     ColorFactor_____,
-    ______________01,
+    ScaleFactor_____,
+    AlphaFactor_____,
+    ______________02,
     TestParamWAV_0__,
     TestParamWAV_1__,
     TestParamWAV_2__,
@@ -45,7 +59,7 @@ class WaveEquationFD
     TestParamWAV_7__,
     TestParamWAV_8__,
     TestParamWAV_9__,
-    ______________02,
+    ______________03,
     VerboseLevel____,
   };
 
@@ -66,7 +80,7 @@ class WaveEquationFD
   bool isAllocated;
   bool isRefreshed;
 
-  WaveEquationFD();
+  WavePropagSimu();
 
   void SetActiveProject();
   bool CheckAlloc();

@@ -32,7 +32,7 @@
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
 #include "TheBoardGameAI/TheBoardGameAI.hpp"
-#include "WaveEquationFD/WaveEquationFD.hpp"
+#include "WavePropagSimu/WavePropagSimu.hpp"
 // #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "CompuFluidDyna/CompuFluidDyna.hpp"
@@ -92,7 +92,7 @@ SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
 TheBoardGameAI myTheBoardGameAI;
-WaveEquationFD myWaveEquationFD;
+WavePropagSimu myWavePropagSimu;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 CompuFluidDyna myCompuFluidDyna;
 NonLinMMABench myNonLinMMABench;
@@ -117,7 +117,7 @@ enum ProjectID
   StringArtOptimID,
   TerrainErosionID,
   TheBoardGameAIID,
-  WaveEquationFDID,
+  WavePropagSimuID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   CompuFluidDynaID,
   NonLinMMABenchID,
@@ -146,7 +146,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
   if (currentProjectID != ProjectID::TheBoardGameAIID && myTheBoardGameAI.isActivProj) myTheBoardGameAI= TheBoardGameAI();
-  if (currentProjectID != ProjectID::WaveEquationFDID && myWaveEquationFD.isActivProj) myWaveEquationFD= WaveEquationFD();
+  if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj) myWavePropagSimu= WavePropagSimu();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj) myCompuFluidDyna= CompuFluidDyna();
   if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj) myNonLinMMABench= NonLinMMABench();
@@ -168,7 +168,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.SetActiveProject();
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.SetActiveProject();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
@@ -193,7 +193,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Refresh();
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.Refresh();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
@@ -218,7 +218,7 @@ void project_KeyPress(const unsigned char key) {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(key);
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(key);
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress(key);
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.KeyPress(key);
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.KeyPress(key);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(key);
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(key);
@@ -243,7 +243,7 @@ void project_MousePress(const unsigned char mouse) {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress(mouse);
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress(mouse);
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.MousePress(mouse);
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.MousePress(mouse);
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.MousePress(mouse);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.MousePress(mouse);
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress(mouse);
@@ -267,7 +267,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Animate();
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.Animate();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
@@ -292,7 +292,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Draw();
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.Draw();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
@@ -317,7 +317,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.isRefreshed= false;
-  if (currentProjectID == ProjectID::WaveEquationFDID) myWaveEquationFD.isRefreshed= false;
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
@@ -477,7 +477,9 @@ void callback_display() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   cam->setWindowSize(float(winW), float(winH));
-  glMultMatrixf(cam->getViewMatrix());
+  const float *viewMat= cam->getViewMatrix();
+  glMultMatrixf(viewMat);
+  D.camDir= {viewMat[2], viewMat[6], viewMat[10]};
 
   // Draw the reference frame and box
   if (D.showAxis) {
@@ -1064,7 +1066,7 @@ void init_menu() {
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
   glutAddMenuEntry("TheBoardGameAI", ProjectID::TheBoardGameAIID);
-  glutAddMenuEntry("WaveEquationFD", ProjectID::WaveEquationFDID);
+  glutAddMenuEntry("WavePropagSimu", ProjectID::WavePropagSimuID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
   glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);
@@ -1086,7 +1088,7 @@ void init_menu() {
 // OpenGL initialization
 void init_GL() {
   isDarkMode= true;
-  isSmoothDraw= true;
+  isSmoothDraw= false;
   isCursorDraw= false;
   isMiddleMousePressed= false;
 
@@ -1127,8 +1129,6 @@ void init_GL() {
   glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
   glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_LIGHT0);
-  glEnable(GL_POINT_SMOOTH);
-  glEnable(GL_LINE_SMOOTH);
 }
 
 
