@@ -331,10 +331,14 @@ void WavePropagSimu::Draw() {
       }
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
-          if (y > 0 && z > 0) terrainNor[y][z]+= ((terrainPos[y - 1][z] - terrainPos[y][z]).cross(terrainPos[y][z - 1] - terrainPos[y][z])).normalized();
-          if (y < nY - 1 && z > 0) terrainNor[y][z]+= ((terrainPos[y][z - 1] - terrainPos[y][z]).cross(terrainPos[y + 1][z] - terrainPos[y][z])).normalized();
-          if (y < nY - 1 && z < nZ - 1) terrainNor[y][z]+= ((terrainPos[y + 1][z] - terrainPos[y][z]).cross(terrainPos[y][z + 1] - terrainPos[y][z])).normalized();
-          if (y > 0 && z < nZ - 1) terrainNor[y][z]+= ((terrainPos[y][z + 1] - terrainPos[y][z]).cross(terrainPos[y - 1][z] - terrainPos[y][z])).normalized();
+          if (y < nY - 1) {
+            if (z < nZ - 1) terrainNor[y][z]+= ((terrainPos[y + 1][z] - terrainPos[y][z]).cross(terrainPos[y][z + 1] - terrainPos[y][z])).normalized();
+            else if (z > 0) terrainNor[y][z]+= ((terrainPos[y][z - 1] - terrainPos[y][z]).cross(terrainPos[y + 1][z] - terrainPos[y][z])).normalized();
+          }
+          else if (y > 0) {
+            if (z < nZ - 1) terrainNor[y][z]+= ((terrainPos[y][z + 1] - terrainPos[y][z]).cross(terrainPos[y - 1][z] - terrainPos[y][z])).normalized();
+            else if (z > 0) terrainNor[y][z]+= ((terrainPos[y - 1][z] - terrainPos[y][z]).cross(terrainPos[y][z - 1] - terrainPos[y][z])).normalized();
+          }
           terrainNor[y][z].normalize();
         }
       }
