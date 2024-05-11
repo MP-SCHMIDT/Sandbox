@@ -19,10 +19,19 @@ namespace Functions {
     else return iVal / (1.0 + coeff - coeff * iVal);                                                   // y= x / (1+c-cx)
   }
 
-  // Smooth Heaviside function [-∞ ; +∞] ⇒ [0 ; 1]
+  // Logistic sigmoid function with asymptote flattening [-∞ ; +∞] ⇒ [0 ; 1]
+  // https://en.wikipedia.org/wiki/Logistic_function
   template <std::floating_point element_type>
-  inline element_type SmoothHeaviside(element_type const iVal, element_type const iBandWidth) {
-    if (iBandWidth > 0.0) return 1.0 - 1.0 / (1.0 + std::exp(5.0 * iVal / iBandWidth));
-    else return (iVal > 0.0) ? 1.0 : 0.0;
+  inline element_type LogisticSigmoid(element_type const iVal, element_type const iBandWidth) {
+    if (iBandWidth > 0.0) return 1.0 - 1.0 / (1.0 + std::exp(5.0 * iVal / iBandWidth));  // y= 1-1/(e^(5x/w))
+    else return (iVal < 0.0) ? 0.0 : 1.0;
+  }
+
+  // Smooth step function [-∞ ; +∞] ⇒ [0 ; 1] with exact match and zero gradient at 0=0 and 1=1
+  // https://en.wikipedia.org/wiki/Smoothstep
+  template <std::floating_point element_type>
+  inline element_type SmoothStep(element_type const iVal) {
+    if (iVal > 0.0 && iVal < 1.0) return 3.0 * iVal * iVal - 2.0 * iVal * iVal * iVal;  // y= 3x^2 - 2x^3
+    else return (iVal < 0.5) ? 0.0 : 1.0;
   }
 }  // namespace Functions

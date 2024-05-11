@@ -38,7 +38,6 @@ class WavePropagSimu
     MaxWaveSpeed____,
     MaxAmplitude____,
     BrushRadius_____,
-    BrushBorder_____,
     ______________01,
     SliceDim________,
     SliceRelPosX____,

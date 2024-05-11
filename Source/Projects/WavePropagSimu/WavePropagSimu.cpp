@@ -51,7 +51,6 @@ void WavePropagSimu::SetActiveProject() {
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
     D.UI.push_back(ParamUI("MaxAmplitude____", 1.0));
     D.UI.push_back(ParamUI("BrushRadius_____", 0.05));
-    D.UI.push_back(ParamUI("BrushBorder_____", 0.04));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("SliceDim________", 0));
     D.UI.push_back(ParamUI("SliceRelPosX____", 0.5));
@@ -208,21 +207,21 @@ void WavePropagSimu::KeyPress(const unsigned char key) {
 void WavePropagSimu::MousePress(const unsigned char mouse) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 
   // Set the target voxels
-  const Vec::Vec3 cursor(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
-  for (int x= 0; x < nX; x++) {
-    for (int y= 0; y < nY; y++) {
-      for (int z= 0; z < nZ; z++) {
-        const Vec::Vec3 pos(D.boxMin[0] + (double(x) + 0.5) * D.UI[VoxelSize_______].D(),
-                            D.boxMin[1] + (double(y) + 0.5) * D.UI[VoxelSize_______].D(),
-                            D.boxMin[2] + (double(z) + 0.5) * D.UI[VoxelSize_______].D());
-        const double dist= D.UI[BrushRadius_____].D() - (pos - cursor).norm();
-        const double val= 2.0 * Functions::SmoothHeaviside(dist, D.UI[BrushBorder_____].D()) - 1.0;
-        UNew[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UNew[x][y][z]);
-        UCur[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UCur[x][y][z]);
-        UOld[x][y][z]= std::max(D.UI[MaxAmplitude____].D() * val, UOld[x][y][z]);
+  if (mouse == 1 || mouse == 2) {
+    const Vec::Vec3 cursor(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          const Vec::Vec3 pos(D.boxMin[0] + ((double)x + 0.5) * D.UI[VoxelSize_______].D(),
+                              D.boxMin[1] + ((double)y + 0.5) * D.UI[VoxelSize_______].D(),
+                              D.boxMin[2] + ((double)z + 0.5) * D.UI[VoxelSize_______].D());
+          const double blend= Functions::SmoothStep((D.UI[BrushRadius_____].D() - (pos - cursor).norm()) / (2.0 * D.UI[BrushRadius_____].D()));
+          UNew[x][y][z]= blend * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew[x][y][z];
+          UCur[x][y][z]= blend * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur[x][y][z];
+          UOld[x][y][z]= blend * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld[x][y][z];
+        }
       }
     }
   }
