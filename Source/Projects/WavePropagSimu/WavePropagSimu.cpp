@@ -144,11 +144,12 @@ void WavePropagSimu::Refresh() {
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
   if (D.UI[ScenarioPreset__].I() == 0) {
     if (D.UI[ScenarioFileID__].I() == 0) FileInput::LoadImageBMPFile("./FileInput/Images/DoubleSlit.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 1) FileInput::LoadImageBMPFile("./FileInput/Images/LensConvex.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 2) FileInput::LoadImageBMPFile("./FileInput/Images/LensConcave.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 3) FileInput::LoadImageBMPFile("./FileInput/Images/Bimaterial.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 4) FileInput::LoadImageBMPFile("./FileInput/Images/SimpleSmile.bmp", imageRGBA, false);
-    if (D.UI[ScenarioFileID__].I() == 5) FileInput::LoadImageBMPFile("./FileInput/Images/Logo.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 1) FileInput::LoadImageBMPFile("./FileInput/Images/FiberOptic.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 2) FileInput::LoadImageBMPFile("./FileInput/Images/LensConvex.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 3) FileInput::LoadImageBMPFile("./FileInput/Images/LensConcave.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 4) FileInput::LoadImageBMPFile("./FileInput/Images/Bimaterial.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 5) FileInput::LoadImageBMPFile("./FileInput/Images/SimpleSmile.bmp", imageRGBA, false);
+    if (D.UI[ScenarioFileID__].I() == 6) FileInput::LoadImageBMPFile("./FileInput/Images/Logo.bmp", imageRGBA, false);
   }
   // Initialize scenario values
   for (int x= 0; x < nX; x++) {
