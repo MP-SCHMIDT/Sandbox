@@ -156,9 +156,7 @@ void WavePropagSimu::Refresh() {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
         // Reset values
-        UNew[x][y][z]= 0.0;
-        UCur[x][y][z]= 0.0;
-        UOld[x][y][z]= 0.0;
+        UNew[x][y][z]= UCur[x][y][z]= UOld[x][y][z]= 0.0;
         Speed[x][y][z]= 1.0;
 
         // Scenario from loaded BMP file
@@ -371,31 +369,34 @@ void WavePropagSimu::StepSimulation() {
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
-        // Reset and precompute
+        // Reset and precompute data
         UNew[x][y][z]= 0.0;
         if (Speed[x][y][z] == 0.0) continue;
-        const double gamma= D.UI[MaxWaveSpeed____].D() * Speed[x][y][z] * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D();
+        const double gamma= Speed[x][y][z] * D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D();
 
-        // Update the field values with dicretized wave equation
-        double sum= 0.0;
-        sum+= (x - 1 >= 0) ? (UCur[x - 1][y][z]) : (UCur[x][y][z]);
-        sum+= (y - 1 >= 0) ? (UCur[x][y - 1][z]) : (UCur[x][y][z]);
-        sum+= (z - 1 >= 0) ? (UCur[x][y][z - 1]) : (UCur[x][y][z]);
-        sum+= (x + 1 < nX) ? (UCur[x + 1][y][z]) : (UCur[x][y][z]);
-        sum+= (y + 1 < nY) ? (UCur[x][y + 1][z]) : (UCur[x][y][z]);
-        sum+= (z + 1 < nZ) ? (UCur[x][y][z + 1]) : (UCur[x][y][z]);
-        UNew[x][y][z]= 2.0 * UCur[x][y][z] - UOld[x][y][z] + gamma * gamma * (sum - 6.0 * UCur[x][y][z]);
+        // Compute the 3D field Laplacian with spatial discretization
+        double laplacian= 0.0;
+        laplacian+= (x - 1 >= 0) ? UCur[x - 1][y][z] : UCur[x][y][z];
+        laplacian+= (y - 1 >= 0) ? UCur[x][y - 1][z] : UCur[x][y][z];
+        laplacian+= (z - 1 >= 0) ? UCur[x][y][z - 1] : UCur[x][y][z];
+        laplacian+= (x + 1 < nX) ? UCur[x + 1][y][z] : UCur[x][y][z];
+        laplacian+= (y + 1 < nY) ? UCur[x][y + 1][z] : UCur[x][y][z];
+        laplacian+= (z + 1 < nZ) ? UCur[x][y][z + 1] : UCur[x][y][z];
+        laplacian-= 6.0 * UCur[x][y][z];
+
+        // Update the field values with time discretized wave equation
+        UNew[x][y][z]= 2.0 * UCur[x][y][z] - UOld[x][y][z] + gamma * gamma * laplacian;
 
         // Apply the absorbing boundary conditions with Perfectly Matched Layer on domain faces
         // https://en.wikipedia.org/wiki/Perfectly_matched_layer
         // https://hal.science/hal-01374183
         // https://www.idpoisson.fr/berglund/wave_billiard.c
-        if (nX >= 3 && x == nX - 1) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x - 1][y][z]);
-        else if (nX >= 3 && x == 0) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x + 1][y][z]);
-        if (nY >= 3 && y == nY - 1) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y - 1][z]);
-        else if (nY >= 3 && y == 0) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y + 1][z]);
-        if (nZ >= 3 && z == nZ - 1) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z - 1]);
-        else if (nZ >= 3 && z == 0) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z + 1]);
+        if (nX - 1 == x && nX >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x - 1][y][z]);
+        else if (0 == x && nX >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x + 1][y][z]);
+        if (nY - 1 == y && nY >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y - 1][z]);
+        else if (0 == y && nY >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y + 1][z]);
+        if (nZ - 1 == z && nZ >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z - 1]);
+        else if (0 == z && nZ >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z + 1]);
       }
     }
   }
