@@ -50,7 +50,8 @@ void WavePropagSimu::SetActiveProject() {
     D.UI.push_back(ParamUI("NbSubsteps______", 1));
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
     D.UI.push_back(ParamUI("MaxAmplitude____", 1.0));
-    D.UI.push_back(ParamUI("BrushRadius_____", 0.05));
+    D.UI.push_back(ParamUI("SourceRadius____", 0.05));
+    D.UI.push_back(ParamUI("SourceFrequency_", 1.0));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("SliceDim________", 0));
     D.UI.push_back(ParamUI("SliceRelPosX____", 0.5));
@@ -117,6 +118,7 @@ void WavePropagSimu::Allocate() {
   nY= std::max(D.UI[ResolutionY_____].I(), 1);
   nZ= std::max(D.UI[ResolutionZ_____].I(), 1);
   simTime= 0;
+  sourcePos= {NAN, NAN, NAN};
 
   UNew= Field::AllocField3D(nX, nY, nZ, 0.0);
   UCur= Field::AllocField3D(nX, nY, nZ, 0.0);
@@ -198,7 +200,10 @@ void WavePropagSimu::Refresh() {
 void WavePropagSimu::KeyPress(const unsigned char key) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
+
+  if (key == 'P') {
+    sourcePos= D.mouseProjX;
+  }
 }
 
 
@@ -207,23 +212,8 @@ void WavePropagSimu::MousePress(const unsigned char mouse) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
-  // Set the target voxels
-  if (mouse == 1 || mouse == 2) {
-    const Vec::Vec3 cursor(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
-    for (int x= 0; x < nX; x++) {
-      for (int y= 0; y < nY; y++) {
-        for (int z= 0; z < nZ; z++) {
-          const Vec::Vec3 pos(D.boxMin[0] + ((double)x + 0.5) * D.UI[VoxelSize_______].D(),
-                              D.boxMin[1] + ((double)y + 0.5) * D.UI[VoxelSize_______].D(),
-                              D.boxMin[2] + ((double)z + 0.5) * D.UI[VoxelSize_______].D());
-          const double blend= Functions::SmoothStep((D.UI[BrushRadius_____].D() - (pos - cursor).norm()) / (2.0 * D.UI[BrushRadius_____].D()));
-          UNew[x][y][z]= blend * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew[x][y][z];
-          UCur[x][y][z]= blend * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur[x][y][z];
-          UOld[x][y][z]= blend * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld[x][y][z];
-        }
-      }
-    }
-  }
+  if (mouse == 1 || mouse == 2) sourcePos= D.mouseProjX;
+  if (mouse == 3) sourcePos= {NAN, NAN, NAN};
 }
 
 
@@ -233,7 +223,11 @@ void WavePropagSimu::Animate() {
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
 
+  // Simulate
   for (int k= 0; k < std::max(D.UI[NbSubsteps______].I(), 1); k++) {
+    // Add source
+    AddSource();
+
     // Update field values
     StepSimulation();
 
@@ -397,6 +391,26 @@ void WavePropagSimu::StepSimulation() {
         else if (0 == y && nY >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y + 1][z]);
         if (nZ - 1 == z && nZ >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z - 1]);
         else if (0 == z && nZ >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y][z + 1]);
+      }
+    }
+  }
+}
+
+
+void WavePropagSimu::AddSource() {
+  if (!std::isnan(sourcePos[0])) {
+    const Vec::Vec3 source(sourcePos[0], sourcePos[1], sourcePos[2]);
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          const Vec::Vec3 pos(D.boxMin[0] + ((double)x + 0.5) * D.UI[VoxelSize_______].D(),
+                              D.boxMin[1] + ((double)y + 0.5) * D.UI[VoxelSize_______].D(),
+                              D.boxMin[2] + ((double)z + 0.5) * D.UI[VoxelSize_______].D());
+          const double blend= Functions::SmoothStep((D.UI[SourceRadius____].D() - (pos - source).norm()) / (2.0 * D.UI[SourceRadius____].D()));
+          UNew[x][y][z]= blend * std::cos(D.UI[SourceFrequency_].D() * simTime * 3.1415) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew[x][y][z];
+          UCur[x][y][z]= blend * std::cos(D.UI[SourceFrequency_].D() * simTime * 3.1415) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur[x][y][z];
+          UOld[x][y][z]= blend * std::cos(D.UI[SourceFrequency_].D() * simTime * 3.1415) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld[x][y][z];
+        }
       }
     }
   }

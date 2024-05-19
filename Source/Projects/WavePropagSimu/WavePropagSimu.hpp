@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard lib
+#include <array>
 #include <vector>
 
 // Algo headers
@@ -37,7 +38,8 @@ class WavePropagSimu
     NbSubsteps______,
     MaxWaveSpeed____,
     MaxAmplitude____,
-    BrushRadius_____,
+    SourceRadius____,
+    SourceFrequency_,
     ______________01,
     SliceDim________,
     SliceRelPosX____,
@@ -66,6 +68,7 @@ class WavePropagSimu
   int nY;
   int nZ;
   double simTime;
+  std::array<double, 3> sourcePos;
 
   std::vector<std::vector<std::vector<double>>> UNew;   // Field value at new time
   std::vector<std::vector<std::vector<double>>> UCur;   // Field value at current time
@@ -73,6 +76,7 @@ class WavePropagSimu
   std::vector<std::vector<std::vector<double>>> Speed;  // Wave propagation speed
 
   void StepSimulation();
+  void AddSource();
 
   public:
   bool isActivProj;
