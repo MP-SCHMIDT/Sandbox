@@ -323,7 +323,6 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.isRefreshed= false;
 #endif
-  project_Refresh();
 }
 
 
@@ -371,23 +370,27 @@ void loadConfigProject() {
   FILE *file= nullptr;
   file= fopen("ConfigProject.txt", "r");
   if (file != nullptr) {
-    int nbParam= 0;
-    const int oldProjectID= currentProjectID;
     fscanf(file, "currentProjectID %d\n", &currentProjectID);
-    if (oldProjectID == currentProjectID) {
-      fscanf(file, "nbParam %d\n", &nbParam);
-      if (nbParam == (int)D.UI.size()) {
-        for (int idxParam= 0; idxParam < nbParam; idxParam++) {
-          double val= 0.0;
-          char name[100];
-          if (fscanf(file, "%s %lf\n", name, &val) == 2) {
-            D.UI[idxParam].Set(val);
-          }
+    project_ForceHardInit();
+    int nbParam= 0;
+    fscanf(file, "nbParam %d\n", &nbParam);
+    if (nbParam == (int)D.UI.size()) {
+      for (int idxParam= 0; idxParam < nbParam; idxParam++) {
+        double val= 0.0;
+        char name[100];
+        if (fscanf(file, "%s %lf\n", name, &val) == 2 && D.UI[idxParam].name == std::string(name)) {
+          D.UI[idxParam].Set(val);
+        }
+        else {
+          printf("Invalid parameter count in loaded config file. Using default parameters.\n");
+          D.UI.clear();
+          project_ForceHardInit();
+          break;
         }
       }
-      else {
-        printf("Invalid number of parameters in loaded config file. Using default parameters.\n");
-      }
+    }
+    else {
+      printf("Invalid parameter names in loaded config file. Using default parameters.\n");
     }
     fclose(file);
   }
@@ -566,7 +569,7 @@ void callback_display() {
       glColor3f(0.8f, 0.4f, 0.4f);
     else {
       if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-      else glColor3f(0.2f, 0.2f, 0.2f);
+      else glColor3f(0.4f, 0.4f, 0.4f);
     }
     char str[50];
     sprintf(str, "%s %+020.9f", D.UI[k].name.c_str(), D.UI[k].D());  // Format must match paramValNbChar settings
@@ -770,11 +773,10 @@ void callback_display() {
     for (std::string text : D.Status) {
       if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
       else glColor3f(0.2f, 0.2f, 0.2f);
-      // draw_text(0, cumulLen * charWidth, text.c_str());
       char str[50];
       sprintf(str, "%s", text.c_str());
       draw_text(winMarginL + cumulLen * charWidth, winMarginB, str);
-      cumulLen+= text.length() + 1;
+      cumulLen+= text.length() + 3;
     }
     glLineWidth(1.0f);
   }
@@ -846,9 +848,10 @@ void callback_keyboard(unsigned char key, int x, int y) {
   }
 
   // Compute refresh
-  project_Refresh();
-
-  callback_display();
+  if (key != ' ' && key != '.') {
+    project_Refresh();
+    callback_display();
+  }
 }
 
 
@@ -1177,8 +1180,6 @@ int main(int argc, char *argv[]) {
 
   // Compute refresh
   currentProjectID= 0;
-  loadConfigProject();
-  project_ForceHardInit();
   loadConfigProject();
   project_Refresh();
 

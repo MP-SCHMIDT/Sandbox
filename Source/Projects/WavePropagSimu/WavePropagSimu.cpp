@@ -3,6 +3,8 @@
 
 // Standard lib
 #include <array>
+#include <format>
+#include <numbers>
 #include <vector>
 
 // GLUT lib
@@ -41,11 +43,11 @@ void WavePropagSimu::SetActiveProject() {
     D.UI.push_back(ParamUI("ScenarioPreset__", 0));
     D.UI.push_back(ParamUI("ScenarioFileID__", 0));
     D.UI.push_back(ParamUI("ResolutionX_____", 1));
-    D.UI.push_back(ParamUI("ResolutionY_____", 100));
-    D.UI.push_back(ParamUI("ResolutionZ_____", 100));
-    D.UI.push_back(ParamUI("VoxelSize_______", 0.01));
+    D.UI.push_back(ParamUI("ResolutionY_____", 200));
+    D.UI.push_back(ParamUI("ResolutionZ_____", 200));
+    D.UI.push_back(ParamUI("VoxelSize_______", 0.005));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("TimeStep________", 0.05));
+    D.UI.push_back(ParamUI("TimeStep________", 0.02));
     D.UI.push_back(ParamUI("Parallelize_____", 0));
     D.UI.push_back(ParamUI("NbSubsteps______", 1));
     D.UI.push_back(ParamUI("MaxWaveSpeed____", 0.05));
@@ -118,7 +120,6 @@ void WavePropagSimu::Allocate() {
   nY= std::max(D.UI[ResolutionY_____].I(), 1);
   nZ= std::max(D.UI[ResolutionZ_____].I(), 1);
   simTime= 0;
-  sourcePos= {NAN, NAN, NAN};
 
   UNew= Field::AllocField3D(nX, nY, nZ, 0.0);
   UCur= Field::AllocField3D(nX, nY, nZ, 0.0);
@@ -181,14 +182,21 @@ void WavePropagSimu::Refresh() {
 
         // Simple sphere domain
         if (D.UI[ScenarioPreset__].I() == 2) {
-          const int radius= std::max(nX, std::max(nY, nZ)) / 2;
+          const int radius= std::min((nX > 1) ? nX : INT_MAX, std::min((nY > 1) ? nY : INT_MAX, (nZ > 1) ? nZ : INT_MAX)) / 2;
           if (std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed[x][y][z]= 0.0;
         }
 
         // Simple ellipse domain
         if (D.UI[ScenarioPreset__].I() == 3) {
-          const int radius= std::max(nX, std::max(nY, nZ)) / 2;
+          const int radius= std::min((nX > 1) ? nX : INT_MAX, std::min((nY > 1) ? nY : INT_MAX, (nZ > 1) ? nZ : INT_MAX)) / 2;
           if (2.0 * std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + 2.0 * std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed[x][y][z]= 0.0;
+        }
+
+        // Convex lens domain as the intersection of two spheres
+        if (D.UI[ScenarioPreset__].I() == 4) {
+          const int radius= std::min((nX > 1) ? nX : INT_MAX, std::min((nY > 1) ? nY : INT_MAX, (nZ > 1) ? nZ : INT_MAX)) / 2;
+          if (std::pow(x - nX / 2, 2) + std::pow(y - 1 * nY / 4, 2) + std::pow(z - nZ / 2, 2) < std::pow(radius - 2, 2) &&
+              std::pow(x - nX / 2, 2) + std::pow(y - 3 * nY / 4, 2) + std::pow(z - nZ / 2, 2) < std::pow(radius - 2, 2)) Speed[x][y][z]= 0.5;
         }
       }
     }
@@ -201,9 +209,7 @@ void WavePropagSimu::KeyPress(const unsigned char key) {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
-  if (key == 'P') {
-    sourcePos= D.mouseProjX;
-  }
+  if (key == 'P') sourcePos= D.mouseProjX;
 }
 
 
@@ -251,9 +257,10 @@ void WavePropagSimu::Animate() {
   }
 
   // Write the status
-  if ((int)D.Status.size() != 2) D.Status.resize(2);
-  D.Status[0]= std::string{"SimTime: "} + std::to_string(simTime);
-  D.Status[1]= std::string{"CFL: "} + std::to_string(D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D());
+  D.Status.clear();
+  D.Status.resize(2);
+  D.Status[0]= std::format("SimTime:{:<6.6}", simTime);
+  D.Status[1]= std::format("CFL:{:<6.6}", D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D());
 }
 
 
@@ -278,7 +285,7 @@ void WavePropagSimu::Draw() {
           // Color by wave value
           if (D.displayMode1) {
             float r= 0.0, g= 0.0, b= 0.0;
-            if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(0.5 + UNew[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
+            if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5 + UNew[x][y][z] * D.UI[ColorFactor_____].D(), r, g, b);
             if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew[x][y][z]) * D.UI[ColorFactor_____].D(), r, g, b);
             Color[x][y][z]= {r, g, b, (float)std::abs(UNew[x][y][z])};
           }
@@ -289,8 +296,8 @@ void WavePropagSimu::Draw() {
             Colormap::RatioToGrayscale(Speed[x][y][z], r, g, b);
             if (D.displayMode1) Color[x][y][z]= {0.6f * Color[x][y][z][0] + 0.4f * r,
                                                  0.6f * Color[x][y][z][1] + 0.4f * g,
-                                                 0.6f * Color[x][y][z][2] + 0.4f * b, Color[x][y][z][3]};
-            else Color[x][y][z]= {r, g, b, Color[x][y][z][2]};
+                                                 0.6f * Color[x][y][z][2] + 0.4f * b, Color[x][y][z][3] + 0.1f * (1.0f - (float)Speed[x][y][z])};
+            else Color[x][y][z]= {r, g, b, 0.1f * (1.0f - (float)Speed[x][y][z])};
           }
 
           // Apply transparency settings
@@ -359,6 +366,8 @@ void WavePropagSimu::Draw() {
 void WavePropagSimu::StepSimulation() {
   UOld= UCur;
   UCur= UNew;
+  // Explicit numerical integration of the wave equation
+  // ∂²u/∂t² = c² ∂²u/∂x²
 #pragma omp parallel for collapse(3) if (D.UI[Parallelize_____].B())
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
@@ -369,6 +378,7 @@ void WavePropagSimu::StepSimulation() {
         const double gamma= Speed[x][y][z] * D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D();
 
         // Compute the 3D field Laplacian with spatial discretization
+        // https://en.wikipedia.org/wiki/Discrete_Laplace_operator
         double laplacian= 0.0;
         laplacian+= (x - 1 >= 0) ? UCur[x - 1][y][z] : UCur[x][y][z];
         laplacian+= (y - 1 >= 0) ? UCur[x][y - 1][z] : UCur[x][y][z];
@@ -379,12 +389,15 @@ void WavePropagSimu::StepSimulation() {
         laplacian-= 6.0 * UCur[x][y][z];
 
         // Update the field values with time discretized wave equation
+        // https://en.wikipedia.org/wiki/Wave_equation
+        // https://vitalitylearning.medium.com/solving-the-1d-wave-equation-numerical-discretization-190a92c917bc
+        // https://www.youtube.com/watch?v=pN-gi_omIVE
+        // https://www.idpoisson.fr/berglund/wave_billiard.c
         UNew[x][y][z]= 2.0 * UCur[x][y][z] - UOld[x][y][z] + gamma * gamma * laplacian;
 
         // Apply the absorbing boundary conditions with Perfectly Matched Layer on domain faces
         // https://en.wikipedia.org/wiki/Perfectly_matched_layer
         // https://hal.science/hal-01374183
-        // https://www.idpoisson.fr/berglund/wave_billiard.c
         if (nX - 1 == x && nX >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x - 1][y][z]);
         else if (0 == x && nX >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x + 1][y][z]);
         if (nY - 1 == y && nY >= 3) UNew[x][y][z]= UCur[x][y][z] - gamma * (UCur[x][y][z] - UCur[x][y - 1][z]);
@@ -407,9 +420,10 @@ void WavePropagSimu::AddSource() {
                               D.boxMin[1] + ((double)y + 0.5) * D.UI[VoxelSize_______].D(),
                               D.boxMin[2] + ((double)z + 0.5) * D.UI[VoxelSize_______].D());
           const double blend= Functions::SmoothStep((D.UI[SourceRadius____].D() - (pos - source).norm()) / (2.0 * D.UI[SourceRadius____].D()));
-          UNew[x][y][z]= blend * std::cos(D.UI[SourceFrequency_].D() * simTime * 3.1415) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew[x][y][z];
-          UCur[x][y][z]= blend * std::cos(D.UI[SourceFrequency_].D() * simTime * 3.1415) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur[x][y][z];
-          UOld[x][y][z]= blend * std::cos(D.UI[SourceFrequency_].D() * simTime * 3.1415) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld[x][y][z];
+          const double omega= D.UI[SourceFrequency_].D() * simTime * std::numbers::pi;
+          UNew[x][y][z]= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew[x][y][z];
+          UCur[x][y][z]= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur[x][y][z];
+          UOld[x][y][z]= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld[x][y][z];
         }
       }
     }

@@ -38,7 +38,7 @@ Sandbox environment with various personal experimentation and a subset of resear
 **Source/Algo/** contains algorithms for various tasks organized in sub folders
 
 ## Minimal build env on windows
-If C++ compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0posix-17.0.5-11.0.1-ucrt-r3/winlibs-x86_64-posix-seh-gcc-13.2.0-mingw-w64ucrt-11.0.1-r3.7z) and extract at root of C: drive or another appropriate location.
+If C++ compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/14.1.0posix-18.1.5-11.0.1-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.1.0-mingw-w64ucrt-11.0.1-r1.zip) and extract at root of C: drive or another appropriate location.
 Doc available at  https://winlibs.com/
 
 If bash commands are not already present, install MinGW (https://sourceforge.net/projects/mingw/) at root of C: drive or another appropriate location. Only check "msys-base" package in MinGW Installation Manager to just get bash commands in bin folder.

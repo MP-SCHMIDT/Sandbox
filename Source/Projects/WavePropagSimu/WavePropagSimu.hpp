@@ -14,12 +14,6 @@
 // - Reflection BC with Dirichlet
 // - Absorption BC with Perfectly Matched Layer
 // - Spatially varying wave speed
-// https://vitalitylearning.medium.com/solving-the-1d-wave-equation-numerical-discretization-190a92c917bc
-// https://en.wikipedia.org/wiki/Wave_equation
-// https://en.wikipedia.org/wiki/Perfectly_matched_layer
-// https://hal.science/hal-01374183
-// https://www.idpoisson.fr/berglund/wave_billiard.c
-// https://www.youtube.com/watch?v=pN-gi_omIVE
 class WavePropagSimu
 {
   private:

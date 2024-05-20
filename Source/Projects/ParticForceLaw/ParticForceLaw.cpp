@@ -3,6 +3,7 @@
 
 // Standard lib
 #include <cmath>
+#include <format>
 #include <numbers>
 #include <vector>
 
@@ -406,11 +407,12 @@ void ParticForceLaw::Draw() {
   }
 
   // Write the status
-  if ((int)D.Status.size() != 4) D.Status.resize(4);
-  D.Status[0]= std::string{" NbBuckets="} + std::to_string(nX * nY * nZ);
-  D.Status[1]= std::string{" NbParticles="} + std::to_string((int)Pos.size());
-  D.Status[2]= std::string{" SimTime="} + std::to_string(SimTime);
-  D.Status[3]= (BucketOverflown) ? std::string{" BUCKET OVERFLOW "} : std::string{""};
+  D.Status.clear();
+  D.Status.resize(4);
+  D.Status[0]= std::format("NbBuckets:{}", nX * nY * nZ);
+  D.Status[1]= std::format("NbParticles:{}", (int)Pos.size());
+  D.Status[2]= std::format("SimTime:{:<6.6}ms", SimTime);
+  if (BucketOverflown) D.Status[3]= std::string{"BUCKET OVERFLOW"};
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("DrawT %f\n", Timer::PopTimer());
 }
@@ -1080,11 +1082,11 @@ void ParticForceLaw::StepSimulation() {
     if (!useForceBC && BCPos[k] != 0) {            // Check BC
       Pos[k]= Ref[k];                              // Overwrite position
       Vel[k]= Vec::Vec3<float>{0.0f, 0.0f, 0.0f};  // Reset velocity
-    }                                              //
-    else if (use2D > 0 && use2D <= 3) {            // Check 2D mode
-      Pos[k][use2D - 1]= Ref[k][use2D - 1];        // Constrain to 2D
-      Vel[k][use2D - 1]= 0.0f;                     // Reset velocity
-    }                                              //
+    }  //
+    else if (use2D > 0 && use2D <= 3) {      // Check 2D mode
+      Pos[k][use2D - 1]= Ref[k][use2D - 1];  // Constrain to 2D
+      Vel[k][use2D - 1]= 0.0f;               // Reset velocity
+    }  //
   }
 
   // Advance time

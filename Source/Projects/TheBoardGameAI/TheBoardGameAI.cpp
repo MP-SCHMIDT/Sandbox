@@ -3,6 +3,7 @@
 
 // Standard lib
 #include <cmath>
+#include <format>
 
 // GLUT lib
 #include "freeglut/include/GL/freeglut.h"
@@ -529,10 +530,10 @@ void TheBoardGameAI::PlotData() {
   // Print turn and win state
   D.Status.clear();
   D.Status.resize(5);
-  D.Status[0]= std::string{"Turn:"} + std::to_string(idxTurn);
-  D.Status[1]= std::string{"ThinkTime:"} + std::to_string(thinkTime) + std::string{"ms"};
-  D.Status[2]= std::string{"BoardCount:"} + std::to_string(nbTreeBoards);
-  D.Status[3]= std::string{"Player:"} + (IsRedTurn(0) ? std::string{"Red"} : std::string{"Blu"});
-  if (RootBoard->NashScore == +INT_MAX) D.Status[4]= std::string{"RedWin:"} + std::to_string(RootBoard->NashNbSteps);
-  if (RootBoard->NashScore == -INT_MAX) D.Status[4]= std::string{"BluWin:"} + std::to_string(RootBoard->NashNbSteps);
+  D.Status[0]= std::format("Turn:{}", idxTurn);
+  D.Status[1]= std::format("ThinkTime:{:<6.3}ms", thinkTime);
+  D.Status[2]= std::format("BoardCount:{}", nbTreeBoards);
+  D.Status[3]= std::format("Player:{}", (IsRedTurn(0) ? 'R' : 'B'));
+  if (RootBoard->NashScore == +INT_MAX) D.Status[4]= std::format("RedWin:{}", RootBoard->NashNbSteps);
+  if (RootBoard->NashScore == -INT_MAX) D.Status[4]= std::format("BluWin:{}", RootBoard->NashNbSteps);
 }
