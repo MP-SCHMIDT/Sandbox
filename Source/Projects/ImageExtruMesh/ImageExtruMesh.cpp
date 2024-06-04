@@ -141,10 +141,7 @@ void ImageExtruMesh::Refresh() {
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 1; z < nZ; z++) {
-        if (D.UI[HeightMapMode___].B())
-          ScalarField[x][y][z]= ScalarField[x][y][z - 1] - D.UI[HeightMapSlope__].D();
-        else
-          ScalarField[x][y][z]= ScalarField[x][y][z - 1];
+        ScalarField[x][y][z]= ScalarField[x][y][z - 1] - std::max(D.UI[HeightMapSlope__].D(), 0.0);
       }
     }
   }

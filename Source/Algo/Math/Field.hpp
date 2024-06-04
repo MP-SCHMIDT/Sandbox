@@ -6,25 +6,29 @@
 
 namespace Field {
 
-  // Allocation of fields
+  // Allocation of field with copy constructor
   template <typename element_type>
-  inline std::vector<std::vector<element_type>> AllocField2D(int const iNbA, int const iNbB, element_type const& val) {
-    return std::vector<std::vector<element_type>>(iNbA, std::vector<element_type>(iNbB, val));
+  inline std::vector<std::vector<element_type>> AllocField2D(int const iNbA, int const iNbB, element_type const& iVal) {
+    return std::vector<std::vector<element_type>>(iNbA, std::vector<element_type>(iNbB, iVal));
   }
+  // Allocation of field with copy constructor
   template <typename element_type>
-  inline std::vector<std::vector<std::vector<element_type>>> AllocField3D(int const iNbA, int const iNbB, int const iNbC, element_type const& val) {
-    return std::vector<std::vector<std::vector<element_type>>>(iNbA, std::vector<std::vector<element_type>>(iNbB, std::vector<element_type>(iNbC, val)));
+  inline std::vector<std::vector<std::vector<element_type>>> AllocField3D(int const iNbA, int const iNbB, int const iNbC, element_type const& iVal) {
+    return std::vector<std::vector<std::vector<element_type>>>(iNbA, std::vector<std::vector<element_type>>(iNbB, std::vector<element_type>(iNbC, iVal)));
   }
+  // Allocation of field with copy constructor
   template <typename element_type>
-  inline std::vector<std::vector<std::vector<std::vector<element_type>>>> AllocField4D(int const iNbA, int const iNbB, int const iNbC, int const iNbD, element_type const& val) {
-    return std::vector<std::vector<std::vector<std::vector<element_type>>>>(iNbA, std::vector<std::vector<std::vector<element_type>>>(iNbB, std::vector<std::vector<element_type>>(iNbC, std::vector<element_type>(iNbD, val))));
+  inline std::vector<std::vector<std::vector<std::vector<element_type>>>> AllocField4D(int const iNbA, int const iNbB, int const iNbC, int const iNbD, element_type const& iVal) {
+    return std::vector<std::vector<std::vector<std::vector<element_type>>>>(iNbA, std::vector<std::vector<std::vector<element_type>>>(iNbB, std::vector<std::vector<element_type>>(iNbC, std::vector<element_type>(iNbD, iVal))));
   }
+  // Allocation of field with copy constructor
   template <typename element_type>
-  inline std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> AllocField5D(int const iNbA, int const iNbB, int const iNbC, int const iNbD, int const iNbE, element_type const& val) {
-    return std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>>(iNbA, std::vector<std::vector<std::vector<std::vector<element_type>>>>(iNbB, std::vector<std::vector<std::vector<element_type>>>(iNbC, std::vector<std::vector<element_type>>(iNbD, std::vector<element_type>(iNbE, val)))));
+  inline std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> AllocField5D(int const iNbA, int const iNbB, int const iNbC, int const iNbD, int const iNbE, element_type const& iVal) {
+    return std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>>(iNbA, std::vector<std::vector<std::vector<std::vector<element_type>>>>(iNbB, std::vector<std::vector<std::vector<element_type>>>(iNbC, std::vector<std::vector<element_type>>(iNbD, std::vector<element_type>(iNbE, iVal)))));
   }
 
-  // Get dimensions of fields
+
+  // Get dimensions of field
   template <typename element_type>
   inline void GetFieldDimensions(std::vector<std::vector<element_type>> const& iField, int& oNbA, int& oNbB) {
     oNbA= oNbB= 0;
@@ -33,6 +37,7 @@ namespace Field {
       oNbB= int(iField[0].size());
     }
   }
+  // Get dimensions of field
   template <typename element_type>
   inline void GetFieldDimensions(std::vector<std::vector<std::vector<element_type>>> const& iField, int& oNbA, int& oNbB, int& oNbC) {
     oNbA= oNbB= oNbC= 0;
@@ -44,6 +49,7 @@ namespace Field {
       }
     }
   }
+  // Get dimensions of field
   template <typename element_type>
   inline void GetFieldDimensions(std::vector<std::vector<std::vector<std::vector<element_type>>>> const& iField, int& oNbA, int& oNbB, int& oNbC, int& oNbD) {
     oNbA= oNbB= oNbC= oNbD= 0;
@@ -58,6 +64,7 @@ namespace Field {
       }
     }
   }
+  // Get dimensions of field
   template <typename element_type>
   inline void GetFieldDimensions(std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> const& iField, int& oNbA, int& oNbB, int& oNbC, int& oNbD, int& oNbE) {
     oNbA= oNbB= oNbC= oNbD= oNbE= 0;
@@ -76,42 +83,42 @@ namespace Field {
     }
   }
 
-  // Check if two fields share the same dimensions
+
+  // Check if a field has the given dimensions
   template <typename element_type>
-  inline bool CheckSameDimensions(std::vector<std::vector<element_type>> const& iFieldA,
-                                  std::vector<std::vector<element_type>> const& iFieldB) {
-    if (iFieldA.size() == iFieldB.size()) {
+  inline bool CheckDim(std::vector<std::vector<element_type>> const& iFieldA, int const iNbA, int const iNbB) {
+    if ((int)iFieldA.size() == iNbA) {
       if (iFieldA.empty()) return true;
-      if (iFieldA[0].size() == iFieldB[0].size()) {
+      if ((int)iFieldA[0].size() == iNbB) {
         return true;
       }
     }
     return false;
   }
+  // Check if a field has the given dimensions
   template <typename element_type>
-  inline bool CheckSameDimensions(std::vector<std::vector<std::vector<element_type>>> const& iFieldA,
-                                  std::vector<std::vector<std::vector<element_type>>> const& iFieldB) {
-    if (iFieldA.size() == iFieldB.size()) {
+  inline bool CheckDim(std::vector<std::vector<std::vector<element_type>>> const& iFieldA, int const iNbA, int const iNbB, int const iNbC) {
+    if ((int)iFieldA.size() == iNbA) {
       if (iFieldA.empty()) return true;
-      if (iFieldA[0].size() == iFieldB[0].size()) {
+      if ((int)iFieldA[0].size() == iNbB) {
         if (iFieldA[0].empty()) return true;
-        if (iFieldA[0][0].size() == iFieldB[0][0].size()) {
+        if ((int)iFieldA[0][0].size() == iNbC) {
           return true;
         }
       }
     }
     return false;
   }
+  // Check if a field has the given dimensions
   template <typename element_type>
-  inline bool CheckSameDimensions(std::vector<std::vector<std::vector<std::vector<element_type>>>> const& iFieldA,
-                                  std::vector<std::vector<std::vector<std::vector<element_type>>>> const& iFieldB) {
-    if (iFieldA.size() == iFieldB.size()) {
+  inline bool CheckDim(std::vector<std::vector<std::vector<std::vector<element_type>>>> const& iFieldA, int const iNbA, int const iNbB, int const iNbC, int const iNbD) {
+    if ((int)iFieldA.size() == iNbA) {
       if (iFieldA.empty()) return true;
-      if (iFieldA[0].size() == iFieldB[0].size()) {
+      if ((int)iFieldA[0].size() == iNbB) {
         if (iFieldA[0].empty()) return true;
-        if (iFieldA[0][0].size() == iFieldB[0][0].size()) {
+        if ((int)iFieldA[0][0].size() == iNbC) {
           if (iFieldA[0][0].empty()) return true;
-          if (iFieldA[0][0][0].size() == iFieldB[0][0][0].size()) {
+          if ((int)iFieldA[0][0][0].size() == iNbD) {
             return true;
           }
         }
@@ -119,18 +126,18 @@ namespace Field {
     }
     return false;
   }
+  // Check if a field has the given dimensions
   template <typename element_type>
-  inline bool CheckSameDimensions(std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> const& iFieldA,
-                                  std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> const& iFieldB) {
-    if (iFieldA.size() == iFieldB.size()) {
+  inline bool CheckDim(std::vector<std::vector<std::vector<std::vector<std::vector<element_type>>>>> const& iFieldA, int const iNbA, int const iNbB, int const iNbC, int const iNbD, int const iNbE) {
+    if ((int)iFieldA.size() == iNbA) {
       if (iFieldA.empty()) return true;
-      if (iFieldA[0].size() == iFieldB[0].size()) {
+      if ((int)iFieldA[0].size() == iNbB) {
         if (iFieldA[0].empty()) return true;
-        if (iFieldA[0][0].size() == iFieldB[0][0].size()) {
+        if ((int)iFieldA[0][0].size() == iNbC) {
           if (iFieldA[0][0].empty()) return true;
-          if (iFieldA[0][0][0].size() == iFieldB[0][0][0].size()) {
+          if ((int)iFieldA[0][0][0].size() == iNbD) {
             if (iFieldA[0][0][0].empty()) return true;
-            if (iFieldA[0][0][0][0].size() == iFieldB[0][0][0][0].size()) {
+            if ((int)iFieldA[0][0][0][0].size() == iNbE) {
               return true;
             }
           }

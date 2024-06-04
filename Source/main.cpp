@@ -48,7 +48,6 @@ static int winPosW, winPosH;
 static int currentProjectID;
 static bool isDarkMode;
 static bool isSmoothDraw;
-static bool isCursorDraw;
 static bool isMiddleMousePressed;
 Camera *cam;
 
@@ -523,33 +522,6 @@ void callback_display() {
     glPopMatrix();
   }
 
-  // Draw the projected mouse cursor
-  if (isCursorDraw) {
-    const double cursorSize= 0.05 * std::sqrt((D.boxMax[0] - D.boxMin[0]) * (D.boxMax[0] - D.boxMin[0]) +
-                                              (D.boxMax[1] - D.boxMin[1]) * (D.boxMax[1] - D.boxMin[1]) +
-                                              (D.boxMax[2] - D.boxMin[2]) * (D.boxMax[2] - D.boxMin[2]));
-
-    glEnable(GL_LIGHTING);
-    glColor3f(0.7f, 0.2f, 0.2f);
-    glPushMatrix();
-    glTranslatef(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
-    glutWireCube(cursorSize);
-    glPopMatrix();
-
-    glColor3f(0.2f, 0.7f, 0.2f);
-    glPushMatrix();
-    glTranslatef(D.mouseProjY[0], D.mouseProjY[1], D.mouseProjY[2]);
-    glutWireCube(cursorSize);
-    glPopMatrix();
-
-    glColor3f(0.2f, 0.2f, 0.7f);
-    glPushMatrix();
-    glTranslatef(D.mouseProjZ[0], D.mouseProjZ[1], D.mouseProjZ[2]);
-    glutWireCube(cursorSize);
-    glPopMatrix();
-    glDisable(GL_LIGHTING);
-  }
-
   // Draw stuff in the scene
   project_Draw();
 
@@ -619,8 +591,11 @@ void callback_display() {
       strcpy(str, D.Plot[k0].name.c_str());
       draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW,
                 winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
+      sprintf(str, "N:%d", int(D.Plot[k0].val.size()));
+      draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW - 3 * textBoxW / 2,
+                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       if (D.Plot[k0].isLog) {
-        strcpy(str, std::string("log").c_str());
+        sprintf(str, "log");
         draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW - textBoxW / 2,
                   winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       }
@@ -953,8 +928,10 @@ void callback_mouse_click(int button, int state, int x, int y) {
 void callback_mouse_motion(int x, int y) {
   cam->setCurrentMousePos(float(x), float(y));
 
-  if (isCursorDraw || isMiddleMousePressed) ComputeMouseIn3D(x, y);
-  if (isMiddleMousePressed) project_MousePress(2);
+  if (isMiddleMousePressed) {
+    ComputeMouseIn3D(x, y);
+    project_MousePress(2);
+  }
 
   glutPostRedisplay();
 }
@@ -973,9 +950,7 @@ void callback_passive_mouse_motion(int x, int y) {
     }
   }
 
-  if (isCursorDraw) ComputeMouseIn3D(x, y);
-
-  if (isCursorDraw || D.idxParamUI != prevParamIdx || D.idxCursorUI != prevCursorIdx)
+  if (D.idxParamUI != prevParamIdx || D.idxCursorUI != prevCursorIdx)
     glutPostRedisplay();
 }
 
@@ -1019,10 +994,6 @@ void callback_menu(int num) {
       glDisable(GL_LINE_SMOOTH);
     }
   }
-  // Toggle cursor drawing
-  if (num == -12) {
-    isCursorDraw= !isCursorDraw;
-  }
   // Save sandbox settings
   if (num == -20) {
     winPosW= glutGet((GLenum)GLUT_WINDOW_X);
@@ -1052,7 +1023,6 @@ void init_menu() {
   glutAddMenuEntry("View Z-", -6);
   glutAddMenuEntry("Dark mode", -10);
   glutAddMenuEntry("Smooth draw", -11);
-  glutAddMenuEntry("Cursor draw", -12);
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
@@ -1092,7 +1062,6 @@ void init_menu() {
 void init_GL() {
   isDarkMode= true;
   isSmoothDraw= false;
-  isCursorDraw= false;
   isMiddleMousePressed= false;
 
   // Set background color

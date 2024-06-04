@@ -24,7 +24,7 @@ class ParamUI
     val= iVal;
   }
 
-  bool B() { return val > 0.0; }
+  bool B() { return val >= 0.5; }
   int I() { return (int)((val < 0.0) ? (val - 0.5) : (val + 0.5)); }
   float F() { return (float)val; }
   double D() { return val; }
