@@ -6,7 +6,9 @@ Sandbox environment with various personal experimentation and a subset of resear
 ![Screenshot](Docs/Anim_MassSpringSystem.gif)
 ![Screenshot](Docs/Anim_FraclElevMapZoom.gif)
 ![Screenshot](Docs/Anim_FractCurvDev.gif)
-![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)\
+![Screenshot](Docs/Anim_WaveEquationDoubleSlit.gif)
+![Screenshot](Docs/Anim_WaveEquation3DLens.gif)
+![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)
 ![Screenshot](Docs/Anim_SandiaCrash.gif)
 ![Screenshot](Docs/Anim_StringArtOptim.gif)
 ![Screenshot](Docs/Anim_ParticMultimat.gif)
