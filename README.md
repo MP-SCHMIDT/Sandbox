@@ -1,5 +1,5 @@
 # Sandbox
-Sandbox environment with various personal experimentation and a subset of research projects implemented from scratch (physics simulations, fractals, swarm intelligence, precedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D scene display. The repo is standalone and should not require installing any external library.
+Sandbox environment with various personal experimentation and a subset of research projects implemented from scratch (physics simulations, fractals, swarm intelligence, precedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization, game tree search...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D scene display. The repo is standalone and should not require installing any external library.
 
 ![Screenshot](Docs/Anim_TopOptMultiLC.gif)
 ![Screenshot](Docs/Anim_CFD.gif)
@@ -12,6 +12,7 @@ Sandbox environment with various personal experimentation and a subset of resear
 ![Screenshot](Docs/Anim_WaveEquation3DLens.gif)
 ![Screenshot](Docs/Anim_SandiaCrash.gif)
 ![Screenshot](Docs/Anim_StringArtOptim.gif)
+![Screenshot](Docs/Anim_HexBoardGameAI.gif)
 ![Screenshot](Docs/Anim_ParticMultimat.gif)
 ![Screenshot](Docs/Anim_FieldOrientedLattice.gif)
 ![Screenshot](Docs/Anim_ParticleLifeOrga.gif)

@@ -437,8 +437,8 @@ void TheBoardGameAI::Draw() {
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
         if (RootBoard->Pawns[w][h] == 0) continue;
-        if (RootBoard->Pawns[w][h] > 0) glColor3f(0.8f, 0.5f, 0.5f);
-        if (RootBoard->Pawns[w][h] < 0) glColor3f(0.5f, 0.5f, 0.8f);
+        if (RootBoard->Pawns[w][h] > 0) glColor3f(1.0f, 0.5f, 0.5f);
+        if (RootBoard->Pawns[w][h] < 0) glColor3f(0.5f, 0.5f, 1.0f);
         glPushMatrix();
         glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
         glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
