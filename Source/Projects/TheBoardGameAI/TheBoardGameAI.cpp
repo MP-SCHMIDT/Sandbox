@@ -531,7 +531,7 @@ void TheBoardGameAI::PlotData() {
   D.Status.clear();
   D.Status.resize(5);
   D.Status[0]= std::format("Turn:{}", idxTurn);
-  D.Status[1]= std::format("ThinkTime:{:<6.3}ms", thinkTime);
+  D.Status[1]= std::format("ThinkTime:{:6.3f}ms", thinkTime);
   D.Status[2]= std::format("BoardCount:{}", nbTreeBoards);
   D.Status[3]= std::format("Player:{}", (IsRedTurn(0) ? 'R' : 'B'));
   if (RootBoard->NashScore == +INT_MAX) D.Status[4]= std::format("RedWin:{}", RootBoard->NashNbSteps);

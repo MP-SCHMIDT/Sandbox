@@ -259,8 +259,8 @@ void WavePropagSimu::Animate() {
   // Write the status
   D.Status.clear();
   D.Status.resize(2);
-  D.Status[0]= std::format("SimTime:{:<6.6}", simTime);
-  D.Status[1]= std::format("CFL:{:<6.6}", D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D());
+  D.Status[0]= std::format("SimTime:{:.6f}s", simTime);
+  D.Status[1]= std::format("CFL:{:<.6f}", D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D());
 }
 
 

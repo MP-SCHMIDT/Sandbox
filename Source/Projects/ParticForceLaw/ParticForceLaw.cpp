@@ -411,7 +411,7 @@ void ParticForceLaw::Draw() {
   D.Status.resize(4);
   D.Status[0]= std::format("NbBuckets:{}", nX * nY * nZ);
   D.Status[1]= std::format("NbParticles:{}", (int)Pos.size());
-  D.Status[2]= std::format("SimTime:{:<6.6}ms", SimTime);
+  D.Status[2]= std::format("SimTime:{:.6f}ms", SimTime);
   if (BucketOverflown) D.Status[3]= std::string{"BUCKET OVERFLOW"};
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("DrawT %f\n", Timer::PopTimer());
