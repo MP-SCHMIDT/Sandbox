@@ -17,18 +17,21 @@ class SpaceTimeWorld
   // List of UI parameters for this project
   enum ParamType
   {
+    InputFileID_____,
     WorldNbT________,
     WorldNbX________,
     WorldNbY________,
     WorldNbZ________,
+    MassReach_______,
+    ______________00,
     ScreenNbH_______,
     ScreenNbV_______,
     ScreenNbS_______,
     CursorWorldT____,
-    MassReach_______,
     TimePersist_____,
     FactorCurv______,
     FactorDoppl_____,
+    ______________01,
     VerboseLevel____,
   };
 
@@ -49,6 +52,10 @@ class SpaceTimeWorld
   std::vector<std::vector<int>> screenCount;
   std::vector<std::vector<std::vector<Vec::Vec4<float>>>> photonPos;
   std::vector<std::vector<std::vector<Vec::Vec4<float>>>> photonVel;
+
+  void InitVoxelWorld();
+  void ComputeWorldFlow();
+  void ComputeScreen();
 
   public:
   bool isActivProj;
