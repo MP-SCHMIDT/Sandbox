@@ -1,12 +1,15 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 #define UTILITIES_REGEX
 //#define UTILITIES_FILE
 #define CONSOLE_WIDTH 79
 #define UTILITIES_NO_CPP17
 
-#pragma warning(disable:26451)
-#pragma warning(disable:6386)
 #include <cmath>
 #include <vector>
 #ifdef UTILITIES_REGEX
@@ -753,3 +756,5 @@ inline void write_file(const string& filename, const string& content="") {
 	file.close();
 }
 #endif // UTILITIES_FILE
+
+#pragma GCC diagnostic pop

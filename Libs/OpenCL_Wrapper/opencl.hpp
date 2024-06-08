@@ -1,5 +1,9 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+
 #define WORKGROUP_SIZE 64 // needs to be 64 to fully use AMD GPUs
 //#define PTX
 //#define LOG
@@ -537,3 +541,5 @@ public:
 		return *this;
 	}
 };
+
+#pragma GCC diagnostic pop

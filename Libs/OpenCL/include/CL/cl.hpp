@@ -182,6 +182,8 @@
 #define CL_HPP_NOEXCEPT
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
 
 // To avoid accidentally taking ownership of core OpenCL types
 // such as cl_kernel constructors are made explicit
@@ -12904,3 +12906,5 @@ public:
 } // namespace cl
 
 #endif // CL_HPP_
+
+#pragma GCC diagnostic pop
