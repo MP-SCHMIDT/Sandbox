@@ -4,7 +4,7 @@
 // Standard lib
 
 // GLUT lib
-#include "freeglut/include/GL/freeglut.h"
+#include "GL/freeglut.h"
 
 // Algo headers
 

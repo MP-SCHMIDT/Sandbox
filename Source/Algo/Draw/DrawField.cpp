@@ -5,7 +5,7 @@
 #include <vector>
 
 // GLUT lib
-#include "freeglut/include/GL/freeglut.h"
+#include "GL/freeglut.h"
 
 // Algo headers
 #include "Geom/BoxGrid.hpp"

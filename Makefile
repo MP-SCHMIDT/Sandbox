@@ -28,7 +28,7 @@ FLAGS_GL = -lGL -lglut -lGLU -lX11 -lm
 endif
 
 LIB_FLAGS = -L"Libs/freeglut/lib/x64" $(FLAGS_GL)
-INC_FLAGS = -I"Libs" -I"Source" -I"Source/Algo" -I"Source/Projects"
+INC_FLAGS = -I"Libs" -I"Libs/freeglut/include" -I"Source" -I"Source/Algo" -I"Source/Projects"
 
 $(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LIB_FLAGS) $(CXXFLAGS)

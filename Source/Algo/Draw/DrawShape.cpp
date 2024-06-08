@@ -1,7 +1,7 @@
 #include "DrawShape.hpp"
 
 // GLUT lib
-#include "freeglut/include/GL/freeglut.h"
+#include "GL/freeglut.h"
 
 
 void DrawShape::DrawBoxPosPos(const float begX, const float begY, const float begZ,

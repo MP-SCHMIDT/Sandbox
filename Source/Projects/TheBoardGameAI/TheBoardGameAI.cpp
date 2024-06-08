@@ -6,7 +6,7 @@
 #include <format>
 
 // GLUT lib
-#include "freeglut/include/GL/freeglut.h"
+#include "GL/freeglut.h"
 
 // Algo headers
 #include "Draw/Colormap.hpp"

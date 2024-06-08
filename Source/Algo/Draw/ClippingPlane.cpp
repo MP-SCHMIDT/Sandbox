@@ -4,7 +4,7 @@
 #include <array>
 
 // GLUT lib
-#include "freeglut/include/GL/freeglut.h"
+#include "GL/freeglut.h"
 
 
 void ClippingPlane::DrawClipping(const bool iUse, const int iDim, const double iPos, const bool iSide,

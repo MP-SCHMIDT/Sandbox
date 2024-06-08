@@ -5,7 +5,7 @@
 #include <limits>
 
 // GLUT lib
-#include "freeglut/include/GL/freeglut.h"
+#include "GL/freeglut.h"
 
 // Trackball lib
 #include "Trackball/Camera.hpp"
