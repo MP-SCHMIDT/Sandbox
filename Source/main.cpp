@@ -31,6 +31,7 @@
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
+#include "TestsKernelGPU/TestsKernelGPU.hpp"
 #include "TheBoardGameAI/TheBoardGameAI.hpp"
 #include "WavePropagSimu/WavePropagSimu.hpp"
 // #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -90,6 +91,7 @@ SkeletonFolder mySkeletonFolder;
 SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
+TestsKernelGPU myTestsKernelGPU;
 TheBoardGameAI myTheBoardGameAI;
 WavePropagSimu myWavePropagSimu;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -115,6 +117,7 @@ enum ProjectID
   SpaceTimeWorldID,
   StringArtOptimID,
   TerrainErosionID,
+  TestsKernelGPUID,
   TheBoardGameAIID,
   WavePropagSimuID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -144,6 +147,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj) mySpaceTimeWorld= SpaceTimeWorld();
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
+  if (currentProjectID != ProjectID::TestsKernelGPUID && myTestsKernelGPU.isActivProj) myTestsKernelGPU= TestsKernelGPU();
   if (currentProjectID != ProjectID::TheBoardGameAIID && myTheBoardGameAI.isActivProj) myTheBoardGameAI= TheBoardGameAI();
   if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj) myWavePropagSimu= WavePropagSimu();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -166,6 +170,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.SetActiveProject();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.SetActiveProject();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.SetActiveProject();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -191,6 +196,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Refresh();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.Refresh();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Refresh();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -216,6 +222,7 @@ void project_KeyPress(const unsigned char key) {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress(key);
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(key);
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(key);
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.KeyPress(key);
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress(key);
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.KeyPress(key);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -241,6 +248,7 @@ void project_MousePress(const unsigned char mouse) {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.MousePress(mouse);
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress(mouse);
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress(mouse);
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.MousePress(mouse);
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.MousePress(mouse);
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.MousePress(mouse);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -265,6 +273,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Animate();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.Animate();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Animate();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -290,6 +299,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Draw();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.Draw();
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Draw();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -315,6 +325,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.isRefreshed= false;
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.isRefreshed= false;
   if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.isRefreshed= false;
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -1038,6 +1049,7 @@ void init_menu() {
   glutAddMenuEntry("SpaceTimeWorld", ProjectID::SpaceTimeWorldID);
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
+  glutAddMenuEntry("TestsKernelGPU", ProjectID::TestsKernelGPUID);
   glutAddMenuEntry("TheBoardGameAI", ProjectID::TheBoardGameAIID);
   glutAddMenuEntry("WavePropagSimu", ProjectID::WavePropagSimuID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET

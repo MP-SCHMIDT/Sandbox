@@ -12,11 +12,11 @@ CXX = g++ -std=c++23
 
 FLAGS_ENV = -m64
 FLAGS_OPTIM = -O2 -march=native
-FLAGS_OPENMP = -fopenmp
+FLAGS_PARALLEL = -fopenmp -pthread -lOpenCL
 FLAGS_DEBUG = -g1
 FLAGS_WARNING = -Wall -Wextra
 FLAGS_DEPEND = -MMD -MP
-CXXFLAGS = $(FLAGS_DEPEND) $(FLAGS_ENV) $(FLAGS_OPENMP) $(FLAGS_WARNING) $(FLAGS_DEBUG) $(FLAGS_OPTIM)
+CXXFLAGS = $(FLAGS_DEPEND) $(FLAGS_ENV) $(FLAGS_PARALLEL) $(FLAGS_WARNING) $(FLAGS_DEBUG) $(FLAGS_OPTIM)
 
 UNAME := $(shell uname)
 ifeq ($(UNAME), Windows_NT)
@@ -27,8 +27,8 @@ else
 FLAGS_GL = -lGL -lglut -lGLU -lX11 -lm
 endif
 
-LIB_FLAGS = -L"Libs/freeglut/lib/x64" $(FLAGS_GL)
-INC_FLAGS = -I"Libs" -I"Libs/freeglut/include" -I"Source" -I"Source/Algo" -I"Source/Projects"
+LIB_FLAGS = -L"Libs/freeglut/lib/x64" -L"Libs/OpenCL/lib" $(FLAGS_GL)
+INC_FLAGS = -I"Libs" -I"Libs/freeglut/include" -I"Libs/OpenCL/include" -I"Source" -I"Source/Algo" -I"Source/Projects"
 
 $(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LIB_FLAGS) $(CXXFLAGS)
