@@ -89,7 +89,9 @@ void TestsKernelGPU::KeyPress(const unsigned char key) {
 
   if (key == 'T') {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    Device device(select_device_with_most_flops());  // compile OpenCL C code for the fastest available device
+
+    Device_Info device_info= select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B()));  // compile OpenCL C code for the fastest available device
+    Device device(device_info, get_opencl_c_code(), D.UI[VerboseLevel____].B());
     if (D.UI[VerboseLevel____].I() >= 1) printf("CreateDeviceT %f\n", Timer::PopTimer());
 
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();

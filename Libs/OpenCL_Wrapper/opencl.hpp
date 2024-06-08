@@ -180,8 +180,8 @@ private:
 	;}
 public:
 	Device_Info info;
-	inline Device(const Device_Info& info, const string& opencl_c_code=get_opencl_c_code()) {
-		print_device_info(info);
+	inline Device(const Device_Info& info, const string& opencl_c_code=get_opencl_c_code(), const bool verbose=true) {
+    if (verbose) print_device_info(info);
 		this->info = info;
 		this->cl_queue = cl::CommandQueue(info.cl_context, info.cl_device); // queue to push commands for the device
 		cl::Program::Sources cl_source;
@@ -199,7 +199,7 @@ public:
 		if((uint)log.length()>2u) print_warning(log); // print build log
 #endif // LOG
 		if(error) print_error("OpenCL C code compilation failed with error code "+to_string(error)+". Make sure there are no errors in kernel.cpp.");
-		else print_info("OpenCL C code successfully compiled.");
+		else if (verbose) print_info("OpenCL C code successfully compiled.");
 #ifdef PTX // generate assembly (ptx) file for OpenCL code
 		write_file("bin/kernel.ptx", cl_program.getInfo<CL_PROGRAM_BINARIES>()[0]); // save binary (ptx file)
 #endif // PTX
