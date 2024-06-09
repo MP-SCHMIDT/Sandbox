@@ -15,8 +15,33 @@ class TestsKernelGPU
   enum ParamType
   {
     ArraySize_______,
+    ______________00,
+    NbParticles_____,
+    InitVel_________,
+    Timestep________,
+    Epsilon_________,
+    GravCoeff_______,
+    ColorMode_______,
+    ScaleColor______,
+    ScaleShape______,
+    ______________01,
+    TestParamGPU_00_,
+    TestParamGPU_01_,
+    TestParamGPU_02_,
+    TestParamGPU_03_,
+    TestParamGPU_04_,
+    TestParamGPU_05_,
+    TestParamGPU_06_,
+    TestParamGPU_07_,
+    TestParamGPU_08_,
+    TestParamGPU_09_,
     VerboseLevel____,
   };
+
+  unsigned int N;
+  std::vector<Vec::Vec3<float>> Pos;
+  std::vector<Vec::Vec3<float>> Vel;
+  bool isOpenCLReady;
 
   public:
   bool isActivProj;
