@@ -8,12 +8,14 @@ DEPS = $(SRCS:%.cpp=$(BUILD_DIR)/%.d)
 
 CXX = g++ -std=c++23
 
-FLAGS_ENV = -m64
-FLAGS_OPTIM = -O2 -march=native
-FLAGS_PARALLEL = -fopenmp -pthread -lOpenCL
-FLAGS_DEBUG = -g1
-FLAGS_WARNING = -Wall -Wextra
 FLAGS_DEPEND = -MMD -MP
+FLAGS_ENV = -m64
+FLAGS_PARALLEL = -fopenmp -pthread -lOpenCL
+FLAGS_WARNING = -Wall -Wextra
+# FLAGS_DEBUG = -g
+# FLAGS_OPTIM =
+FLAGS_DEBUG = -g1
+FLAGS_OPTIM = -O2 -march=native
 CXXFLAGS = $(FLAGS_DEPEND) $(FLAGS_ENV) $(FLAGS_PARALLEL) $(FLAGS_WARNING) $(FLAGS_DEBUG) $(FLAGS_OPTIM)
 
 UNAME := $(shell uname)
