@@ -40,9 +40,15 @@ Sandbox environment with various personal experimentation and a subset of resear
 
 **Source/Algo/** contains algorithms for various tasks organized in sub folders
 
+## Libraries used
+**Eigen** for some linear algebra (https://eigen.tuxfamily.org)
+
+**Freeglut** for GUI handling (https://freeglut.sourceforge.net/)
+
+**OpenCL-Wrapper** for running GPU kernels (https://github.com/ProjectPhysX/OpenCL-Wrapper)
+
 ## Minimal build env on windows
-If C++ compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/14.1.0posix-18.1.5-11.0.1-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.1.0-mingw-w64ucrt-11.0.1-r1.zip) and extract at root of C: drive or another appropriate location.
-Doc available at  https://winlibs.com/
+If C++20 compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/14.1.0posix-18.1.5-11.0.1-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.1.0-mingw-w64ucrt-11.0.1-r1.zip) and extract at root of C: drive or another appropriate location. Doc available at  https://winlibs.com/.
 
 If bash commands are not already present, install MinGW (https://sourceforge.net/projects/mingw/) at root of C: drive or another appropriate location. Only check "msys-base" package in MinGW Installation Manager to just get bash commands in bin folder.
 
