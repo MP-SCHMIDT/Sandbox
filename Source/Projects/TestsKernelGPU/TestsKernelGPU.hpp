@@ -16,6 +16,8 @@ class TestsKernelGPU
   {
     ArraySize_______,
     ______________00,
+    ReducSumSize____,
+    ______________01,
     NbParticles_____,
     InitVel_________,
     Timestep________,
@@ -24,7 +26,7 @@ class TestsKernelGPU
     ColorMode_______,
     ScaleColor______,
     ScaleShape______,
-    ______________01,
+    ______________02,
     TestParamGPU_00_,
     TestParamGPU_01_,
     TestParamGPU_02_,
@@ -38,10 +40,13 @@ class TestsKernelGPU
     VerboseLevel____,
   };
 
-  unsigned int N;
   std::vector<Vec::Vec3<float>> Pos;
   std::vector<Vec::Vec3<float>> Vel;
-  bool isOpenCLReady;
+
+  void RunVecAddGPU();
+  void RunReducSumGPU();
+  void StepNBodySimGPU();
+  void StepNBodySimCPU();
 
   public:
   bool isActivProj;

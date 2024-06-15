@@ -1,12 +1,10 @@
 TARGET_EXEC = main.exe
 
 BUILD_DIR = ./Build
-SRC_DIRS = ./Source
 
-SRCS = $(wildcard Source/*.cpp) $(wildcard Source/*/*.cpp) $(wildcard Source/*/*/*.cpp)
-
-OBJS = $(SRCS:%=$(BUILD_DIR)/%.o)
-DEPS = $(SRCS:%=$(BUILD_DIR)/%.d)
+SRCS = $(wildcard Source/*.cpp) $(wildcard Source/Algo/*/*.cpp) $(wildcard Source/Projects/*/*.cpp)
+OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
+DEPS = $(SRCS:%.cpp=$(BUILD_DIR)/%.d)
 
 CXX = g++ -std=c++23
 
@@ -20,21 +18,21 @@ CXXFLAGS = $(FLAGS_DEPEND) $(FLAGS_ENV) $(FLAGS_PARALLEL) $(FLAGS_WARNING) $(FLA
 
 UNAME := $(shell uname)
 ifeq ($(UNAME), Windows_NT)
-FLAGS_GL = -lfreeglut -lopengl32 -lglu32
+LIB_FLAGS_GL = -lfreeglut -lopengl32 -lglu32
 else ifeq ($(UNAME), MINGW32_NT-6.2)
-FLAGS_GL = -lfreeglut -lopengl32 -lglu32
+LIB_FLAGS_GL = -lfreeglut -lopengl32 -lglu32
 else
-FLAGS_GL = -lGL -lglut -lGLU -lX11 -lm
+LIB_FLAGS_GL = -lGL -lglut -lGLU -lX11 -lm
 endif
 
-LIB_FLAGS = -L"Libs/freeglut/lib/x64" -L"Libs/OpenCL/lib" $(FLAGS_GL)
+LIB_FLAGS = -L"Libs/freeglut/lib/x64" -L"Libs/OpenCL/lib" $(LIB_FLAGS_GL)
 INC_FLAGS = -I"Libs" -I"Libs/freeglut/include" -I"Libs/OpenCL/include" -I"Source" -I"Source/Algo" -I"Source/Projects"
 
 $(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LIB_FLAGS) $(CXXFLAGS)
 
-$(BUILD_DIR)/%.cpp.o: %.cpp
-	mkdir -p $(dir $@)
+$(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(INC_FLAGS) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: clean

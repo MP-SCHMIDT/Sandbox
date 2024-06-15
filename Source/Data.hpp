@@ -29,9 +29,9 @@ class ParamUI
   float F() { return (float)val; }
   double D() { return val; }
 
-  bool hasChanged() {
+  bool hasChanged(const bool iResetFlag= true) {
     if (changeFlag) {
-      changeFlag= false;
+      if (iResetFlag) changeFlag= false;
       return true;
     }
     return false;

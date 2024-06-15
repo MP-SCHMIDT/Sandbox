@@ -17,7 +17,7 @@
 #include "Util/Timer.hpp"
 
 // Project headers
-#include "TestsKernelGPU_Data.hpp"
+#include "TestsKernelGPU_GPUData.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -41,6 +41,8 @@ void TestsKernelGPU::SetActiveProject() {
     D.UI.clear();
     D.UI.push_back(ParamUI("ArraySize_______", 1024));
     D.UI.push_back(ParamUI("______________00", NAN));
+    D.UI.push_back(ParamUI("ReducSumSize____", 1024));
+    D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("NbParticles_____", 64000));
     D.UI.push_back(ParamUI("InitVel_________", 5.0));
     D.UI.push_back(ParamUI("Timestep________", 0.0004));
@@ -49,7 +51,7 @@ void TestsKernelGPU::SetActiveProject() {
     D.UI.push_back(ParamUI("ColorMode_______", 1));
     D.UI.push_back(ParamUI("ScaleColor______", 0.08));
     D.UI.push_back(ParamUI("ScaleShape______", 0.002));
-    D.UI.push_back(ParamUI("______________01", NAN));
+    D.UI.push_back(ParamUI("______________02", NAN));
     D.UI.push_back(ParamUI("TestParamGPU_00_", 0.0));
     D.UI.push_back(ParamUI("TestParamGPU_01_", 0.0));
     D.UI.push_back(ParamUI("TestParamGPU_02_", 0.0));
@@ -78,11 +80,6 @@ void TestsKernelGPU::SetActiveProject() {
 
 // Check if parameter changes should trigger an allocation
 bool TestsKernelGPU::CheckAlloc() {
-  if (D.UI[NbParticles_____].hasChanged()) isAllocated= false;
-  if (D.UI[InitVel_________].hasChanged()) isAllocated= false;
-  if (D.UI[Timestep________].hasChanged()) isAllocated= false;
-  if (D.UI[Epsilon_________].hasChanged()) isAllocated= false;
-  if (D.UI[GravCoeff_______].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -99,22 +96,6 @@ void TestsKernelGPU::Allocate() {
   if (CheckAlloc()) return;
   isRefreshed= false;
   isAllocated= true;
-
-  // Allocate
-  N= std::max(D.UI[NbParticles_____].I(), 1);
-  Pos= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  Vel= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  isOpenCLReady= false;
-
-  // Set random positions, velocities and types
-  for (unsigned int k= 0; k < N; k++) {
-    Pos[k][0]= (float)D.boxMin[0] + Random::Val(0.0f, 1.0f) * (float)(D.boxMax[0] - D.boxMin[0]);
-    Pos[k][1]= (float)D.boxMin[1] + Random::Val(0.0f, 1.0f) * (float)(D.boxMax[1] - D.boxMin[1]);
-    Pos[k][2]= (float)D.boxMin[2] + Random::Val(0.0f, 1.0f) * (float)(D.boxMax[2] - D.boxMin[2]);
-    Vel[k][0]= D.UI[InitVel_________].F() * Random::Val(-1.0f, 1.0f);
-    Vel[k][1]= D.UI[InitVel_________].F() * Random::Val(-1.0f, 1.0f);
-    Vel[k][2]= D.UI[InitVel_________].F() * Random::Val(-1.0f, 1.0f);
-  }
 }
 
 
@@ -134,142 +115,25 @@ void TestsKernelGPU::KeyPress(const unsigned char key) {
   (void)key;  // Disable warning unused variable
 
   if (key == 'A') {
-    // Create the computation device
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    Device_Info device_info(select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B())));
-    Device device(device_info, get_opencl_c_code(), D.UI[VerboseLevel____].B());
-    if (D.UI[VerboseLevel____].I() >= 1) printf("CreateDeviceT %f\n", Timer::PopTimer());
+    RunVecAddGPU();
+  }
 
-    // Allocate the memory shared by host and device
+  if (key == 'R') {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    const uint N= std::max(D.UI[ArraySize_______].I(), 1);
-    Memory<float> A(device, N);
-    Memory<float> B(device, N);
-    Memory<float> C(device, N);
-    if (D.UI[VerboseLevel____].I() >= 1) printf("AllocVectorsT %f\n", Timer::PopTimer());
+    RunReducSumGPU();
+    if (D.UI[VerboseLevel____].I() >= 1) printf("IterT %f\n", Timer::PopTimer());
+  }
 
-    // Add the OpenCL kernel
+  if (key == 'G') {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    Kernel kernel_Add(device, N, "kernel_Add", A, B, C);
-    if (D.UI[VerboseLevel____].I() >= 1) printf("SetKernelT %f\n", Timer::PopTimer());
-
-    // Initialize the memory values on the host
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    for (uint n= 0u; n < N; n++) {
-      A[n]= 3.0f;
-      B[n]= 2.0f;
-      C[n]= 1.0f;
-    }
-    if (D.UI[VerboseLevel____].I() >= 1) printf("FillVectorsT %f\n", Timer::PopTimer());
-
-    // Copy the data from host memory to device memory
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    A.write_to_device();
-    B.write_to_device();
-    if (D.UI[VerboseLevel____].I() >= 1) printf("SendVectorsT %f\n", Timer::PopTimer());
-
-    // Run the OpenCL kernel on the data
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    kernel_Add.run();
-    if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
-
-    // Copy the data from device memory to host memory
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    C.read_from_device();
-    if (D.UI[VerboseLevel____].I() >= 1) printf("ReceiveVectorsT %f\n", Timer::PopTimer());
-
-    // Print the resulting value
-    if (D.UI[VerboseLevel____].I() >= 1) printf("C[N-1] = %f\n", C[N - 1]);
+    StepNBodySimGPU();
+    if (D.UI[VerboseLevel____].I() >= 1) printf("IterT %f\n", Timer::PopTimer());
   }
 
   if (key == 'C') {
-    // Initialize the memory values on the host
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    std::vector<Vec::Vec3<float>> PosOld= Pos;
-    std::vector<Vec::Vec3<float>> VelOld= Vel;
-    if (D.UI[VerboseLevel____].I() >= 1) printf("FillVectorsT %f\n", Timer::PopTimer());
-
-    // Run the OpenCL kernel on the data
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    float dt= D.UI[Timestep________].F();
-    float eps= D.UI[Epsilon_________].F();
-    float grav= D.UI[GravCoeff_______].F();
-    for (unsigned int k0= 0; k0 < N; k0++) {  // Loop through bodies
-      Vec::Vec3<float> p0= PosOld[k0];        // Get position of current body
-      Vec::Vec3<float> v= VelOld[k0];         // Get velocity of current body
-      Vec::Vec3<float> a(0.0f, 0.0f, 0.0f);   // Initialize acceleration of current body
-
-      for (unsigned int k1= 0; k1 < N; k1++) {             // Loop through other bodies
-        Vec::Vec3<float> p1= PosOld[k1];                   // Get position of other body
-        Vec::Vec3<float> rVec= p1 - p0;                    // Get vector from current to other body
-        float rNormInv= 1.0f / (rVec.norm() + eps * eps);  // Compute inverse of distance
-        a+= grav * rNormInv * rNormInv * rNormInv * rVec;  // Add acceleration toward other body
-      }
-      v+= dt * a;                        // Integrate velocity
-      p0+= dt * v + 0.5f * dt * dt * a;  // Integrate position
-      Vel[k0]= v;                        // Save new velocity
-      Pos[k0]= p0;                       // Save new position
-    }
-    if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
-  }
-
-  // https://dournac.org/info/nbody_tutorial
-  if (key == 'G') {
-    if (!isOpenCLReady) {
-      isOpenCLReady= true;
-      // Create the computation device
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      device= Device((select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B()))), get_opencl_c_code(), D.UI[VerboseLevel____].B());
-      if (D.UI[VerboseLevel____].I() >= 1) printf("CreateDeviceT %f\n", Timer::PopTimer());
-
-      // Allocate the memory shared by host and device
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      PosOld= Memory<cl_float4>(device, N, 1u, true, true, cl_float4());
-      PosNew= Memory<cl_float4>(device, N, 1u, true, true, cl_float4());
-      VelOld= Memory<cl_float4>(device, N, 1u, true, true, cl_float4());
-      VelNew= Memory<cl_float4>(device, N, 1u, true, true, cl_float4());
-      if (D.UI[VerboseLevel____].I() >= 1) printf("AllocVectorsT %f\n", Timer::PopTimer());
-
-      // Add the OpenCL kernel
-      if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-      kernel_NBody= Kernel(device, N, "kernel_NBody",
-                           N, D.UI[Timestep________].F(), D.UI[Epsilon_________].F(), D.UI[GravCoeff_______].F(),
-                           PosOld, PosNew, VelOld, VelNew);
-      if (D.UI[VerboseLevel____].I() >= 1) printf("SetKernelT %f\n", Timer::PopTimer());
-    }
-
-    // Initialize the memory values on the host
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    for (uint n= 0u; n < N; n++) {
-      PosOld[n]= {Pos[n][0], Pos[n][1], Pos[n][2], 0.0};
-      VelOld[n]= {Vel[n][0], Vel[n][1], Vel[n][2], 0.0};
-    }
-    if (D.UI[VerboseLevel____].I() >= 1) printf("FillVectorsT %f\n", Timer::PopTimer());
-
-    // Copy the data from host memory to device memory
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    PosOld.write_to_device();
-    VelOld.write_to_device();
-    if (D.UI[VerboseLevel____].I() >= 1) printf("SendVectorsT %f\n", Timer::PopTimer());
-
-    // Run the OpenCL kernel on the data
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    kernel_NBody.run();
-    if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
-
-    // Copy the data from device memory to host memory
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    PosNew.read_from_device();
-    VelNew.read_from_device();
-    if (D.UI[VerboseLevel____].I() >= 1) printf("ReceiveVectorsT %f\n", Timer::PopTimer());
-
-    // Read the memory values on the host
-    if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-    for (uint n= 0u; n < N; n++) {
-      Pos[n].set(PosNew[n].s[0], PosNew[n].s[1], PosNew[n].s[2]);
-      Vel[n].set(VelNew[n].s[0], VelNew[n].s[1], VelNew[n].s[2]);
-    }
-    if (D.UI[VerboseLevel____].I() >= 1) printf("ReadVectorsT %f\n", Timer::PopTimer());
+    StepNBodySimCPU();
+    if (D.UI[VerboseLevel____].I() >= 1) printf("IterT %f\n", Timer::PopTimer());
   }
 }
 
@@ -287,6 +151,8 @@ void TestsKernelGPU::Animate() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
+
+  StepNBodySimGPU();
 }
 
 
@@ -297,11 +163,11 @@ void TestsKernelGPU::Draw() {
   if (!isRefreshed) return;
 
   // Display particles
-
-  if (D.displayMode1) {
+  if (D.displayMode1 || D.displayMode2) {
     glPointSize(1000.0f * D.UI[ScaleShape______].F());
-    glBegin(GL_POINTS);
-    for (unsigned int k= 0; k < N; k++) {
+    if (D.displayMode1) glBegin(GL_POINTS);
+    else glEnable(GL_LIGHTING);
+    for (unsigned int k= 0; k < Pos.size(); k++) {
       float r= 0.5, g= 0.5, b= 0.5;
       if (D.UI[ColorMode_______].I() == 1) {
         Colormap::RatioToJetBrightSmooth(Vel[k].norm() * D.UI[ScaleColor______].F(), r, g, b);
@@ -312,30 +178,206 @@ void TestsKernelGPU::Draw() {
         b= 0.5f + Vel[k][2] * D.UI[ScaleColor______].F();
       }
       glColor3f(r, g, b);
-      glVertex3fv(Pos[k].array());
+      if (D.displayMode1) {
+        glVertex3fv(Pos[k].array());
+      }
+      else {
+        glPushMatrix();
+        glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
+        glScalef(D.UI[ScaleShape______].F(), D.UI[ScaleShape______].F(), D.UI[ScaleShape______].F());
+        glutSolidSphere(1.0, 16, 8);
+        glPopMatrix();
+      }
     }
-    glEnd();
+    if (D.displayMode1) glEnd();
+    else glDisable(GL_LIGHTING);
+  }
+}
+
+
+void TestsKernelGPU::RunVecAddGPU() {
+  // Initialize the device
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.device= Device((select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B()))), get_opencl_c_code(), D.UI[VerboseLevel____].B());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("CreateDeviceT %f\n", Timer::PopTimer());
+
+  // Get the UI parameters
+  OCL_AddVec.N= std::max(D.UI[ArraySize_______].I(), 1);
+
+  // Allocate the memory shared by host and device
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.A= Memory<int>(OCL_AddVec.device, (ulong)OCL_AddVec.N, 1u, true, true, 0);
+  OCL_AddVec.B= Memory<int>(OCL_AddVec.device, (ulong)OCL_AddVec.N, 1u, true, true, 0);
+  OCL_AddVec.C= Memory<int>(OCL_AddVec.device, (ulong)OCL_AddVec.N, 1u, true, true, 0);
+  if (D.UI[VerboseLevel____].I() >= 1) printf("AllocVectorsT %f\n", Timer::PopTimer());
+
+  // Set the OpenCL kernel
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.kernelABC= Kernel(OCL_AddVec.device, (ulong)OCL_AddVec.N, "kernel_AddVec", OCL_AddVec.A, OCL_AddVec.B, OCL_AddVec.C);
+  OCL_AddVec.kernelBCA= Kernel(OCL_AddVec.device, (ulong)OCL_AddVec.N, "kernel_AddVec", OCL_AddVec.B, OCL_AddVec.C, OCL_AddVec.A);
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SetKernelT %f\n", Timer::PopTimer());
+
+  // Set the memory values on the host
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  for (int k= 0; k < OCL_AddVec.N; k++) {
+    OCL_AddVec.A[k]= 3;
+    OCL_AddVec.B[k]= 2;
+  }
+  if (D.UI[VerboseLevel____].I() >= 1) printf("FillVectorsT %f\n", Timer::PopTimer());
+
+  // Copy the data from host memory to device memory
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.A.write_to_device();
+  OCL_AddVec.B.write_to_device();
+  OCL_AddVec.C.write_to_device();
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SendVectorsT %f\n", Timer::PopTimer());
+
+  // Run the OpenCL kernel on the data
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.kernelABC.run();
+  if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.kernelBCA.run();
+  if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
+
+  // Copy the data from device memory to host memory
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_AddVec.A.read_from_device();
+  OCL_AddVec.B.read_from_device();
+  OCL_AddVec.C.read_from_device();
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ReceiveVectorsT %f\n", Timer::PopTimer());
+
+  // Print the result
+  printf("A[0]= %d B[0]= %d C[0]= %d\n", OCL_AddVec.A[0], OCL_AddVec.B[0], OCL_AddVec.C[0]);
+}
+
+
+void TestsKernelGPU::RunReducSumGPU() {
+  OCL_ReducSum.device= Device((select_device_with_most_flops(get_devices(false))), get_opencl_c_code(), false);
+  OCL_ReducSum.N= std::max(D.UI[ReducSumSize____].I(), 1);
+  OCL_ReducSum.arr= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
+  OCL_ReducSum.par= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
+  OCL_ReducSum.loc= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
+  OCL_ReducSum.kernel= Kernel(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, "kernel_ReducSum",
+                              OCL_ReducSum.arr, OCL_ReducSum.par, OCL_ReducSum.loc);
+  for (int k= 0; k < OCL_ReducSum.N; k++)
+    OCL_ReducSum.arr[k]= 1;
+  OCL_ReducSum.arr.write_to_device();
+  OCL_ReducSum.par.write_to_device();
+  OCL_ReducSum.loc.write_to_device();
+  OCL_ReducSum.kernel.run();
+  OCL_ReducSum.arr.read_from_device();
+  OCL_ReducSum.par.read_from_device();
+  OCL_ReducSum.loc.read_from_device();
+
+  // Print the result
+  for (int k= 0; k < OCL_ReducSum.N; k++)
+    printf("%d ", OCL_ReducSum.arr[k]);
+  printf("\n");
+  for (int k= 0; k < OCL_ReducSum.N; k++)
+    printf("%d ", OCL_ReducSum.par[k]);
+  printf("\n");
+  for (int k= 0; k < OCL_ReducSum.N; k++)
+    printf("%d ", OCL_ReducSum.loc[k]);
+  printf("\n");
+}
+
+
+void TestsKernelGPU::StepNBodySimGPU() {
+  // Check if parameters changed
+  if (D.UI[NbParticles_____].hasChanged()) OCL_NBody.isMemoryReady= false;
+  if (D.UI[InitVel_________].hasChanged()) OCL_NBody.isMemoryReady= false;
+  if (D.UI[Timestep________].hasChanged()) OCL_NBody.isParamsReady= false;
+  if (D.UI[Epsilon_________].hasChanged()) OCL_NBody.isParamsReady= false;
+  if (D.UI[GravCoeff_______].hasChanged()) OCL_NBody.isParamsReady= false;
+
+  // Initialize the device if needed
+  if (!OCL_NBody.isDeviceReady) {
+    OCL_NBody.isDeviceReady= true;
+    OCL_NBody.device= Device((select_device_with_most_flops(get_devices(false))), get_opencl_c_code(), false);
   }
 
-  if (!D.displayMode2) {
-    glEnable(GL_LIGHTING);
-    for (unsigned int k= 0; k < N; k++) {
-      float r= 0.5, g= 0.5, b= 0.5;
-      if (D.UI[ColorMode_______].I() == 1) {
-        Colormap::RatioToJetBrightSmooth(Vel[k].norm() * D.UI[ScaleColor______].F(), r, g, b);
-      }
-      if (D.UI[ColorMode_______].I() == 2) {
-        r= 0.5f + Vel[k][0] * D.UI[ScaleColor______].F();
-        g= 0.5f + Vel[k][1] * D.UI[ScaleColor______].F();
-        b= 0.5f + Vel[k][2] * D.UI[ScaleColor______].F();
-      }
-      glColor3f(r, g, b);
-      glPushMatrix();
-      glTranslatef(Pos[k][0], Pos[k][1], Pos[k][2]);
-      glScalef(D.UI[ScaleShape______].F(), D.UI[ScaleShape______].F(), D.UI[ScaleShape______].F());
-      glutSolidSphere(1.0, 16, 8);
-      glPopMatrix();
+  // Initialize the memory shared between device and host if needed
+  if (!OCL_NBody.isMemoryReady) {
+    OCL_NBody.isMemoryReady= true;
+    OCL_NBody.isParamsReady= false;
+    // Get the UI parameters
+    OCL_NBody.N= std::max(D.UI[NbParticles_____].I(), 1);
+    // Allocate and initialize bodies with random positions and velocities
+    Pos= std::vector<Vec::Vec3<float>>(OCL_NBody.N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+    Vel= std::vector<Vec::Vec3<float>>(OCL_NBody.N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+    for (int k= 0; k < OCL_NBody.N; k++) {
+      Pos[k][0]= (float)D.boxMin[0] + Random::Val(0.0f, 1.0f) * (float)(D.boxMax[0] - D.boxMin[0]);
+      Pos[k][1]= (float)D.boxMin[1] + Random::Val(0.0f, 1.0f) * (float)(D.boxMax[1] - D.boxMin[1]);
+      Pos[k][2]= (float)D.boxMin[2] + Random::Val(0.0f, 1.0f) * (float)(D.boxMax[2] - D.boxMin[2]);
+      Vel[k][0]= std::max(D.UI[InitVel_________].F(), 0.0f) * Random::Val(-1.0f, 1.0f);
+      Vel[k][1]= std::max(D.UI[InitVel_________].F(), 0.0f) * Random::Val(-1.0f, 1.0f);
+      Vel[k][2]= std::max(D.UI[InitVel_________].F(), 0.0f) * Random::Val(-1.0f, 1.0f);
     }
-    glDisable(GL_LIGHTING);
+    // Allocate the memory shared by host and device
+    OCL_NBody.PosOld= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.PosNew= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.VelOld= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.VelNew= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+  }
+
+  // Initialize the kernel parameters
+  if (!OCL_NBody.isParamsReady) {
+    OCL_NBody.isParamsReady= true;
+    // Get the UI parameters
+    OCL_NBody.timestep= std::max(D.UI[Timestep________].F(), 0.0f);
+    OCL_NBody.epsilon= std::max(D.UI[Epsilon_________].F(), 0.0f);
+    OCL_NBody.gravity= std::max(D.UI[GravCoeff_______].F(), 0.0f);
+    // Set the OpenCL kernel
+    OCL_NBody.kernel= Kernel(OCL_NBody.device, (ulong)OCL_NBody.N, "kernel_NBodySim",
+                             OCL_NBody.timestep, OCL_NBody.epsilon, OCL_NBody.gravity,
+                             OCL_NBody.PosOld, OCL_NBody.PosNew, OCL_NBody.VelOld, OCL_NBody.VelNew);
+  }
+
+  // Set the memory values on the host
+  for (int k= 0; k < OCL_NBody.N; k++) {
+    OCL_NBody.PosOld[k]= {Pos[k][0], Pos[k][1], Pos[k][2], 0.0};
+    OCL_NBody.VelOld[k]= {Vel[k][0], Vel[k][1], Vel[k][2], 0.0};
+  }
+  // Copy the data from host memory to device memory
+  OCL_NBody.PosOld.write_to_device();
+  OCL_NBody.VelOld.write_to_device();
+  // Run the OpenCL kernel on the data
+  OCL_NBody.kernel.run();
+  // Copy the data from device memory to host memory
+  OCL_NBody.PosNew.read_from_device();
+  OCL_NBody.VelNew.read_from_device();
+  // Get the memory values from the host
+  for (int k= 0; k < OCL_NBody.N; k++) {
+    Pos[k].set(OCL_NBody.PosNew[k].s[0], OCL_NBody.PosNew[k].s[1], OCL_NBody.PosNew[k].s[2]);
+    Vel[k].set(OCL_NBody.VelNew[k].s[0], OCL_NBody.VelNew[k].s[1], OCL_NBody.VelNew[k].s[2]);
+  }
+}
+
+
+void TestsKernelGPU::StepNBodySimCPU() {
+  // Run one iteration of NBody simulation on multithreaded CPU for comparison
+  const int N= (int)Pos.size();
+  const float dt= D.UI[Timestep________].F();
+  const float eps= D.UI[Epsilon_________].F();
+  const float grav= D.UI[GravCoeff_______].F();
+  std::vector<Vec::Vec3<float>> PosOld= Pos;
+  std::vector<Vec::Vec3<float>> VelOld= Vel;
+#pragma omp parallel for
+  for (int k0= 0; k0 < N; k0++) {          // Loop through bodies
+    Vec::Vec3<float> p0= PosOld[k0];       // Get position of current body
+    Vec::Vec3<float> v= VelOld[k0];        // Get velocity of current body
+    Vec::Vec3<float> a(0.0f, 0.0f, 0.0f);  // Initialize acceleration of current body
+
+    for (int k1= 0; k1 < N; k1++) {                      // Loop through other bodies
+      Vec::Vec3<float> p1= PosOld[k1];                   // Get position of other body
+      Vec::Vec3<float> rVec= p1 - p0;                    // Get vector from current to other body
+      float rNormInv= 1.0f / (rVec.norm() + eps * eps);  // Compute inverse of distance
+      a+= grav * rNormInv * rNormInv * rNormInv * rVec;  // Add acceleration toward other body
+    }
+    v+= dt * a;                        // Integrate velocity
+    p0+= dt * v + 0.5f * dt * dt * a;  // Integrate position
+    Vel[k0]= v;                        // Save new velocity
+    Pos[k0]= p0;                       // Save new position
   }
 }

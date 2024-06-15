@@ -859,25 +859,26 @@ void callback_keyboard_special(int key, int x, int y) {
     D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
   }
 
-  if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
-    if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / 2.0);
-    if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * 2.0);
+  if (key == GLUT_KEY_LEFT || key == GLUT_KEY_RIGHT) {
+    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
+      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / 2.0);
+      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * 2.0);
+    }
+    else if (glutGetModifiers() & GLUT_ACTIVE_CTRL) {
+      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / (1.0 + 1.0 / 16.0));
+      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * (1.0 + 1.0 / 16.0));
+    }
+    else if (glutGetModifiers() & GLUT_ACTIVE_ALT) {
+      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0 / 16.0);
+      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0 / 16.0);
+    }
+    else {
+      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0);
+      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0);
+    }
+    // Compute refresh
+    project_Refresh();
   }
-  else if (glutGetModifiers() & GLUT_ACTIVE_CTRL) {
-    if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / (1.0 + 1.0 / 16.0));
-    if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * (1.0 + 1.0 / 16.0));
-  }
-  else if (glutGetModifiers() & GLUT_ACTIVE_ALT) {
-    if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0 / 16.0);
-    if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0 / 16.0);
-  }
-  else {
-    if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0);
-    if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0);
-  }
-
-  // Compute refresh
-  project_Refresh();
 
   callback_display();
 }
