@@ -8,6 +8,7 @@
 
 
 // Test environment for running GPU kernel using OpenCL Wrapper
+// https://github.com/ProjectPhysX/OpenCL-Wrapper
 class TestsKernelGPU
 {
   private:

@@ -256,30 +256,30 @@ void TestsKernelGPU::RunReducSumGPU() {
   OCL_ReducSum.device= Device((select_device_with_most_flops(get_devices(false))), get_opencl_c_code(), false);
   OCL_ReducSum.N= std::max(D.UI[ReducSumSize____].I(), 1);
   OCL_ReducSum.arr= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
-  OCL_ReducSum.par= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
-  OCL_ReducSum.loc= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
-  OCL_ReducSum.kernel= Kernel(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, "kernel_ReducSum",
-                              OCL_ReducSum.arr, OCL_ReducSum.par, OCL_ReducSum.loc);
+  OCL_ReducSum.par= Memory<int>(OCL_ReducSum.device, OCL_ReducSum.N / WORKGROUP_SIZE + 1u, 1u, true, true, 0);
+  OCL_ReducSum.kernel= Kernel(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, "kernel_ReducSum", OCL_ReducSum.arr, OCL_ReducSum.par);
+
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
   for (int k= 0; k < OCL_ReducSum.N; k++)
     OCL_ReducSum.arr[k]= 1;
   OCL_ReducSum.arr.write_to_device();
-  OCL_ReducSum.par.write_to_device();
-  OCL_ReducSum.loc.write_to_device();
-  OCL_ReducSum.kernel.run();
-  OCL_ReducSum.arr.read_from_device();
-  OCL_ReducSum.par.read_from_device();
-  OCL_ReducSum.loc.read_from_device();
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ValSetup %f\n", Timer::PopTimer());
 
-  // Print the result
-  for (int k= 0; k < OCL_ReducSum.N; k++)
-    printf("%d ", OCL_ReducSum.arr[k]);
-  printf("\n");
-  for (int k= 0; k < OCL_ReducSum.N; k++)
-    printf("%d ", OCL_ReducSum.par[k]);
-  printf("\n");
-  for (int k= 0; k < OCL_ReducSum.N; k++)
-    printf("%d ", OCL_ReducSum.loc[k]);
-  printf("\n");
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  OCL_ReducSum.kernel.run();
+  OCL_ReducSum.par.read_from_device();
+  int sumGPU= 0;
+  for (int k= 0; k < (int)OCL_ReducSum.par.length(); k++)
+    sumGPU+= OCL_ReducSum.par[k];
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SumGPUT %f\n", Timer::PopTimer());
+
+  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
+  int sumCPU= 0;
+  for (int k= 0; k < (int)OCL_ReducSum.arr.length(); k++)
+    sumCPU+= OCL_ReducSum.arr[k];
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SumCPUT %f\n", Timer::PopTimer());
+
+  printf("GPU:%d    CPU:%d\n", sumGPU, sumCPU);
 }
 
 
