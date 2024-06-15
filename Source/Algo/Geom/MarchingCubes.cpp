@@ -37,6 +37,11 @@ void MarchingCubes::Interpolate(
 }
 
 
+// Marching cubes algorith to extract a triangulated isosurface of a scalar field
+// Uses an input bounding box to spatially locate the nodes
+// Assumes the scalar values are at the centroid of the voxels
+// Uses lookup tables from :
+// https://paulbourke.net/geometry/polygonise/
 void MarchingCubes::ComputeMarchingCubes(
     double const iIsoval,
     std::array<double, 3> const& iBBoxMin,
