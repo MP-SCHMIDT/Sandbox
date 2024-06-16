@@ -10,7 +10,6 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
-#include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 #include "Util/Random.hpp"
 
@@ -149,46 +148,46 @@ void TheBoardGameAI::Allocate() {
     const float cloudWidth= float(nW - 1) * wStep + float(nH - 1) * 0.5f * hStep + wStep;
     const float cloudHeight= float(nH - 1) * hStep + hStep;
     cellSize= 1.0f / std::max(cloudWidth, cloudHeight);
-    Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
+    Cells= Field2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
     for (int w= 0; w < nW; w++)
       for (int h= 0; h < nH; h++)
-        Cells[w][h].set(0.5f,
+        Cells(w, h).set(0.5f,
                         0.5f + ((float(w) + 0.5f) * wStep + float(nH - 1 - h) * 0.5f * wStep - 0.5f * cloudWidth) * cellSize,
                         0.5f - ((float(nH - 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
   }
   else if (D.UI[GameMode________].I() == 1) {
     cellSize= 1.0f / (float)std::max(nW, nH);
-    Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
+    Cells= Field2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
     for (int w= 0; w < nW; w++)
       for (int h= 0; h < nH; h++)
-        Cells[w][h].set(0.5f,
+        Cells(w, h).set(0.5f,
                         0.5f * cellSize + float(w) * cellSize,
                         0.5f * cellSize + float(h) * cellSize);
   }
   else if (D.UI[GameMode________].I() == 2) {
     cellSize= 1.0f / (float)std::max(nW, nH);
-    Cells= Field::AllocField2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
+    Cells= Field2D(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
     for (int w= 0; w < nW; w++)
       for (int h= 0; h < nH; h++)
-        Cells[w][h].set(0.5f,
+        Cells(w, h).set(0.5f,
                         0.5f * cellSize + float(w) * cellSize,
                         0.5f * cellSize + float(h) * cellSize);
   }
 
   // Initialize the pawns
-  std::vector<std::vector<int>> Pawns= Field::AllocField2D(nW, nH, 0);
+  Field2D<int> Pawns(nW, nH, 0);
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
       if (D.UI[GameMode________].I() == 0) {
       }
       else if (D.UI[GameMode________].I() == 1) {
-        if (streakRed > 0 && h < 2) Pawns[w][h]= +1;
-        if (streakBlu > 0 && h >= nH - 2) Pawns[w][h]= -1;
+        if (streakRed > 0 && h < 2) Pawns(w, h)= +1;
+        if (streakBlu > 0 && h >= nH - 2) Pawns(w, h)= -1;
       }
       else if (D.UI[GameMode________].I() == 2) {
         if ((w + h) % 2 == 0) {
-          if (h < 3) Pawns[w][h]= +1;
-          if (h >= nH - 3) Pawns[w][h]= -1;
+          if (h < 3) Pawns(w, h)= +1;
+          if (h >= nH - 3) Pawns(w, h)= -1;
         }
       }
     }
@@ -228,10 +227,10 @@ void TheBoardGameAI::KeyPress(const unsigned char key) {
   int wCursor= 0;
   int hCursor= 0;
   Vec::Vec3<float> mouseProj(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
-  float distMin= (mouseProj - Cells[0][0]).norm();
+  float distMin= (mouseProj - Cells(0, 0)).norm();
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
-      const float dist= (mouseProj - Cells[w][h]).norm();
+      const float dist= (mouseProj - Cells(w, h)).norm();
       if (distMin > dist) {
         distMin= dist;
         wCursor= w;
@@ -242,9 +241,9 @@ void TheBoardGameAI::KeyPress(const unsigned char key) {
 
   // Manual board set-up
   if (key == 'R' || key == 'G' || key == 'B') {
-    if (key == 'R') RootBoard->Pawns[wCursor][hCursor]= +1;
-    if (key == 'G') RootBoard->Pawns[wCursor][hCursor]= 0;
-    if (key == 'B') RootBoard->Pawns[wCursor][hCursor]= -1;
+    if (key == 'R') RootBoard->Pawns(wCursor, hCursor)= +1;
+    if (key == 'G') RootBoard->Pawns(wCursor, hCursor)= 0;
+    if (key == 'B') RootBoard->Pawns(wCursor, hCursor)= -1;
     wSel= hSel= -1;
     ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
   }
@@ -378,22 +377,22 @@ void TheBoardGameAI::Draw() {
       glLineWidth(8.0f);
       glBegin(GL_LINES);
       glColor3f(1.0f, 0.0f, 0.0f);
-      glVertex3fv((Cells[0][0] - Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
-      glVertex3fv((Cells[nW - 1][0] - Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
-      glVertex3fv((Cells[0][nH - 1] + Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
-      glVertex3fv((Cells[nW - 1][nH - 1] + Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells(0, 0) - Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells(nW - 1, 0) - Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells(0, nH - 1) + Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
+      glVertex3fv((Cells(nW - 1, nH - 1) + Vec::Vec3<float>(0.0f, 0.0f, 0.7f * cellSize)).array());
       glColor3f(0.0f, 0.0f, 1.0f);
-      glVertex3fv((Cells[0][0] - Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
-      glVertex3fv((Cells[0][nH - 1] - Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
-      glVertex3fv((Cells[nW - 1][0] + Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
-      glVertex3fv((Cells[nW - 1][nH - 1] + Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells(0, 0) - Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells(0, nH - 1) - Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells(nW - 1, 0) + Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
+      glVertex3fv((Cells(nW - 1, nH - 1) + Vec::Vec3<float>(0.0f, 0.7f * cellSize, 0.0f)).array());
       glEnd();
       glLineWidth(1.0f);
       for (int w= 0; w < nW; w++) {
         for (int h= 0; h < nH; h++) {
           glColor3f(0.5f, 0.5f, 0.5f);
           glPushMatrix();
-          glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+          glTranslatef(Cells(w, h)[0], Cells(w, h)[1], Cells(w, h)[2]);
           glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
           glScalef(1.0f, 1.0f, 0.01f);
           glutSolidSphere(0.5 * cellSize, 6, 2);
@@ -409,7 +408,7 @@ void TheBoardGameAI::Draw() {
           else if (h >= nH - 2) glColor3f(col + 0.2f, col, col);
           else glColor3f(col, col, col);
           glPushMatrix();
-          glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+          glTranslatef(Cells(w, h)[0], Cells(w, h)[1], Cells(w, h)[2]);
           glScalef(0.01f, 1.0f, 1.0f);
           glutSolidCube(cellSize);
           glPopMatrix();
@@ -422,7 +421,7 @@ void TheBoardGameAI::Draw() {
           const float col= ((w + h) % 2 == 0) ? 0.4f : 0.6f;
           glColor3f(col, col, col);
           glPushMatrix();
-          glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+          glTranslatef(Cells(w, h)[0], Cells(w, h)[1], Cells(w, h)[2]);
           glScalef(0.01f, 1.0f, 1.0f);
           glutSolidCube(cellSize);
           glPopMatrix();
@@ -436,11 +435,11 @@ void TheBoardGameAI::Draw() {
     glEnable(GL_LIGHTING);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (RootBoard->Pawns[w][h] == 0) continue;
-        if (RootBoard->Pawns[w][h] > 0) glColor3f(1.0f, 0.5f, 0.5f);
-        if (RootBoard->Pawns[w][h] < 0) glColor3f(0.5f, 0.5f, 1.0f);
+        if (RootBoard->Pawns(w, h) == 0) continue;
+        if (RootBoard->Pawns(w, h) > 0) glColor3f(1.0f, 0.5f, 0.5f);
+        if (RootBoard->Pawns(w, h) < 0) glColor3f(0.5f, 0.5f, 1.0f);
         glPushMatrix();
-        glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+        glTranslatef(Cells(w, h)[0], Cells(w, h)[1], Cells(w, h)[2]);
         glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
         glutSolidSphere(0.4 * cellSize, 36, 10);
         glPopMatrix();
@@ -460,7 +459,7 @@ void TheBoardGameAI::Draw() {
       const int w= subBoard->Move[subBoard->Move.size() - 1][0];
       const int h= subBoard->Move[subBoard->Move.size() - 1][1];
       glPushMatrix();
-      glTranslatef(Cells[w][h][0], Cells[w][h][1], Cells[w][h][2]);
+      glTranslatef(Cells(w, h)[0], Cells(w, h)[1], Cells(w, h)[2]);
       glutWireCube(0.5 * cellSize);
       glPopMatrix();
     }

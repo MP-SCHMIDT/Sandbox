@@ -21,7 +21,7 @@ void TheBoardGameAI::ComputeGameTreeSearch(const int iMaxDepth) {
   nbTreeBoards= 1;
 
   // Reset root board
-  std::vector<std::vector<int>> Pawns= RootBoard->Pawns;
+  Field2D<int> Pawns= RootBoard->Pawns;
   DeleteBoard(RootBoard);
   RootBoard= CreateBoard(Pawns, std::vector<std::array<int, 2>>(), 0);
   if (D.UI[GameMode________].I() == 0) ComputeBoardScoreHex(RootBoard);

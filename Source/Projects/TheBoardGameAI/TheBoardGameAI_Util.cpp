@@ -13,7 +13,7 @@
 extern Data D;
 
 
-TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const std::vector<std::vector<int>> &iPawns,
+TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const Field2D<int> &iPawns,
                                                         const std::vector<std::array<int, 2>> &iMove,
                                                         const int iDepth) {
   BoardState *newBoard= new BoardState;
