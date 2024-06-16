@@ -5,6 +5,7 @@
 #include <vector>
 
 // Algo headers
+#include <Math/FieldArray.hpp>
 
 
 // Generic 3D wave equation solver
@@ -64,10 +65,11 @@ class WavePropagSimu
   double simTime;
   std::array<double, 3> sourcePos;
 
-  std::vector<std::vector<std::vector<double>>> UNew;   // Field value at new time
-  std::vector<std::vector<std::vector<double>>> UCur;   // Field value at current time
-  std::vector<std::vector<std::vector<double>>> UOld;   // Field value at previous time
-  std::vector<std::vector<std::vector<double>>> Speed;  // Wave propagation speed
+  Field3D<double> UNew;                         // Field value at new time
+  Field3D<double> UCur;                         // Field value at current time
+  Field3D<double> UOld;                         // Field value at previous time
+  Field3D<double> Speed;                        // Wave propagation speed
+  Field3D<std::array<char, 3>> BorderNeighbor;  // Index offsets to neighbor if border cell
 
   void StepSimulation();
   void AddSource();
