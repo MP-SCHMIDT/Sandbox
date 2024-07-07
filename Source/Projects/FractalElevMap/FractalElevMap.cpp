@@ -48,9 +48,6 @@ void FractalElevMap::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -86,13 +83,13 @@ void FractalElevMap::Allocate() {
   isAllocated= true;
 
   // Get UI parameters
-  mapNbX= std::max(D.UI[ResolutionX_____].I(), 2);
-  mapNbY= std::max(D.UI[ResolutionY_____].I(), 2);
+  nX= std::max(D.UI[ResolutionX_____].I(), 2);
+  nY= std::max(D.UI[ResolutionY_____].I(), 2);
 
   // Allocate data
-  mapPos= Field::AllocField2D(mapNbX, mapNbY, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  mapNor= Field::AllocField2D(mapNbX, mapNbY, Vec::Vec3<float>(0.0f, 0.0f, 1.0f));
-  mapCol= Field::AllocField2D(mapNbX, mapNbY, Vec::Vec3<float>(0.5f, 0.5f, 0.5f));
+  mapPos= Field::Field2(nX, nY, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+  mapNor= Field::Field2(nX, nY, Vec::Vec3<float>(0.0f, 0.0f, 1.0f));
+  mapCol= Field::Field2(nX, nY, Vec::Vec3<float>(0.5f, 0.5f, 0.5f));
 }
 
 
@@ -115,12 +112,12 @@ void FractalElevMap::Refresh() {
 
   // Compute positions
 #pragma omp parallel for
-  for (int x= 0; x < mapNbX; x++) {
-    for (int y= 0; y < mapNbY; y++) {
-      mapPos[x][y][0]= float(x) / float(mapNbX - 1);
-      mapPos[x][y][1]= float(y) / float(mapNbY - 1);
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      mapPos.at(x, y)[0]= float(x) / float(nX - 1);
+      mapPos.at(x, y)[1]= float(y) / float(nY - 1);
 
-      Vec::Vec2<double> z= mapFocus + Vec::Vec2<double>(2.0 * double(x) / double(mapNbX - 1) - 1.0, 2.0 * double(y) / double(mapNbY - 1) - 1.0) / mapZoom;
+      Vec::Vec2<double> z= mapFocus + Vec::Vec2<double>(2.0 * double(x) / double(nX - 1) - 1.0, 2.0 * double(y) / double(nY - 1) - 1.0) / mapZoom;
       int idxIter= 0;
       while (idxIter < mapNbIter && z.normSquared() < mapDivThresh) {
         const double zr= z[0] * z[0] - z[1] * z[1];
@@ -134,65 +131,63 @@ void FractalElevMap::Refresh() {
       // double val= - std::log2(std::max(std::log2(z.normSquared()), 1.0));
       // if (val != 0.0) val= std::log2(std::max(std::log2(val), 1.0));
 
-      // mapPos[x][y][2]= float(z.norm());
-      // if (mapPos[x][y][2] != mapPos[x][y][2]) mapPos[x][y][2]= D.UI[HeightLvls__].Get();
-      Colormap::RatioToJetSmooth(float(val), mapCol[x][y][0], mapCol[x][y][1], mapCol[x][y][2]);
+      // mapPos.at(x, y)[2]= float(z.norm());
+      // if (mapPos.at(x, y)[2] != mapPos.at(x, y)[2]) mapPos.at(x, y)[2]= D.UI[HeightLvls__].Get();
+      Colormap::RatioToJetSmooth(float(val), mapCol.at(x, y)[0], mapCol.at(x, y)[1], mapCol.at(x, y)[2]);
 
-      mapPos[x][y][2]= 0.5f + 0.04f * std::min(std::max(float(val), 0.0f), 1.0f);
+      mapPos.at(x, y)[2]= 0.5f + 0.04f * std::min(std::max(float(val), 0.0f), 1.0f);
     }
   }
 
   // Smooth the positions
-  for (int iter= 0; iter < std::max(mapNbX, mapNbY) / 128; iter++) {
-    std::vector<std::vector<Vec::Vec3<float>>> mapPosOld= mapPos;
+  for (int iter= 0; iter < std::max(nX, nY) / 128; iter++) {
+    Field::Field2<Vec::Vec3<float>> mapPosOld= mapPos;
 #pragma omp parallel for
-    for (int x= 0; x < mapNbX; x++) {
-      for (int y= 0; y < mapNbY; y++) {
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
         int count= 0;
-        mapPos[x][y][2]= 0.0;
-        for (int xOff= std::max(x - 1, 0); xOff <= std::min(x + 1, mapNbX - 1); xOff++) {
-          for (int yOff= std::max(y - 1, 0); yOff <= std::min(y + 1, mapNbY - 1); yOff++) {
-            mapPos[x][y][2]+= mapPosOld[xOff][yOff][2];
+        mapPos.at(x, y)[2]= 0.0;
+        for (int xOff= std::max(x - 1, 0); xOff <= std::min(x + 1, nX - 1); xOff++) {
+          for (int yOff= std::max(y - 1, 0); yOff <= std::min(y + 1, nY - 1); yOff++) {
+            mapPos.at(x, y)[2]+= mapPosOld.at(xOff, yOff)[2];
             count++;
           }
         }
-        mapPos[x][y][2]/= float(count);
+        mapPos.at(x, y)[2]/= float(count);
       }
     }
   }
 
   // Compute normals
 #pragma omp parallel for
-  for (int x= 0; x < mapNbX; x++) {
-    for (int y= 0; y < mapNbY; y++) {
-      mapNor[x][y].set(0.0f, 0.0f, 0.0f);
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      mapNor.at(x, y).set(0.0f, 0.0f, 0.0f);
       if (x > 0 && y > 0)
-        mapNor[x][y]+= ((mapPos[x - 1][y] - mapPos[x][y]).cross(mapPos[x][y - 1] - mapPos[x][y])).normalized();
-      if (x < mapNbX - 1 && y > 0)
-        mapNor[x][y]+= ((mapPos[x][y - 1] - mapPos[x][y]).cross(mapPos[x + 1][y] - mapPos[x][y])).normalized();
-      if (x < mapNbX - 1 && y < mapNbY - 1)
-        mapNor[x][y]+= ((mapPos[x + 1][y] - mapPos[x][y]).cross(mapPos[x][y + 1] - mapPos[x][y])).normalized();
-      if (x > 0 && y < mapNbY - 1)
-        mapNor[x][y]+= ((mapPos[x][y + 1] - mapPos[x][y]).cross(mapPos[x - 1][y] - mapPos[x][y])).normalized();
-      mapNor[x][y].normalize();
+        mapNor.at(x, y)+= ((mapPos.at(x - 1, y) - mapPos.at(x, y)).cross(mapPos.at(x, y - 1) - mapPos.at(x, y))).normalized();
+      if (x < nX - 1 && y > 0)
+        mapNor.at(x, y)+= ((mapPos.at(x, y - 1) - mapPos.at(x, y)).cross(mapPos.at(x + 1, y) - mapPos.at(x, y))).normalized();
+      if (x < nX - 1 && y < nY - 1)
+        mapNor.at(x, y)+= ((mapPos.at(x + 1, y) - mapPos.at(x, y)).cross(mapPos.at(x, y + 1) - mapPos.at(x, y))).normalized();
+      if (x > 0 && y < nY - 1)
+        mapNor.at(x, y)+= ((mapPos.at(x, y + 1) - mapPos.at(x, y)).cross(mapPos.at(x - 1, y) - mapPos.at(x, y))).normalized();
+      mapNor.at(x, y).normalize();
     }
   }
 }
 
 
 // Handle keypress
-void FractalElevMap::KeyPress(const unsigned char key) {
+void FractalElevMap::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 }
 
 
 // Handle mouse action
-void FractalElevMap::MousePress(const unsigned char mouse) {
+void FractalElevMap::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -213,16 +208,16 @@ void FractalElevMap::Draw() {
   // Draw the map
   glEnable(GL_LIGHTING);
   glBegin(GL_QUADS);
-  for (int x= 0; x < mapNbX - 1; x++) {
-    for (int y= 0; y < mapNbY - 1; y++) {
-      Vec::Vec3<float> flatNormal= (mapNor[x][y] + mapNor[x + 1][y] + mapNor[x + 1][y + 1] + mapNor[x][y + 1]).normalized();
-      Vec::Vec3<float> flatColor= (mapCol[x][y] + mapCol[x + 1][y] + mapCol[x + 1][y + 1] + mapCol[x][y + 1]) / 4.0f;
+  for (int x= 0; x < nX - 1; x++) {
+    for (int y= 0; y < nY - 1; y++) {
+      Vec::Vec3<float> flatNormal= (mapNor.at(x, y) + mapNor.at(x + 1, y) + mapNor.at(x + 1, y + 1) + mapNor.at(x, y + 1)).normalized();
+      Vec::Vec3<float> flatColor= (mapCol.at(x, y) + mapCol.at(x + 1, y) + mapCol.at(x + 1, y + 1) + mapCol.at(x, y + 1)) / 4.0f;
       glColor3fv(flatColor.array());
       glNormal3fv(flatNormal.array());
-      glVertex3fv(mapPos[x][y].array());
-      glVertex3fv(mapPos[x + 1][y].array());
-      glVertex3fv(mapPos[x + 1][y + 1].array());
-      glVertex3fv(mapPos[x][y + 1].array());
+      glVertex3fv(mapPos.at(x, y).array());
+      glVertex3fv(mapPos.at(x + 1, y).array());
+      glVertex3fv(mapPos.at(x + 1, y + 1).array());
+      glVertex3fv(mapPos.at(x, y + 1).array());
     }
   }
   glEnd();

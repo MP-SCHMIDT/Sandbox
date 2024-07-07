@@ -7,11 +7,10 @@
 
 class ParamUI
 {
-  private:
+  public:
   double val;
   bool changeFlag;
 
-  public:
   std::string name;
   ParamUI(std::string const iName, double const iVal) {
     name= iName;
@@ -19,23 +18,23 @@ class ParamUI
     changeFlag= true;
   }
 
-  void Set(double const iVal) {
+  inline void Set(double const iVal) {
     changeFlag= true;
     val= iVal;
   }
 
-  bool B() { return val >= 0.5; }
-  int I() { return (int)((val < 0.0) ? (val - 0.5) : (val + 0.5)); }
-  float F() { return (float)val; }
-  double D() { return val; }
-
-  bool hasChanged(const bool iResetFlag= true) {
+  inline bool hasChanged(const bool iResetFlag= true) {
     if (changeFlag) {
       if (iResetFlag) changeFlag= false;
       return true;
     }
     return false;
   }
+
+  inline bool B() { return val >= 0.5; }
+  inline int I() { return (int)((val < 0.0) ? (val - 0.5) : (val + 0.5)); }
+  inline float F() { return (float)val; }
+  inline double D() { return val; }
 };
 
 
@@ -88,15 +87,20 @@ class Data
   bool displayMode7= true;
   bool displayMode8= true;
   bool displayMode9= true;
-  bool showAxis= true;
 
+  bool showAxis= true;
   std::array<double, 3> boxMin= {0.0, 0.0, 0.0};
   std::array<double, 3> boxMax= {1.0, 1.0, 1.0};
 
   std::array<double, 3> camDir= {0.0, 0.0, 0.0};
 
-  std::array<double, 3> mouseNear= {0.0, 0.0, 0.0};
-  std::array<double, 3> mouseFar= {0.0, 0.0, 0.0};
+  bool keyIsShift= false;
+  bool keyIsCtrl= false;
+  bool keyIsAlt= false;
+  unsigned char keyLetterUpperCase= 0;
+  unsigned char mouseMiddleButtonState= 0;
+  std::array<double, 3> mouseBeg= {0.0, 0.0, 0.0};
+  std::array<double, 3> mouseEnd= {0.0, 0.0, 0.0};
   std::array<double, 3> mouseProjX= {0.0, 0.0, 0.0};
   std::array<double, 3> mouseProjY= {0.0, 0.0, 0.0};
   std::array<double, 3> mouseProjZ= {0.0, 0.0, 0.0};

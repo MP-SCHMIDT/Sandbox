@@ -19,10 +19,13 @@ class MarchingCubes
 
   public:
   static void ComputeMarchingCubes(
+      int const nX,
+      int const nY,
+      int const nZ,
       double const iIsoval,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
-      std::vector<std::vector<std::vector<double>>> const& iField,
+      std::vector<double> const& iField,
       std::vector<std::array<double, 3>>& oVertices,
       std::vector<std::array<int, 3>>& oTriangles);
 };

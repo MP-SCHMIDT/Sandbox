@@ -51,9 +51,6 @@ void AgentSwarmBoid::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -117,18 +114,16 @@ void AgentSwarmBoid::Refresh() {
 
 
 // Handle keypress
-void AgentSwarmBoid::KeyPress(const unsigned char key) {
+void AgentSwarmBoid::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 }
 
 
 // Handle mouse action
-void AgentSwarmBoid::MousePress(const unsigned char mouse) {
+void AgentSwarmBoid::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 

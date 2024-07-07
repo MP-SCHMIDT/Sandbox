@@ -5,7 +5,7 @@
 #include <vector>
 
 // Algo headers
-#include "Math/FieldArray.hpp"
+#include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 
 
@@ -60,7 +60,7 @@ class TheBoardGameAI
   struct BoardState
   {
     std::vector<BoardState *> SubBoards;   // List of possible boards reachable from the current position sorted in Nash order
-    Field2D<int> Pawns;                    // Flag grid for presence of pawns on the board (Blu= -1, Red= +1)
+    Field::Field2<int> Pawns;                    // Flag grid for presence of pawns on the board (Blu= -1, Red= +1)
     std::vector<std::array<int, 2>> Move;  // Last move sequence that led to this board
     int Score;                             // Evaluated score of the board
     int NashScore;                         // Nash score found in sub tree
@@ -79,7 +79,7 @@ class TheBoardGameAI
   int hSel;                        // Coordinates of the currently selected pawn
 
   // Hex draw data
-  Field2D<Vec::Vec3<float>> Cells;  // Cell centroid coordinates for display and picking
+  Field::Field2<Vec::Vec3<float>> Cells;  // Cell centroid coordinates for display and picking
   float cellSize;                   // Size of a cell
 
   // Draw
@@ -89,7 +89,7 @@ class TheBoardGameAI
   void PlotData();
 
   // Board creation and destruction
-  BoardState *CreateBoard(const Field2D<int> &iPawns,
+  BoardState *CreateBoard(const Field::Field2<int> &iPawns,
                           const std::vector<std::array<int, 2>> &iMove,
                           const int iDepth);
   void DeleteBoard(BoardState *ioBoard);
@@ -113,7 +113,7 @@ class TheBoardGameAI
   void FindPossibleMovesChk(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves);
   void JmpRecursivePawnMoves(BoardState *ioBoard,
                              const int iJumpW, const int iJumpH,
-                             Field2D<char> &ioVisit,
+                             Field::Field2<char> &ioVisit,
                              std::vector<std::array<int, 2>> &ioDestinations);
   void ExecuteMoveHex(BoardState *ioBoard, const int iDepth);
   void ExecuteMoveJmp(BoardState *ioBoard, const int iDepth);
@@ -131,8 +131,8 @@ class TheBoardGameAI
   bool CheckRefresh();
   void Allocate();
   void Refresh();
-  void KeyPress(const unsigned char key);
-  void MousePress(const unsigned char mouse);
+  void KeyPress();
+  void MousePress();
   void Animate();
   void Draw();
 };

@@ -51,9 +51,6 @@ void MarkovProcGene::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -107,14 +104,14 @@ void MarkovProcGene::Refresh() {
 
   // Initialize dictionnary and field values
   Dict.clear();
-  Field= Field::AllocField3D(nbX, nbY, nbZ, 0);
+  Field= Field::AllocNested3(nbX, nbY, nbZ, 0);
   std::array<std::vector<std::vector<std::vector<int>>>, 2> tmpRule;
   int scenario= 0;
 
   // Wave Function collapse from BMP image
   if (scenario++ == D.UI[Scenario________].I()) {
     nbX= 2;
-    Field= Field::AllocField3D(nbX, nbY, nbZ, 0);
+    Field= Field::AllocNested3(nbX, nbY, nbZ, 0);
 
     std::vector<std::vector<std::array<float, 4>>> imageRGBA;
     FileInput::LoadImageBMPFile("./FileInput/Images/WFC_Example.bmp", imageRGBA, false);
@@ -123,7 +120,7 @@ void MarkovProcGene::Refresh() {
     const int nbWCell= std::min(std::max(D.UI[RuleSizeY_______].I(), 3), nbWImag);
     const int nbHCell= std::min(std::max(D.UI[RuleSizeZ_______].I(), 3), nbHImag);
 
-    std::vector<std::vector<int>> Imag= Field::AllocField2D(nbWImag, nbHImag, 0);
+    std::vector<std::vector<int>> Imag= Field::AllocNested2(nbWImag, nbHImag, 0);
     for (int wImag= 0; wImag < nbWImag; wImag++) {
       for (int hImag= 0; hImag < nbHImag; hImag++) {
         if (imageRGBA[wImag][hImag][3] < 0.5f) Imag[wImag][hImag]= 0;
@@ -149,7 +146,7 @@ void MarkovProcGene::Refresh() {
             for (int useR= 0; useR < 2; useR++) {
               for (int useL= 0; useL < 2; useL++) {
                 if (useT == 0 && useB == 0 && useR == 0 && useL == 0) continue;
-                tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(2, nbWCell, nbHCell, 0), Field::AllocField3D(2, nbWCell, nbHCell, 0)});
+                tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(2, nbWCell, nbHCell, 0), Field::AllocNested3(2, nbWCell, nbHCell, 0)});
                 if (useB > 0 || useL > 0) tmpRule[0][0][0][0]= 1;
                 if (useT > 0 || useL > 0) tmpRule[0][0][0][nbHCell - 1]= 1;
                 if (useB > 0 || useR > 0) tmpRule[0][0][nbWCell - 1][0]= 1;
@@ -193,7 +190,7 @@ void MarkovProcGene::Refresh() {
   // Random noise
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 1, 0), Field::AllocField3D(1, 1, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 1, 0), Field::AllocNested3(1, 1, 1, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 0;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 1;
   }
@@ -201,20 +198,20 @@ void MarkovProcGene::Refresh() {
   // Random noise with multiple sets
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 1, 0), Field::AllocField3D(1, 1, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 1, 0), Field::AllocNested3(1, 1, 1, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 0;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 1;
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 1, 0), Field::AllocField3D(1, 1, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 1, 0), Field::AllocNested3(1, 1, 1, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 1;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 2;
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 1, 0), Field::AllocField3D(1, 1, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 1, 0), Field::AllocNested3(1, 1, 1, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 1;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 3;
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 1, 0), Field::AllocField3D(1, 1, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 1, 0), Field::AllocNested3(1, 1, 1, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 2;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 1;
   }
@@ -222,7 +219,7 @@ void MarkovProcGene::Refresh() {
   // Spread
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 2, 0), Field::AllocField3D(1, 1, 2, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 2, 0), Field::AllocNested3(1, 1, 2, 0)});
     tmpRule[0][0][0][0]= 0;
     tmpRule[0][0][0][1]= 1;
     tmpRule[1][0][0][0]= 1;
@@ -240,7 +237,7 @@ void MarkovProcGene::Refresh() {
   // Tron infinite wall
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 3, 0), Field::AllocField3D(1, 1, 3, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 3, 0), Field::AllocNested3(1, 1, 3, 0)});
     tmpRule[0][0][0][0]= 1;
     tmpRule[1][0][0][0]= 2;
     tmpRule[1][0][0][1]= 2;
@@ -258,7 +255,7 @@ void MarkovProcGene::Refresh() {
   // Snake
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 5, 0), Field::AllocField3D(1, 1, 5, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 5, 0), Field::AllocNested3(1, 1, 5, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][2]= 3;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 4;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][1]= 2;
@@ -267,7 +264,7 @@ void MarkovProcGene::Refresh() {
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][4]= 1;
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 3, 0), Field::AllocField3D(1, 1, 3, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 3, 0), Field::AllocNested3(1, 1, 3, 0)});
     tmpRule[0][0][0][0]= 1;
     tmpRule[1][0][0][0]= 2;
     tmpRule[1][0][0][1]= 2;
@@ -280,7 +277,7 @@ void MarkovProcGene::Refresh() {
     Dict[(int)Dict.size() - 1].push_back(BuildSymmetric(-3, +1, +2, tmpRule));
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 3, 0), Field::AllocField3D(1, 1, 3, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 3, 0), Field::AllocNested3(1, 1, 3, 0)});
     tmpRule[0][0][0][0]= 4;
     tmpRule[0][0][0][1]= 2;
     tmpRule[0][0][0][2]= 2;
@@ -298,7 +295,7 @@ void MarkovProcGene::Refresh() {
   // Spanning tree
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 3, 0), Field::AllocField3D(1, 1, 3, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 3, 0), Field::AllocNested3(1, 1, 3, 0)});
     tmpRule[0][0][0][0]= 3;
     tmpRule[1][0][0][0]= 3;
     tmpRule[1][0][0][1]= 8;
@@ -311,7 +308,7 @@ void MarkovProcGene::Refresh() {
     Dict[(int)Dict.size() - 1].push_back(BuildSymmetric(-3, +1, +2, tmpRule));
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 1, 0), Field::AllocField3D(1, 1, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 1, 0), Field::AllocNested3(1, 1, 1, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 3;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 8;
 
@@ -321,24 +318,24 @@ void MarkovProcGene::Refresh() {
   // Flower garden
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(5, 5, 1, 0), Field::AllocField3D(5, 5, 1, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(5, 5, 1, 0), Field::AllocNested3(5, 5, 1, 0)}));
     FillRuleBox(Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1], 0, 0, 0, 4, 4, 0, 2, true, true);
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][2][2][0]= 2;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][2][2][0]= 1;
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 2, 0), Field::AllocField3D(1, 1, 2, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 2, 0), Field::AllocNested3(1, 1, 2, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][0]= 1;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 1;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][1]= 6;
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(5, 5, 2, 0), Field::AllocField3D(5, 5, 2, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(5, 5, 2, 0), Field::AllocNested3(5, 5, 2, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][2][2][0]= 6;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][2][2][0]= 2;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][2][2][1]= 6;
 
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(5, 5, 2, 0), Field::AllocField3D(5, 5, 2, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(5, 5, 2, 0), Field::AllocNested3(5, 5, 2, 0)});
     tmpRule[0][2][2][0]= 6;
     tmpRule[1][2][2][0]= 2;
     tmpRule[1][2][1][1]= 6;
@@ -348,7 +345,7 @@ void MarkovProcGene::Refresh() {
     Dict[(int)Dict.size() - 1].push_back(BuildSymmetric(-2, +1, +3, tmpRule));
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(3, 3, 1, 0), Field::AllocField3D(3, 3, 1, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(3, 3, 1, 0), Field::AllocNested3(3, 3, 1, 0)});
     tmpRule[0][1][1][0]= 6;
     tmpRule[1][1][1][0]= 6;
     tmpRule[1][1][0][0]= 7;
@@ -367,11 +364,11 @@ void MarkovProcGene::Refresh() {
   // Galton board
   if (scenario++ == D.UI[Scenario________].I()) {
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 2, 0), Field::AllocField3D(1, 1, 2, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 2, 0), Field::AllocNested3(1, 1, 2, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][1]= 3;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][1]= 3;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 6;
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 2, 2, 0), Field::AllocField3D(1, 2, 2, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 2, 2, 0), Field::AllocNested3(1, 2, 2, 0)});
     tmpRule[0][0][0][1]= 4;
     tmpRule[0][0][1][0]= 4;
     tmpRule[0][0][1][1]= 6;
@@ -383,13 +380,13 @@ void MarkovProcGene::Refresh() {
     Dict[(int)Dict.size() - 1].push_back(BuildSymmetric(+2, +1, +3, tmpRule));
     Dict[(int)Dict.size() - 1].push_back(BuildSymmetric(-2, +1, +3, tmpRule));
 
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 2, 0), Field::AllocField3D(1, 1, 2, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 2, 0), Field::AllocNested3(1, 1, 2, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][1]= 6;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 6;
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 3, 0), Field::AllocField3D(1, 1, 3, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 3, 0), Field::AllocNested3(1, 1, 3, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][2]= 6;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 6;
-    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 1, 4, 0), Field::AllocField3D(1, 1, 4, 0)}));
+    Dict[(int)Dict.size() - 1].push_back(std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 1, 4, 0), Field::AllocNested3(1, 1, 4, 0)}));
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][0][0][0][3]= 6;
     Dict[(int)Dict.size() - 1][(int)Dict[Dict.size() - 1].size() - 1][1][0][0][0]= 6;
 
@@ -412,7 +409,7 @@ void MarkovProcGene::Refresh() {
     int const blocZ= std::max(D.UI[RuleSizeZ_______].I(), 3);
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(blocX, blocY, blocZ, 0), Field::AllocField3D(blocX, blocY, blocZ, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(blocX, blocY, blocZ, 0), Field::AllocNested3(blocX, blocY, blocZ, 0)});
     FillRuleBox(tmpRule, 0, 0, 0, blocX - 1, blocY - 1, 0, 8, true, true);
     FillRuleBox(tmpRule, 0, 0, blocZ - 1, blocX - 1, blocY - 1, blocZ - 1, 8, false, true);
 
@@ -428,7 +425,7 @@ void MarkovProcGene::Refresh() {
     Dict[(int)Dict.size() - 1].push_back(BuildSymmetric(+2, -1, +3, tmpRule));
 
     Dict.push_back(std::vector<std::array<std::vector<std::vector<std::vector<int>>>, 2>>());
-    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(blocX, blocY, blocZ, 0), Field::AllocField3D(blocX, blocY, blocZ, 0)});
+    tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(blocX, blocY, blocZ, 0), Field::AllocNested3(blocX, blocY, blocZ, 0)});
     FillRuleBox(tmpRule, 0, 0, 0, blocX - 1, blocY - 1, 0, 8, true, true);
     FillRuleBox(tmpRule, 0, 0, blocZ - 1, blocX - 1, blocY - 1, blocZ - 1, 8, false, true);
 
@@ -459,7 +456,7 @@ void MarkovProcGene::Refresh() {
                 for (int useSO= 0; useSO < 2; useSO++) {
                   for (int useOO= 0; useOO < 2; useOO++) {
                     for (int useNO= 0; useNO < 2; useNO++) {
-                      tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocField3D(1, 3, 3, 0), Field::AllocField3D(1, 3, 3, 0)});
+                      tmpRule= std::array<std::vector<std::vector<std::vector<int>>>, 2>({Field::AllocNested3(1, 3, 3, 0), Field::AllocNested3(1, 3, 3, 0)});
                       if (useCC == 1) tmpRule[0][0][1][1]= 8;
                       if (useNN == 1) tmpRule[0][0][1][2]= 8;
                       if (useNE == 1) tmpRule[0][0][2][2]= 8;
@@ -531,18 +528,16 @@ void MarkovProcGene::Refresh() {
 
 
 // Handle keypress
-void MarkovProcGene::KeyPress(const unsigned char key) {
+void MarkovProcGene::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 }
 
 
 // Handle mouse action
-void MarkovProcGene::MousePress(const unsigned char mouse) {
+void MarkovProcGene::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -660,7 +655,7 @@ void MarkovProcGene::Draw() {
           ShaDir.push_back(std::array<int, 3>({x, y, z}));
 
   // Compute the voxel shading map
-  std::vector<std::vector<std::vector<float>>> FieldVisi= Field::AllocField3D(nbX, nbY, nbZ, 0.0f);
+  std::vector<std::vector<std::vector<float>>> FieldVisi= Field::AllocNested3(nbX, nbY, nbZ, 0.0f);
   for (int x= 0; x < nbX; x++) {
     for (int y= 0; y < nbY; y++) {
       for (int z= 0; z < nbZ; z++) {
@@ -717,10 +712,10 @@ void MarkovProcGene::Draw() {
         for (int z= 0; z < nbZ; z++) {
           if (Field[x][y][z] > 0) {
             util_SetColorVoxel(Field[x][y][z], 1.0f - D.UI[ShadeCoeff______].F() * (1.0f - FieldVisi[x][y][z]));
-            DrawShape::DrawBoxPosSiz(0.5f - 0.5f * (float)nbX / (float)maxDim + (float)x * voxSize,
-                                     0.5f - 0.5f * (float)nbY / (float)maxDim + (float)y * voxSize,
-                                     0.5f - 0.5f * (float)nbZ / (float)maxDim + (float)z * voxSize,
-                                     voxSize, voxSize, voxSize, true);
+            DrawShape::DrawBox(0.5f - 0.5f * (float)nbX / (float)maxDim + (float)x * voxSize,
+                               0.5f - 0.5f * (float)nbY / (float)maxDim + (float)y * voxSize,
+                               0.5f - 0.5f * (float)nbZ / (float)maxDim + (float)z * voxSize,
+                               voxSize, voxSize, voxSize, true);
           }
         }
       }
@@ -750,19 +745,19 @@ void MarkovProcGene::Draw() {
           glColor3f(0.8f, 0.8f, 0.8f);
         else
           glColor3f(0.3f, 0.3f, 0.3f);
-        DrawShape::DrawBoxPosSiz(begXI, begYI, begZI, nbXRule * voxSize, nbYRule * voxSize, nbZRule * voxSize, false);
-        DrawShape::DrawBoxPosSiz(begXO, begYO, begZO, nbXRule * voxSize, nbYRule * voxSize, nbZRule * voxSize, false);
+        DrawShape::DrawBox(begXI, begYI, begZI, nbXRule * voxSize, nbYRule * voxSize, nbZRule * voxSize, false);
+        DrawShape::DrawBox(begXO, begYO, begZO, nbXRule * voxSize, nbYRule * voxSize, nbZRule * voxSize, false);
         glEnable(GL_LIGHTING);
         for (int xR= 0; xR < nbXRule; xR++) {
           for (int yR= 0; yR < nbYRule; yR++) {
             for (int zR= 0; zR < nbZRule; zR++) {
               if (Dict[idxSet][idxRule][0][xR][yR][zR] != 0) {
                 util_SetColorVoxel(Dict[idxSet][idxRule][0][xR][yR][zR], 0.8f);
-                DrawShape::DrawBoxPosSiz(begXI + xR * voxSize, begYI + yR * voxSize, begZI + zR * voxSize, voxSize, voxSize, voxSize, true);
+                DrawShape::DrawBox(begXI + xR * voxSize, begYI + yR * voxSize, begZI + zR * voxSize, voxSize, voxSize, voxSize, true);
               }
               if (Dict[idxSet][idxRule][1][xR][yR][zR] != 0) {
                 util_SetColorVoxel(Dict[idxSet][idxRule][1][xR][yR][zR], 0.8f);
-                DrawShape::DrawBoxPosSiz(begXO + xR * voxSize, begYO + yR * voxSize, begZO + zR * voxSize, voxSize, voxSize, voxSize, true);
+                DrawShape::DrawBox(begXO + xR * voxSize, begYO + yR * voxSize, begZO + zR * voxSize, voxSize, voxSize, voxSize, true);
               }
             }
           }
@@ -781,10 +776,10 @@ void MarkovProcGene::Draw() {
   if (D.displayMode3) {
     glLineWidth(3.0);
     glColor3f(0.5f, 0.5f, 0.5f);
-    DrawShape::DrawBoxPosSiz(0.5f - 0.5f * (float)nbX / (float)maxDim,
-                             0.5f - 0.5f * (float)nbY / (float)maxDim,
-                             0.5f - 0.5f * (float)nbZ / (float)maxDim,
-                             voxSize * nbX, voxSize * nbY, voxSize * nbZ, false);
+    DrawShape::DrawBox(0.5f - 0.5f * (float)nbX / (float)maxDim,
+                       0.5f - 0.5f * (float)nbY / (float)maxDim,
+                       0.5f - 0.5f * (float)nbZ / (float)maxDim,
+                       voxSize * nbX, voxSize * nbY, voxSize * nbZ, false);
     glLineWidth(1.0);
   }
 }
@@ -826,7 +821,7 @@ std::array<std::vector<std::vector<std::vector<int>>>, 2> MarkovProcGene::BuildS
   int nbXD= (std::abs(iDim1) == 1) ? (nbXS) : ((std::abs(iDim1) == 2) ? (nbYS) : (nbZS));
   int nbYD= (std::abs(iDim2) == 1) ? (nbXS) : ((std::abs(iDim2) == 2) ? (nbYS) : (nbZS));
   int nbZD= (std::abs(iDim3) == 1) ? (nbXS) : ((std::abs(iDim3) == 2) ? (nbYS) : (nbZS));
-  std::array<std::vector<std::vector<std::vector<int>>>, 2> oRule({Field::AllocField3D(nbXD, nbYD, nbZD, 0), Field::AllocField3D(nbXD, nbYD, nbZD, 0)});
+  std::array<std::vector<std::vector<std::vector<int>>>, 2> oRule({Field::AllocNested3(nbXD, nbYD, nbZD, 0), Field::AllocNested3(nbXD, nbYD, nbZD, 0)});
   for (int xS= 0; xS < nbXS; xS++) {
     for (int yS= 0; yS < nbYS; yS++) {
       for (int zS= 0; zS < nbZS; zS++) {
@@ -856,7 +851,7 @@ std::array<std::vector<std::vector<std::vector<int>>>, 2> MarkovProcGene::BuildC
   int nbYS= (int)iRule[0][0].size();
   int nbZS= (int)iRule[0][0][0].size();
 
-  std::array<std::vector<std::vector<std::vector<int>>>, 2> oRule({Field::AllocField3D(nbXS, nbYS, nbZS, 0), Field::AllocField3D(nbXS, nbYS, nbZS, 0)});
+  std::array<std::vector<std::vector<std::vector<int>>>, 2> oRule({Field::AllocNested3(nbXS, nbYS, nbZS, 0), Field::AllocNested3(nbXS, nbYS, nbZS, 0)});
   for (int xS= 0; xS < nbXS; xS++) {
     for (int yS= 0; yS < nbYS; yS++) {
       for (int zS= 0; zS < nbZS; zS++) {

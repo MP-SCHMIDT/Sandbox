@@ -72,11 +72,11 @@ void SpaceTimeWorld::InitVoxelWorld() {
   worldNbZ= std::max(D.UI[WorldNbZ________].I(), 1);
 
   // Allocate data
-  worldSolid= Field::AllocField4D(worldNbT, worldNbX, worldNbY, worldNbZ, false);
-  worldIsFix= Field::AllocField4D(worldNbT, worldNbX, worldNbY, worldNbZ, false);
-  worldMasss= Field::AllocField4D(worldNbT, worldNbX, worldNbY, worldNbZ, 0.0f);
-  worldColor= Field::AllocField4D(worldNbT, worldNbX, worldNbY, worldNbZ, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  worldFlows= Field::AllocField4D(worldNbT, worldNbX, worldNbY, worldNbZ, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
+  worldSolid= Field::AllocNested4(worldNbT, worldNbX, worldNbY, worldNbZ, false);
+  worldIsFix= Field::AllocNested4(worldNbT, worldNbX, worldNbY, worldNbZ, false);
+  worldMasss= Field::AllocNested4(worldNbT, worldNbX, worldNbY, worldNbZ, 0.0f);
+  worldColor= Field::AllocNested4(worldNbT, worldNbX, worldNbY, worldNbZ, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+  worldFlows= Field::AllocNested4(worldNbT, worldNbX, worldNbY, worldNbZ, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
 
   // Load the BMP image for the background
   static std::vector<std::vector<std::array<float, 4>>> imageRGBA;
@@ -164,7 +164,7 @@ void SpaceTimeWorld::InitVoxelWorld() {
 void SpaceTimeWorld::ComputeWorldFlow() {
   // Precompute a mask for the world flow
   int maskSize= D.UI[MassReach_______].I();
-  std::vector<std::vector<std::vector<std::vector<Vec::Vec4<float>>>>> maskVec= Field::AllocField4D(2 * maskSize + 1, 2 * maskSize + 1, 2 * maskSize + 1, 2 * maskSize + 1, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
+  std::vector<std::vector<std::vector<std::vector<Vec::Vec4<float>>>>> maskVec= Field::AllocNested4(2 * maskSize + 1, 2 * maskSize + 1, 2 * maskSize + 1, 2 * maskSize + 1, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
   for (int t= 0; t < maskSize * 2 + 1; t++) {
     for (int x= 0; x < maskSize * 2 + 1; x++) {
       for (int y= 0; y < maskSize * 2 + 1; y++) {
@@ -219,10 +219,10 @@ void SpaceTimeWorld::ComputeScreen() {
   screenNbS= std::max(D.UI[ScreenNbS_______].I(), 1);
 
   // Allocate data
-  screenColor= Field::AllocField2D(screenNbH, screenNbV, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  screenCount= Field::AllocField2D(screenNbH, screenNbV, 1);
-  photonPos= Field::AllocField3D(screenNbH, screenNbV, screenNbS, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
-  photonVel= Field::AllocField3D(screenNbH, screenNbV, screenNbS, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
+  screenColor= Field::AllocNested2(screenNbH, screenNbV, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+  screenCount= Field::AllocNested2(screenNbH, screenNbV, 1);
+  photonPos= Field::AllocNested3(screenNbH, screenNbV, screenNbS, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
+  photonVel= Field::AllocNested3(screenNbH, screenNbV, screenNbS, Vec::Vec4<float>(0.0f, 0.0f, 0.0f, 0.0f));
 
   // Initialize the photon fields
   for (int h= 0; h < screenNbH; h++) {

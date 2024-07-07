@@ -5,6 +5,7 @@
 #include <vector>
 
 // Algo headers
+#include "Math/Field.hpp"
 
 
 // Skeleton Folder
@@ -40,10 +41,7 @@ class AlgoTestEnviro
     VerboseLevel____,
   };
 
-  std::vector<std::vector<std::vector<double>>> ScalarField;
-  std::vector<std::vector<std::vector<std::array<double, 3>>>> VectorField;
-  std::vector<std::vector<std::vector<std::array<double, 9>>>> TensorField;
-
+  Field::Field3<double> ScalarField;
   std::vector<std::array<double, 3>> Verts;
   std::vector<std::array<int, 2>> Bars;
   std::vector<std::array<int, 3>> Tris;
@@ -60,8 +58,8 @@ class AlgoTestEnviro
   bool CheckRefresh();
   void Allocate();
   void Refresh();
-  void KeyPress(const unsigned char key);
-  void MousePress(const unsigned char mouse);
+  void KeyPress();
+  void MousePress();
   void Animate();
   void Draw();
 };

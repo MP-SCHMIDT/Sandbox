@@ -66,9 +66,6 @@ void ParticLifeOrga::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -126,23 +123,21 @@ void ParticLifeOrga::Refresh() {
 
 
 // Handle keypress
-void ParticLifeOrga::KeyPress(const unsigned char key) {
+void ParticLifeOrga::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 
-  if (key == 'R')
+  if (D.keyLetterUpperCase == 'R')
     GenerateParticleRules();
-  if (key == 'P')
+  if (D.keyLetterUpperCase == 'P')
     GenerateParticleCloud();
 }
 
 
 // Handle mouse action
-void ParticLifeOrga::MousePress(const unsigned char mouse) {
+void ParticLifeOrga::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -241,8 +236,8 @@ void ParticLifeOrga::GenerateParticleRules() {
   // Allocate
   TypeMass= std::vector<double>(nbTypes, 0.0);
   TypeRadius= std::vector<double>(nbTypes, 0.0);
-  TypeAmpli= Field::AllocField2D(nbTypes, nbTypes, 0.0);
-  TypeReach= Field::AllocField2D(nbTypes, nbTypes, 0.0);
+  TypeAmpli= Field::AllocNested2(nbTypes, nbTypes, 0.0);
+  TypeReach= Field::AllocNested2(nbTypes, nbTypes, 0.0);
 
   // Generate random rule values in selected ranges
   for (int k0= 0; k0 < nbTypes; k0++) {

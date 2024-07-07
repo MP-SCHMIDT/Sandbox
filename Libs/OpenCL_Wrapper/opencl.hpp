@@ -87,7 +87,6 @@ struct Device_Info {
 	inline Device_Info() {}; // default constructor
 };
 
-string get_opencl_c_code(); // implemented in kernel.hpp
 inline void print_device_info(const Device_Info& d) { // print OpenCL device info
 #if defined(_WIN32)
 	const string os = "Windows";
@@ -184,7 +183,7 @@ private:
 	;}
 public:
 	Device_Info info;
-	inline Device(const Device_Info& info, const string& opencl_c_code=get_opencl_c_code(), const bool verbose=true) {
+	inline Device(const Device_Info& info, const string& opencl_c_code, const bool verbose=true) {
     if (verbose) print_device_info(info);
 		this->info = info;
 		this->cl_queue = cl::CommandQueue(info.cl_context, info.cl_device); // queue to push commands for the device

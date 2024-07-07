@@ -16,38 +16,41 @@
 
 
 void PrimitiveCSG::Sphere(
+    const int nX,
+    const int nY,
+    const int nZ,
     std::array<double, 3> const& iCenter,
     double const& iRadius,
     PrimitiveCSG::BooleanMode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double>& ioDistanceField) {
+  // Check inputs
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
   double stepX, stepY, stepZ, startX, startY, startZ;
-  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
   // Get primitives properties
   Eigen::Vector3d center(iCenter[0], iCenter[1], iCenter[2]);
   // Sweep through the field
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
         // Get current point coordinates
         Eigen::Vector3d P(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
         // Compute the distance
         double distVal= (P - center).norm() - iRadius;
         // Update the distance
         if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[x][y][z]= std::min(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], -distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[x][y][z]= std::max(-ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
       }
     }
   }
@@ -55,6 +58,9 @@ void PrimitiveCSG::Sphere(
 
 
 void PrimitiveCSG::Cylinder(
+    const int nX,
+    const int nY,
+    const int nZ,
     std::array<double, 3> const& iPointA,
     std::array<double, 3> const& iPointB,
     double const& iRadiusA,
@@ -63,21 +69,21 @@ void PrimitiveCSG::Cylinder(
     PrimitiveCSG::BooleanMode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double>& ioDistanceField) {
+  // Check inputs
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
   double stepX, stepY, stepZ, startX, startY, startZ;
-  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
   // Get primitives properties
   Eigen::Vector3d pointA(iPointA[0], iPointA[1], iPointA[2]);
   Eigen::Vector3d pointB(iPointB[0], iPointB[1], iPointB[2]);
   // Sweep through the field
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
         // Get current point coordinates
         Eigen::Vector3d P(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
         // Compute the distance
@@ -99,13 +105,13 @@ void PrimitiveCSG::Cylinder(
         }
         // Update the distance
         if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[x][y][z]= std::min(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], -distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[x][y][z]= std::max(-ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
       }
     }
   }
@@ -113,6 +119,9 @@ void PrimitiveCSG::Cylinder(
 
 
 void PrimitiveCSG::ConeRound(
+    const int nX,
+    const int nY,
+    const int nZ,
     std::array<double, 3> const& iPointA,
     std::array<double, 3> const& iPointB,
     double const& iRadiusA,
@@ -120,13 +129,12 @@ void PrimitiveCSG::ConeRound(
     PrimitiveCSG::BooleanMode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double>& ioDistanceField) {
+  // Check inputs
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
   double stepX, stepY, stepZ, startX, startY, startZ;
-  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
   // Get primitives properties
   Eigen::Vector3d pointA(iPointA[0], iPointA[1], iPointA[2]);
@@ -139,9 +147,10 @@ void PrimitiveCSG::ConeRound(
   double a2= l2 - rr * rr;
   double il2= 1.0 / l2;
   // Sweep through the field
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
         // Get current point coordinates
         Eigen::Vector3d P(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
         // Sampling dependent computations
@@ -162,13 +171,13 @@ void PrimitiveCSG::ConeRound(
           distVal= (sqrt(x2 * a2 * il2) + y1 * rr) * il2 - iRadiusA;
         // Update the distance
         if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[x][y][z]= std::min(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], -distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[x][y][z]= std::max(-ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
       }
     }
   }
@@ -176,26 +185,29 @@ void PrimitiveCSG::ConeRound(
 
 
 void PrimitiveCSG::AxisAlignedBox(
+    const int nX,
+    const int nY,
+    const int nZ,
     std::array<double, 3> const& iCornerMin,
     std::array<double, 3> const& iCornerMax,
     PrimitiveCSG::BooleanMode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double>& ioDistanceField) {
+  // Check inputs
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
   double stepX, stepY, stepZ, startX, startY, startZ;
-  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
   // Get primitives properties
   Eigen::Vector3d cornerMin(iCornerMin[0], iCornerMin[1], iCornerMin[2]);
   Eigen::Vector3d cornerMax(iCornerMax[0], iCornerMax[1], iCornerMax[2]);
   // Sweep through the field
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
         // Get current point coordinates
         Eigen::Vector3d P(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
         // Compute the distance
@@ -203,13 +215,13 @@ void PrimitiveCSG::AxisAlignedBox(
         double distVal= (Eigen::Vector3d(0.0, 0.0, 0.0).cwiseMax(d)).norm() + std::min(0.0, d.maxCoeff());
         // Update the distance
         if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[x][y][z]= std::min(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], -distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[x][y][z]= std::max(-ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
       }
     }
   }
@@ -217,6 +229,9 @@ void PrimitiveCSG::AxisAlignedBox(
 
 
 void PrimitiveCSG::AxisAlignedExtrudedSketch(
+    const int nX,
+    const int nY,
+    const int nZ,
     int const iExtrusionDir,
     double const iExtruLimitMin,
     double const iExtruLimitMax,
@@ -224,16 +239,14 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
     PrimitiveCSG::BooleanMode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double>& ioDistanceField) {
   // Check inputs
   if (int(iVertices.size()) < 3) return;
   if (iExtrusionDir != 0 && iExtrusionDir != 1 && iExtrusionDir != 2) return;
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
   double stepX, stepY, stepZ, startX, startY, startZ;
-  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
   // Build the 2D polygon in the sketch plane
   std::vector<Eigen::Vector2d> vertices2D(iVertices.size());
@@ -243,9 +256,9 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
     else if (iExtrusionDir == 2) vertices2D[k]= {iVertices[k][0], iVertices[k][1]};
   }
   // Sweep through the sketch plane
-  for (int x= 0; x < ((iExtrusionDir == 0) ? 1 : nbX); x++) {
-    for (int y= 0; y < ((iExtrusionDir == 1) ? 1 : nbY); y++) {
-      for (int z= 0; z < ((iExtrusionDir == 2) ? 1 : nbZ); z++) {
+  for (int x= 0; x < ((iExtrusionDir == 0) ? 1 : nX); x++) {
+    for (int y= 0; y < ((iExtrusionDir == 1) ? 1 : nY); y++) {
+      for (int z= 0; z < ((iExtrusionDir == 2) ? 1 : nZ); z++) {
         // Get position in the sketch plane
         Eigen::Vector2d P;
         if (iExtrusionDir == 0) P= Eigen::Vector2d(double(y) * stepY + startY, double(z) * stepZ + startZ);
@@ -270,9 +283,10 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
         if (!isPositive)
           sketchDistVal= -sketchDistVal;
         // Sweep through the extrusion direction
-        for (int xExt= ((iExtrusionDir == 0) ? 0 : x); xExt < ((iExtrusionDir == 0) ? nbX : x + 1); xExt++) {
-          for (int yExt= ((iExtrusionDir == 1) ? 0 : y); yExt < ((iExtrusionDir == 1) ? nbY : y + 1); yExt++) {
-            for (int zExt= ((iExtrusionDir == 2) ? 0 : z); zExt < ((iExtrusionDir == 2) ? nbZ : z + 1); zExt++) {
+        for (int xExt= ((iExtrusionDir == 0) ? 0 : x); xExt < ((iExtrusionDir == 0) ? nX : x + 1); xExt++) {
+          for (int yExt= ((iExtrusionDir == 1) ? 0 : y); yExt < ((iExtrusionDir == 1) ? nY : y + 1); yExt++) {
+            for (int zExt= ((iExtrusionDir == 2) ? 0 : z); zExt < ((iExtrusionDir == 2) ? nZ : z + 1); zExt++) {
+              int const xyzExt= xExt * (nY * nZ) + yExt * nZ + zExt;
               // Limit the extrusion between the min and max limits
               double extruPos;
               if (iExtrusionDir == 0) extruPos= double(xExt) * stepX + startX;
@@ -283,13 +297,13 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
               double distVal= std::max(sketchDistVal, extruDistVal);
               // Update the distance
               if (iMode == PrimitiveCSG::BooleanMode::Union)
-                ioDistanceField[xExt][yExt][zExt]= std::min(ioDistanceField[xExt][yExt][zExt], distVal);
+                ioDistanceField[xyzExt]= std::min(ioDistanceField[xyzExt], distVal);
               else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-                ioDistanceField[xExt][yExt][zExt]= std::max(ioDistanceField[xExt][yExt][zExt], distVal);
+                ioDistanceField[xyzExt]= std::max(ioDistanceField[xyzExt], distVal);
               else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-                ioDistanceField[xExt][yExt][zExt]= std::max(ioDistanceField[xExt][yExt][zExt], -distVal);
+                ioDistanceField[xyzExt]= std::max(ioDistanceField[xyzExt], -distVal);
               else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-                ioDistanceField[xExt][yExt][zExt]= std::max(-ioDistanceField[xExt][yExt][zExt], distVal);
+                ioDistanceField[xyzExt]= std::max(-ioDistanceField[xyzExt], distVal);
             }
           }
         }
@@ -300,6 +314,9 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
 
 
 void PrimitiveCSG::GeneralExtrudedSketch(
+    const int nX,
+    const int nY,
+    const int nZ,
     std::array<double, 3> const& iSketchCenter,
     std::array<double, 3> const& iSketchVector,
     double const iExtruLimitNega,
@@ -308,15 +325,13 @@ void PrimitiveCSG::GeneralExtrudedSketch(
     PrimitiveCSG::BooleanMode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double>& ioDistanceField) {
   // Check inputs
   if (int(iVertices.size()) < 3) return;
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
   double stepX, stepY, stepZ, startX, startY, startZ;
-  BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
   Eigen::Vector3d sketchCenter(iSketchCenter[0], iSketchCenter[1], iSketchCenter[2]);
   Eigen::Vector3d sketchVector(iSketchVector[0], iSketchVector[1], iSketchVector[2]);
@@ -343,9 +358,10 @@ void PrimitiveCSG::GeneralExtrudedSketch(
     sketchVertices.push_back(pos2D);
   }
   // Sweep through the field
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
         // Get position in the sketch plane
         Eigen::Vector3d pos3D(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
         Eigen::Vector3d pos3DTranslat= pos3D - sketchCenter;
@@ -375,13 +391,13 @@ void PrimitiveCSG::GeneralExtrudedSketch(
         double distVal= std::max(sketchDistVal, extruDistVal);
         // Update the distance
         if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[x][y][z]= std::min(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], -distVal);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
         else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[x][y][z]= std::max(-ioDistanceField[x][y][z], distVal);
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
       }
     }
   }
@@ -389,26 +405,28 @@ void PrimitiveCSG::GeneralExtrudedSketch(
 
 
 void PrimitiveCSG::BooleanOperation(
+    const int nX,
+    const int nY,
+    const int nZ,
     PrimitiveCSG::BooleanMode const& iMode,
-    std::vector<std::vector<std::vector<double>>> const& iDistanceField,
-    std::vector<std::vector<std::vector<double>>>& ioDistanceField) {
+    std::vector<double> const& iDistanceField,
+    std::vector<double>& ioDistanceField) {
   // Get field dimensions
-  int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(ioDistanceField, nbX, nbY, nbZ);
-  if (nbX == 0 || nbY == 0 || nbZ == 0) return;
+  if (nX == 0 || nY == 0 || nZ == 0) return;
   // Sweep through the field
-  for (int x= 0; x < nbX; x++) {
-    for (int y= 0; y < nbY; y++) {
-      for (int z= 0; z < nbZ; z++) {
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
         // Update the distance
         if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[x][y][z]= std::min(ioDistanceField[x][y][z], iDistanceField[x][y][z]);
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], iDistanceField[xyz]);
         else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], iDistanceField[x][y][z]);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], iDistanceField[xyz]);
         else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[x][y][z]= std::max(ioDistanceField[x][y][z], -iDistanceField[x][y][z]);
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -iDistanceField[xyz]);
         else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[x][y][z]= std::max(-ioDistanceField[x][y][z], iDistanceField[x][y][z]);
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], iDistanceField[xyz]);
       }
     }
   }

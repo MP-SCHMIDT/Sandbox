@@ -5,6 +5,7 @@
 #include <vector>
 
 // Algo headers
+#include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 
 
@@ -40,12 +41,12 @@ class StringArtOptim
   int nH;
 
   // Fields for scenario setup
-  std::vector<std::vector<Vec::Vec3<float>>> ImRef;
-  std::vector<std::vector<Vec::Vec3<float>>> ImCur;
-  std::vector<std::array<int, 2>> Pegs;
-  std::vector<int> PegsCount;
-  std::vector<std::vector<int>> Lines;
-  std::vector<Vec::Vec3<float>> Colors;
+  Field::Field2<Vec::Vec3<float>> ImRef;  // RGB reference image
+  Field::Field2<Vec::Vec3<float>> ImCur;  // RGB current image
+  std::vector<std::array<int, 2>> Pegs;   // 2D peg positions in pixel space
+  std::vector<int> PegsUseCount;          // Counter for the number of uses for each peg
+  std::vector<std::vector<int>> Stings;   // Path in peg ID for the string of each color
+  std::vector<Vec::Vec3<float>> Colors;   // Colors of the strings
 
   bool AddLineStep();
 
@@ -61,8 +62,8 @@ class StringArtOptim
   bool CheckRefresh();
   void Allocate();
   void Refresh();
-  void KeyPress(const unsigned char key);
-  void MousePress(const unsigned char mouse);
+  void KeyPress();
+  void MousePress();
   void Animate();
   void Draw();
 };

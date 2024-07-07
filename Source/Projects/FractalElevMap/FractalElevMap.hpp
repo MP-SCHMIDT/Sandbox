@@ -4,6 +4,7 @@
 #include <vector>
 
 // Algo headers
+#include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 
 
@@ -30,17 +31,17 @@ class FractalElevMap
     VerboseLevel____,
   };
 
-  int mapNbX;
-  int mapNbY;
+  int nX;
+  int nY;
   int mapNbIter;
   double mapDivThresh;
   double mapZoom;
   Vec::Vec2<double> mapFocus;
   Vec::Vec2<double> mapConst;
 
-  std::vector<std::vector<Vec::Vec3<float>>> mapPos;
-  std::vector<std::vector<Vec::Vec3<float>>> mapNor;
-  std::vector<std::vector<Vec::Vec3<float>>> mapCol;
+  Field::Field2<Vec::Vec3<float>> mapPos;
+  Field::Field2<Vec::Vec3<float>> mapNor;
+  Field::Field2<Vec::Vec3<float>> mapCol;
 
   public:
   bool isActivProj;
@@ -54,8 +55,8 @@ class FractalElevMap
   bool CheckRefresh();
   void Allocate();
   void Refresh();
-  void KeyPress(const unsigned char key);
-  void MousePress(const unsigned char mouse);
+  void KeyPress();
+  void MousePress();
   void Animate();
   void Draw();
 };

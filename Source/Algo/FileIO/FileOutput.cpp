@@ -273,7 +273,7 @@ bool FileOutput::SaveTensorFieldFile(
   if (iVerbose) printf("Saving TXT tensor field file [%s]\n", iFullpath.c_str());
 
   int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iDoubleField, nbX, nbY, nbZ);
+  Field::GetDim(iDoubleField, nbX, nbY, nbZ);
 
   if (nbX <= 0 || nbY <= 0 || nbZ <= 0) {
     printf("[ERROR] Invalid field dimensions\n");
@@ -328,7 +328,7 @@ bool FileOutput::SaveScalarFieldRawVTIFile(
 
   // Get the voxels dimensions
   int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iField, nbX, nbY, nbZ);
+  Field::GetDim(iField, nbX, nbY, nbZ);
   if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
   double voxSizeX, voxSizeY, voxSizeZ, voxDiag, startX, startY, startZ;
   BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
@@ -398,7 +398,7 @@ bool FileOutput::SaveVectorFieldRawVTIFile(
 
   // Get the voxels dimensions
   int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iField, nbX, nbY, nbZ);
+  Field::GetDim(iField, nbX, nbY, nbZ);
   double voxSizeX, voxSizeY, voxSizeZ, voxDiag;
   BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, voxSizeX, voxSizeY, voxSizeZ, voxDiag);
 
@@ -620,7 +620,7 @@ bool FileOutput::SaveHexaMeshINPFile(
     bool const iVerbose) {
   // Get field dimensions
   int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iDensityField, nbX, nbY, nbZ);
+  Field::GetDim(iDensityField, nbX, nbY, nbZ);
   if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
   BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
@@ -841,7 +841,7 @@ bool FileOutput::SaveHexaMeshElemValuesINPFile(
     bool const iVerbose) {
   // Get field dimensions
   int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iElemValueField, nbX, nbY, nbZ);
+  Field::GetDim(iElemValueField, nbX, nbY, nbZ);
   if (nbX <= 0 || nbY <= 0 || nbZ <= 0) return false;
 
 
@@ -1041,7 +1041,7 @@ bool FileOutput::SaveOrthotropicHexaMeshINPFile(
     double const iDensityThreshold,
     bool const iVerbose) {
   int nbX, nbY, nbZ;
-  Field::GetFieldDimensions(iDensityField, nbX, nbY, nbZ);
+  Field::GetDim(iDensityField, nbX, nbY, nbZ);
   if (nbX == 0 || nbY == 0 || nbZ == 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
   BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);

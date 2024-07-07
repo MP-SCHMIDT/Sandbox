@@ -15,7 +15,7 @@
 #include "Draw/DrawField.hpp"
 #include "FileIO/FileInput.hpp"
 #include "Geom/BoxGrid.hpp"
-#include "Math/FieldArray.hpp"
+#include "Math/Field.hpp"
 #include "Math/Functions.hpp"
 #include "Math/Vec.hpp"
 #include "Util/Timer.hpp"
@@ -83,9 +83,6 @@ void WavePropagSimu::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -123,20 +120,20 @@ void WavePropagSimu::Allocate() {
   simTime= 0;
   sourcePos= {NAN, NAN, NAN};
 
-  UNew= Field3D(nX, nY, nZ, 0.0);
-  UCur= Field3D(nX, nY, nZ, 0.0);
-  UOld= Field3D(nX, nY, nZ, 0.0);
-  Speed= Field3D(nX, nY, nZ, 1.0);
-  BorderNeighbor= Field3D<std::array<char, 3>>(nX, nY, nZ, std::array<char, 3>{0, 0, 0});
+  UNew= Field::Field3(nX, nY, nZ, 0.0);
+  UCur= Field::Field3(nX, nY, nZ, 0.0);
+  UOld= Field::Field3(nX, nY, nZ, 0.0);
+  Speed= Field::Field3(nX, nY, nZ, 1.0);
+  BorderNeighbor= Field::Field3<std::array<char, 3>>(nX, nY, nZ, std::array<char, 3>{0, 0, 0});
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
-        if (nX >= 3 && x == 0) BorderNeighbor(x, y, z)[0]= +1;
-        if (nY >= 3 && y == 0) BorderNeighbor(x, y, z)[1]= +1;
-        if (nZ >= 3 && z == 0) BorderNeighbor(x, y, z)[2]= +1;
-        if (nX >= 3 && x == nX - 1) BorderNeighbor(x, y, z)[0]= -1;
-        if (nY >= 3 && y == nY - 1) BorderNeighbor(x, y, z)[1]= -1;
-        if (nZ >= 3 && z == nZ - 1) BorderNeighbor(x, y, z)[2]= -1;
+        if (nX >= 3 && x == 0) BorderNeighbor.at(x, y, z)[0]= +1;
+        if (nY >= 3 && y == 0) BorderNeighbor.at(x, y, z)[1]= +1;
+        if (nZ >= 3 && z == 0) BorderNeighbor.at(x, y, z)[2]= +1;
+        if (nX >= 3 && x == nX - 1) BorderNeighbor.at(x, y, z)[0]= -1;
+        if (nY >= 3 && y == nY - 1) BorderNeighbor.at(x, y, z)[1]= -1;
+        if (nZ >= 3 && z == nZ - 1) BorderNeighbor.at(x, y, z)[2]= -1;
       }
     }
   }
@@ -175,8 +172,8 @@ void WavePropagSimu::Refresh() {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
         // Reset values
-        UNew(x, y, z)= UCur(x, y, z)= UOld(x, y, z)= 0.0;
-        Speed(x, y, z)= 1.0;
+        UNew.at(x, y, z)= UCur.at(x, y, z)= UOld.at(x, y, z)= 0.0;
+        Speed.at(x, y, z)= 1.0;
 
         // Scenario from loaded BMP file
         if (D.UI[ScenarioPreset__].I() == 0 && !imageRGBA.empty()) {
@@ -185,7 +182,7 @@ void WavePropagSimu::Refresh() {
           const int idxPixelW= std::min(std::max((int)std::round(posW), 0), (int)imageRGBA.size() - 1);
           const int idxPixelH= std::min(std::max((int)std::round(posH), 0), (int)imageRGBA[0].size() - 1);
           const std::array<float, 4> colRGBA= imageRGBA[idxPixelW][idxPixelH];
-          Speed(x, y, z)= (colRGBA[0] + colRGBA[1] + colRGBA[2]) / 3.0;
+          Speed.at(x, y, z)= (colRGBA[0] + colRGBA[1] + colRGBA[2]) / 3.0;
         }
 
         // Empty box domain with Dirichlet boundary
@@ -193,26 +190,26 @@ void WavePropagSimu::Refresh() {
           if ((nX > 1 && (x == 0 || x == nX - 1)) ||
               (nY > 1 && (y == 0 || y == nY - 1)) ||
               (nZ > 1 && (z == 0 || z == nZ - 1)))
-            Speed(x, y, z)= 0.0;
+            Speed.at(x, y, z)= 0.0;
         }
 
         // Simple sphere domain
         if (D.UI[ScenarioPreset__].I() == 2) {
           const int radius= std::min((nX > 1) ? nX : INT_MAX, std::min((nY > 1) ? nY : INT_MAX, (nZ > 1) ? nZ : INT_MAX)) / 2;
-          if (std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed(x, y, z)= 0.0;
+          if (std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed.at(x, y, z)= 0.0;
         }
 
         // Simple ellipse domain
         if (D.UI[ScenarioPreset__].I() == 3) {
           const int radius= std::min((nX > 1) ? nX : INT_MAX, std::min((nY > 1) ? nY : INT_MAX, (nZ > 1) ? nZ : INT_MAX)) / 2;
-          if (2.0 * std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + 2.0 * std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed(x, y, z)= 0.0;
+          if (2.0 * std::pow(x - nX / 2, 2) + std::pow(y - nY / 2, 2) + 2.0 * std::pow(z - nZ / 2, 2) >= std::pow(radius - 2, 2)) Speed.at(x, y, z)= 0.0;
         }
 
         // Convex lens domain as the intersection of two spheres
         if (D.UI[ScenarioPreset__].I() == 4) {
           const int radius= std::min((nX > 1) ? nX : INT_MAX, std::min((nY > 1) ? nY : INT_MAX, (nZ > 1) ? nZ : INT_MAX)) / 2;
           if (std::pow(x - nX / 2, 2) + std::pow(y - 1 * nY / 4, 2) + std::pow(z - nZ / 2, 2) < std::pow(radius - 2, 2) &&
-              std::pow(x - nX / 2, 2) + std::pow(y - 3 * nY / 4, 2) + std::pow(z - nZ / 2, 2) < std::pow(radius - 2, 2)) Speed(x, y, z)= 0.5;
+              std::pow(x - nX / 2, 2) + std::pow(y - 3 * nY / 4, 2) + std::pow(z - nZ / 2, 2) < std::pow(radius - 2, 2)) Speed.at(x, y, z)= 0.5;
         }
       }
     }
@@ -221,21 +218,21 @@ void WavePropagSimu::Refresh() {
 
 
 // Handle keypress
-void WavePropagSimu::KeyPress(const unsigned char key) {
+void WavePropagSimu::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
-  if (key == 'P') sourcePos= D.mouseProjX;
+  if (D.keyLetterUpperCase == 'P') sourcePos= D.mouseProjX;
 }
 
 
 // Handle mouse action
-void WavePropagSimu::MousePress(const unsigned char mouse) {
+void WavePropagSimu::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
-  if (mouse == 1 || mouse == 2) sourcePos= D.mouseProjX;
-  if (mouse == 3) sourcePos= {NAN, NAN, NAN};
+  if (D.mouseMiddleButtonState == 1 || D.mouseMiddleButtonState == 2) sourcePos= D.mouseProjX;
+  if (D.mouseMiddleButtonState == 3) sourcePos= {NAN, NAN, NAN};
 }
 
 
@@ -268,8 +265,8 @@ void WavePropagSimu::Animate() {
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
-        D.Plot[0].val[D.Plot[0].val.size() - 1]+= UNew(x, y, z);
-        D.Plot[1].val[D.Plot[1].val.size() - 1]+= std::abs(UNew(x, y, z));
+        D.Plot[0].val[D.Plot[0].val.size() - 1]+= UNew.at(x, y, z);
+        D.Plot[1].val[D.Plot[1].val.size() - 1]+= std::abs(UNew.at(x, y, z));
       }
     }
   }
@@ -290,39 +287,39 @@ void WavePropagSimu::Draw() {
 
   // Draw the wave field
   if (D.displayMode1 || D.displayMode2) {
-    Field3D<char> Show(nX, nY, nZ, 1);
-    Field3D<std::array<float, 4>> Color(nX, nY, nZ, {0.0, 0.0, 0.0, 1.0});
+    Field::Field3<char> Show(nX, nY, nZ, 1);
+    Field::Field3<std::array<float, 4>> Color(nX, nY, nZ, {0.0, 0.0, 0.0, 1.0});
     for (int x= 0; x < nX; x++) {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
-          if (D.UI[SliceDim________].I() == 1 && x != (int)std::round(D.UI[SliceRelPosX____].D() * nX)) Show(x, y, z)= false;
-          if (D.UI[SliceDim________].I() == 2 && y != (int)std::round(D.UI[SliceRelPosY____].D() * nY)) Show(x, y, z)= false;
-          if (D.UI[SliceDim________].I() == 3 && z != (int)std::round(D.UI[SliceRelPosZ____].D() * nZ)) Show(x, y, z)= false;
-          if (!Show(x, y, z)) continue;
+          if (D.UI[SliceDim________].I() == 1 && x != (int)std::round(D.UI[SliceRelPosX____].D() * nX)) Show.at(x, y, z)= false;
+          if (D.UI[SliceDim________].I() == 2 && y != (int)std::round(D.UI[SliceRelPosY____].D() * nY)) Show.at(x, y, z)= false;
+          if (D.UI[SliceDim________].I() == 3 && z != (int)std::round(D.UI[SliceRelPosZ____].D() * nZ)) Show.at(x, y, z)= false;
+          if (!Show.at(x, y, z)) continue;
 
           // Color by wave value
           if (D.displayMode1) {
             float r= 0.0, g= 0.0, b= 0.0;
-            if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5 + UNew(x, y, z) * D.UI[ColorFactor_____].D(), r, g, b);
-            if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew(x, y, z)) * D.UI[ColorFactor_____].D(), r, g, b);
-            Color(x, y, z)= {r, g, b, (float)std::abs(UNew(x, y, z))};
+            if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5 + UNew.at(x, y, z) * D.UI[ColorFactor_____].D(), r, g, b);
+            if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew.at(x, y, z)) * D.UI[ColorFactor_____].D(), r, g, b);
+            Color.at(x, y, z)= {r, g, b, (float)std::abs(UNew.at(x, y, z))};
           }
 
           // Add shading to visualize wave speed field
           if (D.displayMode2) {
             float r= 0.0, g= 0.0, b= 0.0;
-            Colormap::RatioToGrayscale(Speed(x, y, z), r, g, b);
-            if (D.displayMode1) Color(x, y, z)= {0.6f * Color(x, y, z)[0] + 0.4f * r,
-                                                 0.6f * Color(x, y, z)[1] + 0.4f * g,
-                                                 0.6f * Color(x, y, z)[2] + 0.4f * b, Color(x, y, z)[3] + 0.1f * (1.0f - (float)Speed(x, y, z))};
-            else Color(x, y, z)= {r, g, b, 0.1f * (1.0f - (float)Speed(x, y, z))};
+            Colormap::RatioToGrayscale(Speed.at(x, y, z), r, g, b);
+            if (D.displayMode1) Color.at(x, y, z)= {0.6f * Color.at(x, y, z)[0] + 0.4f * r,
+                                                    0.6f * Color.at(x, y, z)[1] + 0.4f * g,
+                                                    0.6f * Color.at(x, y, z)[2] + 0.4f * b, Color.at(x, y, z)[3] + 0.1f * (1.0f - (float)Speed.at(x, y, z))};
+            else Color.at(x, y, z)= {r, g, b, 0.1f * (1.0f - (float)Speed.at(x, y, z))};
           }
 
           // Apply transparency settings
           if (D.UI[AlphaFactor_____].F() > 0.0f)
-            Color(x, y, z)[3]*= D.UI[AlphaFactor_____].F();
+            Color.at(x, y, z)[3]*= D.UI[AlphaFactor_____].F();
           else
-            Color(x, y, z)[3]= 1.0f;
+            Color.at(x, y, z)[3]= 1.0f;
         }
       }
     }
@@ -333,46 +330,46 @@ void WavePropagSimu::Draw() {
   if (D.displayMode3) {
     if (nX == 1 && nY > 1 && nZ > 1) {
       const int x= 0;
-      Field2D<Vec::Vec3<float>> terrainPos(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
-      Field2D<Vec::Vec3<float>> terrainCol(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
-      Field2D<Vec::Vec3<float>> terrainNor(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
+      Field::Field2<Vec::Vec3<float>> terrainPos(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
+      Field::Field2<Vec::Vec3<float>> terrainCol(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
+      Field::Field2<Vec::Vec3<float>> terrainNor(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
-          terrainPos(y, z).set(0.5f * (D.boxMin[0] + D.boxMax[0]) + UNew(x, y, z) * D.UI[ScaleFactor_____].F(),
-                               D.boxMin[1] + ((float)y + 0.5f) * D.UI[VoxelSize_______].F(),
-                               D.boxMin[2] + ((float)z + 0.5f) * D.UI[VoxelSize_______].F());
+          terrainPos.at(y, z).set(0.5f * (D.boxMin[0] + D.boxMax[0]) + UNew.at(x, y, z) * D.UI[ScaleFactor_____].F(),
+                                  D.boxMin[1] + ((float)y + 0.5f) * D.UI[VoxelSize_______].F(),
+                                  D.boxMin[2] + ((float)z + 0.5f) * D.UI[VoxelSize_______].F());
           float r, g, b;
-          if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(0.5f + 0.5f * UNew(x, y, z) * D.UI[ColorFactor_____].F(), r, g, b);
-          if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew(x, y, z)) * D.UI[ColorFactor_____].F(), r, g, b);
-          terrainCol(y, z).set(r, g, b);
+          if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToViridis(0.5f + 0.5f * UNew.at(x, y, z) * D.UI[ColorFactor_____].F(), r, g, b);
+          if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew.at(x, y, z)) * D.UI[ColorFactor_____].F(), r, g, b);
+          terrainCol.at(y, z).set(r, g, b);
         }
       }
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
           if (y < nY - 1) {
-            if (z < nZ - 1) terrainNor(y, z)+= ((terrainPos(y + 1, z) - terrainPos(y, z)).cross(terrainPos(y, z + 1) - terrainPos(y, z))).normalized();
-            else if (z > 0) terrainNor(y, z)+= ((terrainPos(y, z - 1) - terrainPos(y, z)).cross(terrainPos(y + 1, z) - terrainPos(y, z))).normalized();
+            if (z < nZ - 1) terrainNor.at(y, z)+= ((terrainPos.at(y + 1, z) - terrainPos.at(y, z)).cross(terrainPos.at(y, z + 1) - terrainPos.at(y, z))).normalized();
+            else if (z > 0) terrainNor.at(y, z)+= ((terrainPos.at(y, z - 1) - terrainPos.at(y, z)).cross(terrainPos.at(y + 1, z) - terrainPos.at(y, z))).normalized();
           }
           else if (y > 0) {
-            if (z < nZ - 1) terrainNor(y, z)+= ((terrainPos(y, z + 1) - terrainPos(y, z)).cross(terrainPos(y - 1, z) - terrainPos(y, z))).normalized();
-            else if (z > 0) terrainNor(y, z)+= ((terrainPos(y - 1, z) - terrainPos(y, z)).cross(terrainPos(y, z - 1) - terrainPos(y, z))).normalized();
+            if (z < nZ - 1) terrainNor.at(y, z)+= ((terrainPos.at(y, z + 1) - terrainPos.at(y, z)).cross(terrainPos.at(y - 1, z) - terrainPos.at(y, z))).normalized();
+            else if (z > 0) terrainNor.at(y, z)+= ((terrainPos.at(y - 1, z) - terrainPos.at(y, z)).cross(terrainPos.at(y, z - 1) - terrainPos.at(y, z))).normalized();
           }
-          terrainNor(y, z).normalize();
+          terrainNor.at(y, z).normalize();
         }
       }
       glEnable(GL_LIGHTING);
       glBegin(GL_QUADS);
       for (int y= 0; y < nY - 1; y++) {
         for (int z= 0; z < nZ - 1; z++) {
-          if (Speed(x, y, z) == 0.0 && Speed(x, y, z + 1) == 0.0 && Speed(x, y + 1, z) == 0.0 && Speed(x, y + 1, z + 1) == 0.0) continue;
-          Vec::Vec3<float> flatNormal= (terrainNor(y, z) + terrainNor(y + 1, z) + terrainNor(y + 1, z + 1) + terrainNor(y, z + 1)).normalized();
-          Vec::Vec3<float> flatColor= (terrainCol(y, z) + terrainCol(y + 1, z) + terrainCol(y + 1, z + 1) + terrainCol(y, z + 1)) / 4.0f;
+          if (Speed.at(x, y, z) == 0.0 && Speed.at(x, y, z + 1) == 0.0 && Speed.at(x, y + 1, z) == 0.0 && Speed.at(x, y + 1, z + 1) == 0.0) continue;
+          Vec::Vec3<float> flatNormal= (terrainNor.at(y, z) + terrainNor.at(y + 1, z) + terrainNor.at(y + 1, z + 1) + terrainNor.at(y, z + 1)).normalized();
+          Vec::Vec3<float> flatColor= (terrainCol.at(y, z) + terrainCol.at(y + 1, z) + terrainCol.at(y + 1, z + 1) + terrainCol.at(y, z + 1)) / 4.0f;
           glColor3fv(flatColor.array());
           glNormal3fv(flatNormal.array());
-          glVertex3fv(terrainPos(y, z).array());
-          glVertex3fv(terrainPos(y + 1, z).array());
-          glVertex3fv(terrainPos(y + 1, z + 1).array());
-          glVertex3fv(terrainPos(y, z + 1).array());
+          glVertex3fv(terrainPos.at(y, z).array());
+          glVertex3fv(terrainPos.at(y + 1, z).array());
+          glVertex3fv(terrainPos.at(y + 1, z + 1).array());
+          glVertex3fv(terrainPos.at(y, z + 1).array());
         }
       }
       glEnd();
@@ -391,34 +388,35 @@ void WavePropagSimu::StepSimulation() {
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {
-        if (Speed(x, y, z) == 0.0) continue;
+        if (Speed.at(x, y, z) == 0.0) continue;
         // Precompute data
-        const double gamma= Speed(x, y, z) * D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D();
+        const double gamma= Speed.at(x, y, z) * D.UI[MaxWaveSpeed____].D() * D.UI[TimeStep________].D() / D.UI[VoxelSize_______].D();
 
         // Apply the absorbing boundary conditions with Perfectly Matched Layer on domain faces
         // https://en.wikipedia.org/wiki/Perfectly_matched_layer
         // https://hal.science/hal-01374183
-        if (BorderNeighbor(x, y, z) != std::array<char, 3>{0, 0, 0}) {
-          UNew(x, y, z)= UCur(x, y, z) - gamma * (UCur(x, y, z) - UCur(x + BorderNeighbor(x, y, z)[0], y + BorderNeighbor(x, y, z)[1], z + BorderNeighbor(x, y, z)[2]));
+        if (BorderNeighbor.at(x, y, z) != std::array<char, 3>{0, 0, 0}) {
+          const std::array<char, 3> offset= BorderNeighbor.at(x, y, z);
+          UNew.at(x, y, z)= UCur.at(x, y, z) - gamma * (UCur.at(x, y, z) - UCur.at(x + offset[0], y + offset[1], z + offset[2]));
         }
         else {
           // Compute the 3D field Laplacian with spatial discretization
           // https://en.wikipedia.org/wiki/Discrete_Laplace_operator
           double laplacian= 0.0;
-          laplacian+= (x - 1 >= 0) ? UCur(x - 1, y, z) : UCur(x, y, z);
-          laplacian+= (y - 1 >= 0) ? UCur(x, y - 1, z) : UCur(x, y, z);
-          laplacian+= (z - 1 >= 0) ? UCur(x, y, z - 1) : UCur(x, y, z);
-          laplacian+= (x + 1 < nX) ? UCur(x + 1, y, z) : UCur(x, y, z);
-          laplacian+= (y + 1 < nY) ? UCur(x, y + 1, z) : UCur(x, y, z);
-          laplacian+= (z + 1 < nZ) ? UCur(x, y, z + 1) : UCur(x, y, z);
-          laplacian-= 6.0 * UCur(x, y, z);
+          laplacian+= (x - 1 >= 0) ? UCur.at(x - 1, y, z) : UCur.at(x, y, z);
+          laplacian+= (y - 1 >= 0) ? UCur.at(x, y - 1, z) : UCur.at(x, y, z);
+          laplacian+= (z - 1 >= 0) ? UCur.at(x, y, z - 1) : UCur.at(x, y, z);
+          laplacian+= (x + 1 < nX) ? UCur.at(x + 1, y, z) : UCur.at(x, y, z);
+          laplacian+= (y + 1 < nY) ? UCur.at(x, y + 1, z) : UCur.at(x, y, z);
+          laplacian+= (z + 1 < nZ) ? UCur.at(x, y, z + 1) : UCur.at(x, y, z);
+          laplacian-= 6.0 * UCur.at(x, y, z);
 
           // Update the field values with time discretized wave equation
           // https://en.wikipedia.org/wiki/Wave_equation
           // https://vitalitylearning.medium.com/solving-the-1d-wave-equation-numerical-discretization-190a92c917bc
           // https://www.youtube.com/watch?v=pN-gi_omIVE
           // https://www.idpoisson.fr/berglund/wave_billiard.c
-          UNew(x, y, z)= 2.0 * UCur(x, y, z) - UOld(x, y, z) + gamma * gamma * laplacian;
+          UNew.at(x, y, z)= 2.0 * UCur.at(x, y, z) - UOld.at(x, y, z) + gamma * gamma * laplacian;
         }
       }
     }
@@ -432,15 +430,15 @@ void WavePropagSimu::AddSource() {
     for (int x= 0; x < nX; x++) {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
-          if (Speed(x, y, z) == 0.0) continue;
+          if (Speed.at(x, y, z) == 0.0) continue;
           const Vec::Vec3 pos(D.boxMin[0] + ((double)x + 0.5) * D.UI[VoxelSize_______].D(),
                               D.boxMin[1] + ((double)y + 0.5) * D.UI[VoxelSize_______].D(),
                               D.boxMin[2] + ((double)z + 0.5) * D.UI[VoxelSize_______].D());
           const double blend= Functions::SmoothStep((D.UI[SourceRadius____].D() - (pos - source).norm()) / (2.0 * D.UI[SourceRadius____].D()));
           const double omega= D.UI[SourceFrequency_].D() * simTime * std::numbers::pi;
-          UNew(x, y, z)= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew(x, y, z);
-          UCur(x, y, z)= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur(x, y, z);
-          UOld(x, y, z)= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld(x, y, z);
+          UNew.at(x, y, z)= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UNew.at(x, y, z);
+          UCur.at(x, y, z)= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UCur.at(x, y, z);
+          UOld.at(x, y, z)= blend * std::sin(omega) * D.UI[MaxAmplitude____].D() + (1.0 - blend) * UOld.at(x, y, z);
         }
       }
     }

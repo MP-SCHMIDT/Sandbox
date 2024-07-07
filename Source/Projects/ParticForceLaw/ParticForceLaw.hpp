@@ -5,6 +5,7 @@
 #include <vector>
 
 // Algo headers
+#include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 
 
@@ -125,10 +126,7 @@ class ParticForceLaw
   std::vector<int> BCFor;
 
   // Buckets for spatial partition
-  std::vector<std::vector<std::vector<std::vector<int>>>> Buckets;
-  int nX;
-  int nY;
-  int nZ;
+  Field::Field3<std::vector<int>> Buckets;
   bool BucketOverflown;
 
   // Metaball visualization
@@ -180,8 +178,8 @@ class ParticForceLaw
   bool CheckRefresh();
   void Allocate();
   void Refresh();
-  void KeyPress(const unsigned char key);
-  void MousePress(const unsigned char mouse);
+  void KeyPress();
+  void MousePress();
   void Animate();
   void Draw();
 };

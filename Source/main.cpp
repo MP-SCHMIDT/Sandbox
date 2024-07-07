@@ -49,7 +49,6 @@ static int winPosW, winPosH;
 static int currentProjectID;
 static bool isDarkMode;
 static bool isSmoothDraw;
-static bool isMiddleMousePressed;
 Camera *cam;
 
 // Global constants used by the display
@@ -133,6 +132,9 @@ void project_ForceHardInit() {
   D.Scatter.clear();
   D.Status.clear();
 
+  D.boxMin= {0.0, 0.0, 0.0};
+  D.boxMax= {1.0, 1.0, 1.0};
+
   if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj) myAgentSwarmBoid= AgentSwarmBoid();
   if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
   if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
@@ -178,6 +180,9 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
 #endif
+
+  D.idxFirstParamPageUI= (D.idxFirstParamPageUI < (int)D.UI.size()) ? D.idxFirstParamPageUI : 0;
+  D.idxParamUI= (D.idxParamUI < (int)D.UI.size()) ? D.idxParamUI : 0;
 }
 
 
@@ -207,54 +212,54 @@ void project_Refresh() {
 }
 
 
-void project_KeyPress(const unsigned char key) {
-  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress(key);
-  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress(key);
-  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress(key);
-  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress(key);
-  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress(key);
-  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress(key);
-  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress(key);
-  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress(key);
-  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress(key);
-  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress(key);
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.KeyPress(key);
-  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress(key);
-  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress(key);
-  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress(key);
-  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.KeyPress(key);
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress(key);
-  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.KeyPress(key);
+void project_KeyPress() {
+  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress();
+  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress();
+  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress();
+  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress();
+  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress();
+  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress();
+  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress();
+  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress();
+  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.KeyPress();
+  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress();
+  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress();
+  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.KeyPress();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.KeyPress();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress(key);
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress(key);
-  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress(key);
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress();
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress();
 #endif
 }
 
 
-void project_MousePress(const unsigned char mouse) {
-  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.MousePress(mouse);
-  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.MousePress(mouse);
-  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.MousePress(mouse);
-  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.MousePress(mouse);
-  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.MousePress(mouse);
-  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.MousePress(mouse);
-  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.MousePress(mouse);
-  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.MousePress(mouse);
-  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.MousePress(mouse);
-  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.MousePress(mouse);
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.MousePress(mouse);
-  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.MousePress(mouse);
-  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress(mouse);
-  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress(mouse);
-  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.MousePress(mouse);
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.MousePress(mouse);
-  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.MousePress(mouse);
+void project_MousePress() {
+  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.MousePress();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.MousePress();
+  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.MousePress();
+  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.MousePress();
+  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.MousePress();
+  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.MousePress();
+  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.MousePress();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.MousePress();
+  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.MousePress();
+  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.MousePress();
+  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.MousePress();
+  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.MousePress();
+  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress();
+  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.MousePress();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.MousePress();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.MousePress();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
-  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.MousePress(mouse);
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress(mouse);
-  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.MousePress(mouse);
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.MousePress();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress();
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.MousePress();
 #endif
 }
 
@@ -448,7 +453,7 @@ void ComputeMouseIn3D(int x, int y) {
   cam->setWindowSize(float(winW), float(winH));
   glMultMatrixf(cam->getViewMatrix());
 
-  // Unproject the mouse to near and far 3D positions
+  // Unproject the mouse to near and far planes to get 3D position of beginning and end of mouse ray
   double matModelView[16], matProjection[16];
   int viewport[4];
   glGetDoublev(GL_MODELVIEW_MATRIX, matModelView);
@@ -456,21 +461,21 @@ void ComputeMouseIn3D(int x, int y) {
   glGetIntegerv(GL_VIEWPORT, viewport);
   const double winX= (double)x;
   const double winY= viewport[3] - (double)y;
-  gluUnProject(winX, winY, 0.0, matModelView, matProjection, viewport, &D.mouseNear[0], &D.mouseNear[1], &D.mouseNear[2]);
-  gluUnProject(winX, winY, 1.0, matModelView, matProjection, viewport, &D.mouseFar[0], &D.mouseFar[1], &D.mouseFar[2]);
+  gluUnProject(winX, winY, 0.0, matModelView, matProjection, viewport, &D.mouseBeg[0], &D.mouseBeg[1], &D.mouseBeg[2]);
+  gluUnProject(winX, winY, 1.0, matModelView, matProjection, viewport, &D.mouseEnd[0], &D.mouseEnd[1], &D.mouseEnd[2]);
 
-  // Project mouse to X Y and Z planes
+  // Intersect mouse ray with X Y and Z planes to get 3D projected positions
   const double midX= 0.5 * (D.boxMax[0] + D.boxMin[0]);
   const double midY= 0.5 * (D.boxMax[1] + D.boxMin[1]);
   const double midZ= 0.5 * (D.boxMax[2] + D.boxMin[2]);
   D.mouseProjX[0]= midX;
-  D.mouseProjX[1]= D.mouseNear[1] + (D.mouseFar[1] - D.mouseNear[1]) * (midX - D.mouseNear[0]) / (D.mouseFar[0] - D.mouseNear[0]);
-  D.mouseProjX[2]= D.mouseNear[2] + (D.mouseFar[2] - D.mouseNear[2]) * (midX - D.mouseNear[0]) / (D.mouseFar[0] - D.mouseNear[0]);
-  D.mouseProjY[0]= D.mouseNear[0] + (D.mouseFar[0] - D.mouseNear[0]) * (midY - D.mouseNear[1]) / (D.mouseFar[1] - D.mouseNear[1]);
+  D.mouseProjX[1]= D.mouseBeg[1] + (D.mouseEnd[1] - D.mouseBeg[1]) * (midX - D.mouseBeg[0]) / (D.mouseEnd[0] - D.mouseBeg[0]);
+  D.mouseProjX[2]= D.mouseBeg[2] + (D.mouseEnd[2] - D.mouseBeg[2]) * (midX - D.mouseBeg[0]) / (D.mouseEnd[0] - D.mouseBeg[0]);
+  D.mouseProjY[0]= D.mouseBeg[0] + (D.mouseEnd[0] - D.mouseBeg[0]) * (midY - D.mouseBeg[1]) / (D.mouseEnd[1] - D.mouseBeg[1]);
   D.mouseProjY[1]= midY;
-  D.mouseProjY[2]= D.mouseNear[2] + (D.mouseFar[2] - D.mouseNear[2]) * (midY - D.mouseNear[1]) / (D.mouseFar[1] - D.mouseNear[1]);
-  D.mouseProjZ[0]= D.mouseNear[0] + (D.mouseFar[0] - D.mouseNear[0]) * (midZ - D.mouseNear[2]) / (D.mouseFar[2] - D.mouseNear[2]);
-  D.mouseProjZ[1]= D.mouseNear[1] + (D.mouseFar[1] - D.mouseNear[1]) * (midZ - D.mouseNear[2]) / (D.mouseFar[2] - D.mouseNear[2]);
+  D.mouseProjY[2]= D.mouseBeg[2] + (D.mouseEnd[2] - D.mouseBeg[2]) * (midY - D.mouseBeg[1]) / (D.mouseEnd[1] - D.mouseBeg[1]);
+  D.mouseProjZ[0]= D.mouseBeg[0] + (D.mouseEnd[0] - D.mouseBeg[0]) * (midZ - D.mouseBeg[2]) / (D.mouseEnd[2] - D.mouseBeg[2]);
+  D.mouseProjZ[1]= D.mouseBeg[1] + (D.mouseEnd[1] - D.mouseBeg[1]) * (midZ - D.mouseBeg[2]) / (D.mouseEnd[2] - D.mouseBeg[2]);
   D.mouseProjZ[2]= midZ;
 }
 
@@ -797,6 +802,9 @@ void callback_reshape(int width, int height) {
 void callback_keyboard(unsigned char key, int x, int y) {
   // // Display pressed key code
   // printf("%c  %d\n", key, key);
+  D.keyIsShift= (glutGetModifiers() & GLUT_ACTIVE_SHIFT);
+  D.keyIsCtrl= (glutGetModifiers() & GLUT_ACTIVE_CTRL);
+  D.keyIsAlt= (glutGetModifiers() & GLUT_ACTIVE_ALT);
 
   if (key == 27) {
     glutDestroyWindow(windowID);
@@ -829,14 +837,15 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if (key == '/') project_QueueSoftRefresh();
   else if ((key >= 'A' && key <= 'Z') || (key >= 'a' && key <= 'z')) {
     ComputeMouseIn3D(x, y);
-    const unsigned char keyUpperCase= (key >= 'a' && key <= 'z') ? (key - ('a' - 'A')) : (key);
-    project_KeyPress(keyUpperCase);
+    D.keyLetterUpperCase= (key >= 'a' && key <= 'z') ? (key - ('a' - 'A')) : (key);
+    project_KeyPress();
+    D.keyLetterUpperCase= 0;
   }
 
   // Compute refresh
   if (key != ' ' && key != '.') {
     project_Refresh();
-    callback_display();
+    glutPostRedisplay();
   }
 }
 
@@ -845,30 +854,38 @@ void callback_keyboard(unsigned char key, int x, int y) {
 void callback_keyboard_special(int key, int x, int y) {
   (void)x;  // Disable warning unused variable
   (void)y;  // Disable warning unused variable
+  D.keyIsShift= (glutGetModifiers() & GLUT_ACTIVE_SHIFT);
+  D.keyIsCtrl= (glutGetModifiers() & GLUT_ACTIVE_CTRL);
+  D.keyIsAlt= (glutGetModifiers() & GLUT_ACTIVE_ALT);
 
   if (D.UI.empty()) return;
 
-  if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
-    if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 10 + int(D.UI.size())) % int(D.UI.size());
-    if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 10) % int(D.UI.size());
-    D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
-  }
-  else {
-    if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 1 + int(D.UI.size())) % int(D.UI.size());
-    if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 1) % int(D.UI.size());
-    D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
+  // Handle arrow key to switch selected parameter
+  if (key == GLUT_KEY_UP || key == GLUT_KEY_DOWN) {
+    if (D.keyIsShift) {
+      if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 10 + int(D.UI.size())) % int(D.UI.size());
+      if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 10) % int(D.UI.size());
+      D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
+    }
+    else {
+      if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 1 + int(D.UI.size())) % int(D.UI.size());
+      if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 1) % int(D.UI.size());
+      D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
+    }
+    glutPostRedisplay();
   }
 
+  // Handle arrow key to change the selected parameter value
   if (key == GLUT_KEY_LEFT || key == GLUT_KEY_RIGHT) {
-    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
+    if (D.keyIsShift) {
       if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / 2.0);
       if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * 2.0);
     }
-    else if (glutGetModifiers() & GLUT_ACTIVE_CTRL) {
+    else if (D.keyIsCtrl) {
       if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / (1.0 + 1.0 / 16.0));
       if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * (1.0 + 1.0 / 16.0));
     }
-    else if (glutGetModifiers() & GLUT_ACTIVE_ALT) {
+    else if (D.keyIsAlt) {
       if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0 / 16.0);
       if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0 / 16.0);
     }
@@ -878,55 +895,62 @@ void callback_keyboard_special(int key, int x, int y) {
     }
     // Compute refresh
     project_Refresh();
+    glutPostRedisplay();
   }
-
-  callback_display();
 }
 
 
 // Mouse click interruption callback
 void callback_mouse_click(int button, int state, int x, int y) {
+  D.keyIsShift= (glutGetModifiers() & GLUT_ACTIVE_SHIFT);
+  D.keyIsCtrl= (glutGetModifiers() & GLUT_ACTIVE_CTRL);
+  D.keyIsAlt= (glutGetModifiers() & GLUT_ACTIVE_ALT);
+
   cam->setCurrentMousePos(float(x), float(y));
 
-  if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON && !(glutGetModifiers() & (GLUT_ACTIVE_SHIFT | GLUT_ACTIVE_CTRL))) cam->beginRotate();
-  if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON && (glutGetModifiers() & ~GLUT_ACTIVE_SHIFT & GLUT_ACTIVE_CTRL)) cam->beginZoom();
-  if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON && (glutGetModifiers() & GLUT_ACTIVE_SHIFT & ~GLUT_ACTIVE_CTRL)) cam->beginPan();
+  if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON && !D.keyIsShift && !D.keyIsCtrl) cam->beginRotate();
+  if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON && !D.keyIsShift && D.keyIsCtrl) cam->beginZoom();
+  if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON && D.keyIsShift && !D.keyIsCtrl) cam->beginPan();
   if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) cam->endRotate();
   if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) cam->endZoom();
   if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) cam->endPan();
 
   if (state == GLUT_DOWN && button == GLUT_MIDDLE_BUTTON) {
     ComputeMouseIn3D(x, y);
-    project_MousePress(1);
-    isMiddleMousePressed= true;
+    D.mouseMiddleButtonState= 1;
+    project_MousePress();
+    D.mouseMiddleButtonState= 2;
   }
   if (state == GLUT_UP && button == GLUT_MIDDLE_BUTTON) {
     ComputeMouseIn3D(x, y);
-    project_MousePress(3);
-    isMiddleMousePressed= false;
+    D.mouseMiddleButtonState= 3;
+    project_MousePress();
+    D.mouseMiddleButtonState= 0;
   }
 
   if (state == GLUT_UP && (button == 3 || button == 4)) {
     if (!D.UI.empty()) {
       if (x > (paramLabelNbChar + paramSpaceNbChar) * charWidth) {
         if (x < (paramLabelNbChar + paramSpaceNbChar + paramValNbChar) * charWidth) {
-          if (button == 3) {  // Mouse wheel up
-            if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
-            if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
-            if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+          // Change the targeted symbol if any
+          bool hasParamChanged= true;
+          if (D.idxCursorUI < paramValSignNbChar) {
+            D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
           }
-          if (button == 4) {  // Mouse wheel down
-            if (D.idxCursorUI < paramValSignNbChar) D.UI[D.idxParamUI].Set(-D.UI[D.idxParamUI].D());
-            if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
-            if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar)
-              D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+          else if (D.idxCursorUI >= paramValSignNbChar && D.idxCursorUI < paramValSignNbChar + paramValInteNbChar) {
+            if (button == 3) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
+            if (button == 4) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar - D.idxCursorUI)));
           }
-
+          else if (D.idxCursorUI >= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar && D.idxCursorUI < paramValNbChar) {
+            if (button == 3) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+            if (button == 4) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - std::pow(10.0, double(paramValInteNbChar + paramValSepaNbChar - D.idxCursorUI)));
+          }
+          else {
+            hasParamChanged= false;
+          }
           // Compute refresh
-          project_Refresh();
+          if (hasParamChanged)
+            project_Refresh();
         }
       }
     }
@@ -940,9 +964,12 @@ void callback_mouse_click(int button, int state, int x, int y) {
 void callback_mouse_motion(int x, int y) {
   cam->setCurrentMousePos(float(x), float(y));
 
-  if (isMiddleMousePressed) {
+  if (D.mouseMiddleButtonState == 2) {
+    D.keyIsShift= (glutGetModifiers() & GLUT_ACTIVE_SHIFT);
+    D.keyIsCtrl= (glutGetModifiers() & GLUT_ACTIVE_CTRL);
+    D.keyIsAlt= (glutGetModifiers() & GLUT_ACTIVE_ALT);
     ComputeMouseIn3D(x, y);
-    project_MousePress(2);
+    project_MousePress();
   }
 
   glutPostRedisplay();
@@ -1075,7 +1102,6 @@ void init_menu() {
 void init_GL() {
   isDarkMode= true;
   isSmoothDraw= false;
-  isMiddleMousePressed= false;
 
   // Set background color
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);

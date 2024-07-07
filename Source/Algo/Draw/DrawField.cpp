@@ -13,7 +13,7 @@
 
 
 // Draw a scalar field as solid voxel boundary or as layered panels for transparency
-// TODO Delete this version of the function once all calls are switched to other version
+// TODO Delete this version of the function once all calls are switched to other version using flat array instead of nested
 void DrawField::DrawColored3DField(const std::vector<std::vector<std::vector<bool>>>& iShow,
                                    const std::vector<std::vector<std::vector<std::array<float, 4>>>>& iColor,
                                    const std::array<double, 3>& iBoxMin,
@@ -26,8 +26,8 @@ void DrawField::DrawColored3DField(const std::vector<std::vector<std::vector<boo
   int nX= 0, nY= 0, nZ= 0;
   int nXtmp= 0, nYtmp= 0, nZtmp= 0;
   double voxSizeX= 1.0, voxSizeY= 1.0, voxSizeZ= 1.0;
-  Field::GetFieldDimensions(iShow, nX, nY, nZ);
-  Field::GetFieldDimensions(iColor, nXtmp, nYtmp, nZtmp);
+  Field::GetDim(iShow, nX, nY, nZ);
+  Field::GetDim(iColor, nXtmp, nYtmp, nZtmp);
   if (nX <= 0 || nZ <= 0 || nZ <= 0) return;
   if (nX != nXtmp && nY != nYtmp && nZ != nZtmp) return;
   BoxGrid::GetVoxelSizes(nX, nY, nZ, iBoxMin, iBoxMax, true, voxSizeX, voxSizeY, voxSizeZ);
@@ -149,8 +149,8 @@ void DrawField::DrawColored3DField(const std::vector<std::vector<std::vector<boo
 
 
 // Draw a scalar field as solid voxel boundary or as layered panels for transparency
-void DrawField::DrawColored3DField(const Field3D<char>& iShow,
-                                   const Field3D<std::array<float, 4>>& iColor,
+void DrawField::DrawColored3DField(const Field::Field3<char>& iShow,
+                                   const Field::Field3<std::array<float, 4>>& iColor,
                                    const std::array<double, 3>& iBoxMin,
                                    const std::array<double, 3>& iBoxMax,
                                    const std::array<double, 3>& iCamDir,
@@ -201,8 +201,8 @@ void DrawField::DrawColored3DField(const Field3D<char>& iShow,
               const int y= (std::abs(panelsMode) == 2 && iCamDir[1] < 0.0) ? nY - 1 - yInc : yInc;
               const int z= (std::abs(panelsMode) == 3 && iCamDir[2] < 0.0) ? nZ - 1 - zInc : zInc;
               // Draw the polygons based on visibility and panel mode
-              if (!iShow(x, y, z)) continue;
-              glColor4f(iColor(x, y, z)[0], iColor(x, y, z)[1], iColor(x, y, z)[2], iColor(x, y, z)[3]);
+              if (!iShow.at(x, y, z)) continue;
+              glColor4f(iColor.at(x, y, z)[0], iColor.at(x, y, z)[1], iColor.at(x, y, z)[2], iColor.at(x, y, z)[3]);
               if (iAlphaPanels) {
                 if (std::abs(panelsMode) == 1) {
                   glNormal3f(1.0f, 0.0f, 0.0f);
@@ -227,42 +227,42 @@ void DrawField::DrawColored3DField(const Field3D<char>& iShow,
                 }
               }
               else {
-                if (x == 0 || !iShow(x - 1, y, z)) {
+                if (x == 0 || !iShow.at(x - 1, y, z)) {
                   glNormal3f(-1.0f, 0.0f, 0.0f);
                   glVertex3f(x - 0.5f, y - 0.5f, z - 0.5f);
                   glVertex3f(x - 0.5f, y + 0.5f, z - 0.5f);
                   glVertex3f(x - 0.5f, y + 0.5f, z + 0.5f);
                   glVertex3f(x - 0.5f, y - 0.5f, z + 0.5f);
                 }
-                if (x == nX - 1 || !iShow(x + 1, y, z)) {
+                if (x == nX - 1 || !iShow.at(x + 1, y, z)) {
                   glNormal3f(+1.0f, 0.0f, 0.0f);
                   glVertex3f(x + 0.5f, y - 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y + 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y + 0.5f, z + 0.5f);
                   glVertex3f(x + 0.5f, y - 0.5f, z + 0.5f);
                 }
-                if (y == 0 || !iShow(x, y - 1, z)) {
+                if (y == 0 || !iShow.at(x, y - 1, z)) {
                   glNormal3f(0.0f, -1.0f, 0.0f);
                   glVertex3f(x - 0.5f, y - 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y - 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y - 0.5f, z + 0.5f);
                   glVertex3f(x - 0.5f, y - 0.5f, z + 0.5f);
                 }
-                if (y == nY - 1 || !iShow(x, y + 1, z)) {
+                if (y == nY - 1 || !iShow.at(x, y + 1, z)) {
                   glNormal3f(0.0f, +1.0f, 0.0f);
                   glVertex3f(x - 0.5f, y + 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y + 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y + 0.5f, z + 0.5f);
                   glVertex3f(x - 0.5f, y + 0.5f, z + 0.5f);
                 }
-                if (z == 0 || !iShow(x, y, z - 1)) {
+                if (z == 0 || !iShow.at(x, y, z - 1)) {
                   glNormal3f(0.0f, 0.0f, -1.0f);
                   glVertex3f(x - 0.5f, y - 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y - 0.5f, z - 0.5f);
                   glVertex3f(x + 0.5f, y + 0.5f, z - 0.5f);
                   glVertex3f(x - 0.5f, y + 0.5f, z - 0.5f);
                 }
-                if (z == nZ - 1 || !iShow(x, y, z + 1)) {
+                if (z == nZ - 1 || !iShow.at(x, y, z + 1)) {
                   glNormal3f(0.0f, 0.0f, +1.0f);
                   glVertex3f(x - 0.5f, y - 0.5f, z + 0.5f);
                   glVertex3f(x + 0.5f, y - 0.5f, z + 0.5f);

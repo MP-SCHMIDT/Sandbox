@@ -64,9 +64,6 @@ void ImageExtruMesh::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -122,35 +119,30 @@ void ImageExtruMesh::Refresh() {
   int nW, nH;
   std::vector<std::vector<std::array<float, 4>>> imageRGBA;
   FileInput::LoadImageBMPFile("./FileInput/Images/Logo.bmp", imageRGBA, false);
-  Field::GetFieldDimensions(imageRGBA, nW, nH);
+  Field::GetDim(imageRGBA, nW, nH);
   if (nW < 1 || nH < 1) return;
 
   // Sample field from image with zero order interpolation (nearest neighbor) scheme
-  ScalarField= Field::AllocField3D(nX, nY, nZ, 0.0);
+  ScalarField= Field::Field3(nX, nY, nZ, 0.0);
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       const float posW= (float)(nW - 1) * ((float)x + 0.5f) / (float)nX;
       const float posH= (float)(nH - 1) * ((float)y + 0.5f) / (float)nY;
       const int idxPixelW= std::min(std::max((int)std::round(posW), 0), nW - 1);
       const int idxPixelH= std::min(std::max((int)std::round(posH), 0), nH - 1);
-      ScalarField[x][y][0]= (imageRGBA[idxPixelW][idxPixelH][0] + imageRGBA[idxPixelW][idxPixelH][1] + imageRGBA[idxPixelW][idxPixelH][2]) / 3.0;
+      ScalarField.at(x, y, 0)= (imageRGBA[idxPixelW][idxPixelH][0] + imageRGBA[idxPixelW][idxPixelH][1] + imageRGBA[idxPixelW][idxPixelH][2]) / 3.0;
     }
   }
 
   // Spread value along Z axis of the field
-  for (int x= 0; x < nX; x++) {
-    for (int y= 0; y < nY; y++) {
-      for (int z= 1; z < nZ; z++) {
-        ScalarField[x][y][z]= ScalarField[x][y][z - 1] - std::max(D.UI[HeightMapSlope__].D(), 0.0);
-      }
-    }
-  }
-
-  // Apply the value offset
   for (int x= 0; x < nX; x++)
     for (int y= 0; y < nY; y++)
       for (int z= 1; z < nZ; z++)
-        ScalarField[x][y][z]+= D.UI[ValOffset_______].D();
+        ScalarField.at(x, y, z)= ScalarField.at(x, y, z - 1) - std::max(D.UI[HeightMapSlope__].D(), 0.0);
+
+  // Apply the value offset
+  for (int xyz= 0; xyz < ScalarField.nXYZ; xyz++)
+    ScalarField.at(xyz)+= D.UI[ValOffset_______].D();
 
   // Add the optional flat circular base
   if (D.UI[BaseRelHeight___].D() > 0.0 && nZ > 1) {
@@ -159,23 +151,23 @@ void ImageExtruMesh::Refresh() {
         for (int z= 1; z < nZ - 1; z++)
           if (std::pow(double(x) / double(nX - 1) - 0.5, 2.0) + std::pow(double(y) / double(nY - 1) - 0.5, 2.0) < 0.25)
             if (double(z) / double(nZ - 1) < D.UI[BaseRelHeight___].D())
-              ScalarField[x][y][z]= 1.0;
+              ScalarField.at(x, y, z)= 1.0;
   }
 
   // Iteratively smooth the field
   for (int k= 0; k < D.UI[SmoothIter______].I(); k++) {
-    std::vector<std::vector<std::vector<double>>> fieldOld= ScalarField;
+    Field::Field3<double> fieldOld= ScalarField;
     for (int x= 0; x < nX; x++) {
       for (int y= 0; y < nY; y++) {
         for (int z= 0; z < nZ; z++) {
-          ScalarField[x][y][z]= fieldOld[x][y][z];
-          if (x - 1 >= 0) ScalarField[x][y][z]+= fieldOld[x - 1][y][z];
-          if (x + 1 < nX) ScalarField[x][y][z]+= fieldOld[x + 1][y][z];
-          if (y - 1 >= 0) ScalarField[x][y][z]+= fieldOld[x][y - 1][z];
-          if (y + 1 < nY) ScalarField[x][y][z]+= fieldOld[x][y + 1][z];
-          if (z - 1 >= 0) ScalarField[x][y][z]+= fieldOld[x][y][z - 1];
-          if (z + 1 < nZ) ScalarField[x][y][z]+= fieldOld[x][y][z + 1];
-          ScalarField[x][y][z]/= 7.0;
+          ScalarField.at(x, y, z)= fieldOld.at(x, y, z);
+          if (x - 1 >= 0) ScalarField.at(x, y, z)+= fieldOld.at(x - 1, y, z);
+          if (x + 1 < nX) ScalarField.at(x, y, z)+= fieldOld.at(x + 1, y, z);
+          if (y - 1 >= 0) ScalarField.at(x, y, z)+= fieldOld.at(x, y - 1, z);
+          if (y + 1 < nY) ScalarField.at(x, y, z)+= fieldOld.at(x, y + 1, z);
+          if (z - 1 >= 0) ScalarField.at(x, y, z)+= fieldOld.at(x, y, z - 1);
+          if (z + 1 < nZ) ScalarField.at(x, y, z)+= fieldOld.at(x, y, z + 1);
+          ScalarField.at(x, y, z)/= 7.0;
         }
       }
     }
@@ -186,16 +178,16 @@ void ImageExtruMesh::Refresh() {
   BoxGrid::GetVoxelSizes(nX, nY, nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ);
   std::array<double, 3> tmpBoxMin= {D.boxMin[0] - stepX, D.boxMin[1] - stepY, D.boxMin[2] - stepZ};
   std::array<double, 3> tmpBoxMax= {D.boxMax[0] + stepX, D.boxMax[1] + stepY, D.boxMax[2] + stepZ};
-  std::vector<std::vector<std::vector<double>>> TmpField= Field::AllocField3D(nX + 2, nY + 2, nZ + 2, 0.0);
+  Field::Field3<double> TmpField(nX + 2, nY + 2, nZ + 2, 0.0);
   for (int x= 0; x < nX; x++)
     for (int y= 0; y < nY; y++)
       for (int z= 0; z < nZ; z++)
-        TmpField[x + 1][y + 1][z + 1]= ScalarField[x][y][z];
+        TmpField.at(x + 1, y + 1, z + 1)= ScalarField.at(x, y, z);
   Verts.clear();
   VertsCol.clear();
   Tris.clear();
   Quads.clear();
-  MarchingCubes::ComputeMarchingCubes(D.UI[Isovalue________].F(), tmpBoxMin, tmpBoxMax, TmpField, Verts, Tris);
+  MarchingCubes::ComputeMarchingCubes(TmpField.nX, TmpField.nY, TmpField.nZ, D.UI[Isovalue________].F(), tmpBoxMin, tmpBoxMax, TmpField.data, Verts, Tris);
 
   if (D.UI[GeomSnapMode____].I() == 1) {
     // Snap the mesh nodes to the box in the extrusion direction
@@ -225,10 +217,9 @@ void ImageExtruMesh::Refresh() {
 
 
 // Handle keypress
-void ImageExtruMesh::KeyPress(const unsigned char key) {
+void ImageExtruMesh::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
   if (D.UI[VerboseLevel____].I() >= 5) printf("ImageExtruMesh::KeyPress()\n");
 
   // Write the obj file on disk
@@ -237,10 +228,9 @@ void ImageExtruMesh::KeyPress(const unsigned char key) {
 
 
 // Handle mouse action
-void ImageExtruMesh::MousePress(const unsigned char mouse) {
+void ImageExtruMesh::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -286,20 +276,18 @@ void ImageExtruMesh::Draw() {
 
   // Draw scalar field
   if (D.displayMode4) {
-    int nX, nY, nZ;
-    Field::GetFieldDimensions(ScalarField, nX, nY, nZ);
-    if (nX > 0 && nY > 0 && nZ > 0) {
+    if (ScalarField.nXYZ > 0) {
       double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
-      BoxGrid::GetVoxelSizes(nX, nY, nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);
+      BoxGrid::GetVoxelSizes(ScalarField.nX, ScalarField.nY, ScalarField.nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);
       BoxGrid::GetVoxelStart(D.boxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
       glPointSize(5.0f);
       glBegin(GL_POINTS);
-      for (int x= 0; x < nX; x++) {
-        for (int y= 0; y < nY; y++) {
-          for (int z= 0; z < nZ; z++) {
-            if (ScalarField[x][y][z] < D.UI[Isovalue________].D()) continue;
+      for (int x= 0; x < ScalarField.nX; x++) {
+        for (int y= 0; y < ScalarField.nY; y++) {
+          for (int z= 0; z < ScalarField.nZ; z++) {
+            if (ScalarField.at(x, y, z) < D.UI[Isovalue________].D()) continue;
             float r= 0.0f, g= 0.0f, b= 0.0f;
-            Colormap::RatioToJetBrightSmooth(0.5 * (ScalarField[x][y][z] + 0.5), r, g, b);
+            Colormap::RatioToJetBrightSmooth(0.5 * (ScalarField.at(x, y, z) + 0.5), r, g, b);
             glColor3f(r, g, b);
             glVertex3f(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
           }

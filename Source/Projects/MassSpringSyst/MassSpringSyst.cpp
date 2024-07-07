@@ -58,9 +58,6 @@ void MassSpringSyst::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -160,19 +157,17 @@ void MassSpringSyst::Refresh() {
 
 
 // Handle keypress
-void MassSpringSyst::KeyPress(const unsigned char key) {
+void MassSpringSyst::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
   if (D.UI[VerboseLevel____].I() >= 5) printf("MassSpringSyst::KeyPress()\n");
 }
 
 
 // Handle mouse action
-void MassSpringSyst::MousePress(const unsigned char mouse) {
+void MassSpringSyst::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 

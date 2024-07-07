@@ -8,9 +8,6 @@
 // GLUT lib
 #include "GL/freeglut.h"
 
-// OpenCL lib
-#include "OpenCL_Wrapper/opencl.hpp"
-
 // Algo headers
 #include "Draw/Colormap.hpp"
 #include "Util/Random.hpp"
@@ -18,6 +15,7 @@
 
 // Project headers
 #include "TestsKernelGPU_GPUData.hpp"
+#include "TestsKernelGPU_GPUKernel.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -69,9 +67,6 @@ void TestsKernelGPU::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -109,28 +104,27 @@ void TestsKernelGPU::Refresh() {
 
 
 // Handle keypress
-void TestsKernelGPU::KeyPress(const unsigned char key) {
+void TestsKernelGPU::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 
-  if (key == 'A') {
+  if (D.keyLetterUpperCase == 'A') {
     RunVecAddGPU();
   }
 
-  if (key == 'R') {
+  if (D.keyLetterUpperCase == 'R') {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
     RunReducSumGPU();
     if (D.UI[VerboseLevel____].I() >= 1) printf("IterT %f\n", Timer::PopTimer());
   }
 
-  if (key == 'G') {
+  if (D.keyLetterUpperCase == 'G') {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
     StepNBodySimGPU();
     if (D.UI[VerboseLevel____].I() >= 1) printf("IterT %f\n", Timer::PopTimer());
   }
 
-  if (key == 'C') {
+  if (D.keyLetterUpperCase == 'C') {
     if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
     StepNBodySimCPU();
     if (D.UI[VerboseLevel____].I() >= 1) printf("IterT %f\n", Timer::PopTimer());
@@ -139,10 +133,9 @@ void TestsKernelGPU::KeyPress(const unsigned char key) {
 
 
 // Handle mouse action
-void TestsKernelGPU::MousePress(const unsigned char mouse) {
+void TestsKernelGPU::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -198,7 +191,8 @@ void TestsKernelGPU::Draw() {
 void TestsKernelGPU::RunVecAddGPU() {
   // Initialize the device
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_AddVec.device= Device((select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B()))), get_opencl_c_code(), D.UI[VerboseLevel____].B());
+  OCL_AddVec.deviceLink= Device((select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B()))),
+                                TestsKernelGPU_GPUKernel::get_opencl_c_code(), D.UI[VerboseLevel____].B());
   if (D.UI[VerboseLevel____].I() >= 1) printf("CreateDeviceT %f\n", Timer::PopTimer());
 
   // Get the UI parameters
@@ -206,15 +200,15 @@ void TestsKernelGPU::RunVecAddGPU() {
 
   // Allocate the memory shared by host and device
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_AddVec.A= Memory<int>(OCL_AddVec.device, (ulong)OCL_AddVec.N, 1u, true, true, 0);
-  OCL_AddVec.B= Memory<int>(OCL_AddVec.device, (ulong)OCL_AddVec.N, 1u, true, true, 0);
-  OCL_AddVec.C= Memory<int>(OCL_AddVec.device, (ulong)OCL_AddVec.N, 1u, true, true, 0);
+  OCL_AddVec.A= Memory<int>(OCL_AddVec.deviceLink, (ulong)OCL_AddVec.N, 1u, true, true, 0);
+  OCL_AddVec.B= Memory<int>(OCL_AddVec.deviceLink, (ulong)OCL_AddVec.N, 1u, true, true, 0);
+  OCL_AddVec.C= Memory<int>(OCL_AddVec.deviceLink, (ulong)OCL_AddVec.N, 1u, true, true, 0);
   if (D.UI[VerboseLevel____].I() >= 1) printf("AllocVectorsT %f\n", Timer::PopTimer());
 
   // Set the OpenCL kernel
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_AddVec.kernelABC= Kernel(OCL_AddVec.device, (ulong)OCL_AddVec.N, "kernel_AddVec", OCL_AddVec.A, OCL_AddVec.B, OCL_AddVec.C);
-  OCL_AddVec.kernelBCA= Kernel(OCL_AddVec.device, (ulong)OCL_AddVec.N, "kernel_AddVec", OCL_AddVec.B, OCL_AddVec.C, OCL_AddVec.A);
+  OCL_AddVec.kernelFuncABC= Kernel(OCL_AddVec.deviceLink, (ulong)OCL_AddVec.N, "kernel_AddVec", OCL_AddVec.A, OCL_AddVec.B, OCL_AddVec.C);
+  OCL_AddVec.kernelFuncBCA= Kernel(OCL_AddVec.deviceLink, (ulong)OCL_AddVec.N, "kernel_AddVec", OCL_AddVec.B, OCL_AddVec.C, OCL_AddVec.A);
   if (D.UI[VerboseLevel____].I() >= 1) printf("SetKernelT %f\n", Timer::PopTimer());
 
   // Set the memory values on the host
@@ -234,10 +228,10 @@ void TestsKernelGPU::RunVecAddGPU() {
 
   // Run the OpenCL kernel on the data
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_AddVec.kernelABC.run();
+  OCL_AddVec.kernelFuncABC.run();
   if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_AddVec.kernelBCA.run();
+  OCL_AddVec.kernelFuncBCA.run();
   if (D.UI[VerboseLevel____].I() >= 1) printf("RunKernelT %f\n", Timer::PopTimer());
 
   // Copy the data from device memory to host memory
@@ -253,11 +247,12 @@ void TestsKernelGPU::RunVecAddGPU() {
 
 
 void TestsKernelGPU::RunReducSumGPU() {
-  OCL_ReducSum.device= Device((select_device_with_most_flops(get_devices(false))), get_opencl_c_code(), false);
+  OCL_ReducSum.deviceLink= Device((select_device_with_most_flops(get_devices(false))),
+                                  TestsKernelGPU_GPUKernel::get_opencl_c_code(), false);
   OCL_ReducSum.N= std::max(D.UI[ReducSumSize____].I(), 1);
-  OCL_ReducSum.arr= Memory<int>(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
-  OCL_ReducSum.par= Memory<int>(OCL_ReducSum.device, OCL_ReducSum.N / WORKGROUP_SIZE + 1u, 1u, true, true, 0);
-  OCL_ReducSum.kernel= Kernel(OCL_ReducSum.device, (ulong)OCL_ReducSum.N, "kernel_ReducSum", OCL_ReducSum.arr, OCL_ReducSum.par);
+  OCL_ReducSum.arr= Memory<int>(OCL_ReducSum.deviceLink, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
+  OCL_ReducSum.par= Memory<int>(OCL_ReducSum.deviceLink, OCL_ReducSum.N / WORKGROUP_SIZE + 1u, 1u, true, true, 0);
+  OCL_ReducSum.kernelFunc= Kernel(OCL_ReducSum.deviceLink, (ulong)OCL_ReducSum.N, "kernel_ReducSum", OCL_ReducSum.arr, OCL_ReducSum.par);
 
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
   for (int k= 0; k < OCL_ReducSum.N; k++)
@@ -266,7 +261,7 @@ void TestsKernelGPU::RunReducSumGPU() {
   if (D.UI[VerboseLevel____].I() >= 1) printf("ValSetup %f\n", Timer::PopTimer());
 
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_ReducSum.kernel.run();
+  OCL_ReducSum.kernelFunc.run();
   OCL_ReducSum.par.read_from_device();
   int sumGPU= 0;
   for (int k= 0; k < (int)OCL_ReducSum.par.length(); k++)
@@ -294,7 +289,8 @@ void TestsKernelGPU::StepNBodySimGPU() {
   // Initialize the device if needed
   if (!OCL_NBody.isDeviceReady) {
     OCL_NBody.isDeviceReady= true;
-    OCL_NBody.device= Device((select_device_with_most_flops(get_devices(false))), get_opencl_c_code(), false);
+    OCL_NBody.deviceLink= Device((select_device_with_most_flops(get_devices(false))),
+                                 TestsKernelGPU_GPUKernel::get_opencl_c_code(), false);
   }
 
   // Initialize the memory shared between device and host if needed
@@ -315,10 +311,10 @@ void TestsKernelGPU::StepNBodySimGPU() {
       Vel[k][2]= std::max(D.UI[InitVel_________].F(), 0.0f) * Random::Val(-1.0f, 1.0f);
     }
     // Allocate the memory shared by host and device
-    OCL_NBody.PosOld= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
-    OCL_NBody.PosNew= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
-    OCL_NBody.VelOld= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
-    OCL_NBody.VelNew= Memory<cl_float4>(OCL_NBody.device, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.PosOld= Memory<cl_float4>(OCL_NBody.deviceLink, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.PosNew= Memory<cl_float4>(OCL_NBody.deviceLink, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.VelOld= Memory<cl_float4>(OCL_NBody.deviceLink, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
+    OCL_NBody.VelNew= Memory<cl_float4>(OCL_NBody.deviceLink, (ulong)OCL_NBody.N, 1u, true, true, cl_float4());
   }
 
   // Initialize the kernel parameters
@@ -329,9 +325,9 @@ void TestsKernelGPU::StepNBodySimGPU() {
     OCL_NBody.epsilon= std::max(D.UI[Epsilon_________].F(), 0.0f);
     OCL_NBody.gravity= std::max(D.UI[GravCoeff_______].F(), 0.0f);
     // Set the OpenCL kernel
-    OCL_NBody.kernel= Kernel(OCL_NBody.device, (ulong)OCL_NBody.N, "kernel_NBodySim",
-                             OCL_NBody.timestep, OCL_NBody.epsilon, OCL_NBody.gravity,
-                             OCL_NBody.PosOld, OCL_NBody.PosNew, OCL_NBody.VelOld, OCL_NBody.VelNew);
+    OCL_NBody.kernelFunc= Kernel(OCL_NBody.deviceLink, (ulong)OCL_NBody.N, "kernel_NBodySim",
+                                 OCL_NBody.timestep, OCL_NBody.epsilon, OCL_NBody.gravity,
+                                 OCL_NBody.PosOld, OCL_NBody.PosNew, OCL_NBody.VelOld, OCL_NBody.VelNew);
   }
 
   // Set the memory values on the host
@@ -343,7 +339,7 @@ void TestsKernelGPU::StepNBodySimGPU() {
   OCL_NBody.PosOld.write_to_device();
   OCL_NBody.VelOld.write_to_device();
   // Run the OpenCL kernel on the data
-  OCL_NBody.kernel.run();
+  OCL_NBody.kernelFunc.run();
   // Copy the data from device memory to host memory
   OCL_NBody.PosNew.read_from_device();
   OCL_NBody.VelNew.read_from_device();

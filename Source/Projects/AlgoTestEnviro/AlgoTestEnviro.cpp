@@ -73,9 +73,6 @@ void AlgoTestEnviro::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -117,17 +114,16 @@ void AlgoTestEnviro::Refresh() {
 
 
 // Handle keypress
-void AlgoTestEnviro::KeyPress(const unsigned char key) {
+void AlgoTestEnviro::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 
   if (D.UI[VerboseLevel____].I() >= 5) printf("KeyPress()\n");
 
   // Testing basis computation
-  if (key == 'T') {
-    Vec::Vec3<float> U(D.UI[TestParamALG_00_].D(), D.UI[TestParamALG_01_].D(), D.UI[TestParamALG_02_].D());
-    Vec::Vec3<float> V, W;
+  if (D.keyLetterUpperCase == 'T') {
+    Vec::Vec3<double> U(D.UI[TestParamALG_00_].D(), D.UI[TestParamALG_01_].D(), D.UI[TestParamALG_02_].D());
+    Vec::Vec3<double> V, W;
     U.normalize();
     U.computeBasis(V, W);
     printf("U= %f %f %f\n", U[0], U[1], U[2]);
@@ -143,25 +139,28 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
     Verts.push_back(std::array<double, 3>{V[0], V[1], V[2]});
     Verts.push_back(std::array<double, 3>{W[0], W[1], W[2]});
 
-    Bars.push_back(std::array<int, 2>{0, 1});
-    Bars.push_back(std::array<int, 2>{0, 2});
-    Bars.push_back(std::array<int, 2>{0, 3});
+    Bars.push_back({0, 1});
+    Bars.push_back({0, 2});
+    Bars.push_back({0, 3});
 
-    Tris.push_back(std::array<int, 3>{0, 1, 2});
-    Tris.push_back(std::array<int, 3>{0, 2, 3});
-    Tris.push_back(std::array<int, 3>{0, 3, 1});
+    Tris.push_back({0, 1, 2});
+    Tris.push_back({0, 2, 3});
+    Tris.push_back({0, 3, 1});
   }
 
   // Testing CSG field
-  if (key == 'F') {
-    ScalarField= Field::AllocField3D(D.UI[TestParamALG_03_].I(), D.UI[TestParamALG_04_].I(), D.UI[TestParamALG_05_].I(), std::numeric_limits<double>::max());
+  if (D.keyLetterUpperCase == 'F') {
+    int const nX= D.UI[TestParamALG_03_].I();
+    int const nY= D.UI[TestParamALG_04_].I();
+    int const nZ= D.UI[TestParamALG_05_].I();
+    ScalarField= Field::Field3(nX, nY, nZ, std::numeric_limits<double>::lowest());
     std::array<double, 3> P0({0.1, 0.2, 0.3});
     std::array<double, 3> P1({0.8, 0.6, 0.7});
-    PrimitiveCSG::ConeRound(P0, P1, 0.1, 0.2, PrimitiveCSG::BooleanMode::Union, D.boxMin, D.boxMax, ScalarField);
+    PrimitiveCSG::ConeRound(nX, nY, nZ, P0, P1, 0.1, 0.2, PrimitiveCSG::BooleanMode::Difference, D.boxMin, D.boxMax, ScalarField.data);
   }
 
   // Testing sketch smoothing
-  if (key == 'S') {
+  if (D.keyLetterUpperCase == 'S') {
     std::vector<std::array<double, 3>> polylineRef;
     polylineRef.push_back(std::array<double, 3>({0.0, 0.0, 0.0}));
     polylineRef.push_back(std::array<double, 3>({0.5, 0.5, 0.5}));
@@ -179,24 +178,24 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
   }
 
   // Testing Marching Cubes and vertex merge
-  if (key == 'M') {
+  if (D.keyLetterUpperCase == 'M') {
     Verts.clear();
     Bars.clear();
     Tris.clear();
-    MarchingCubes::ComputeMarchingCubes(0.0, D.boxMin, D.boxMax, ScalarField, Verts, Tris);
+    MarchingCubes::ComputeMarchingCubes(ScalarField.nX, ScalarField.nY, ScalarField.nZ, 0.0, D.boxMin, D.boxMax, ScalarField.data, Verts, Tris);
     if (D.UI[TestParamALG_06_].B())
       MergeVertices::QuadraticMerge(D.UI[TestParamALG_07_].D(), Verts, Tris);
   }
 
   // Testing OBJ file output
-  if (key == 'O') {
+  if (D.keyLetterUpperCase == 'O') {
     std::vector<std::array<double, 3>> VertsCol;
     std::vector<std::array<int, 4>> Quads;
     FileOutput::SaveMeshOBJFile("FileOutput/test.obj", Verts, VertsCol, Tris, Quads, D.UI[VerboseLevel____].I());
   }
 
   // Testing Penal function
-  if (key == 'P') {
+  if (D.keyLetterUpperCase == 'P') {
     Verts.clear();
     for (int k= 0; k < 1000; k++) {
       const double ratio= double(k) / double(1000 - 1);
@@ -212,10 +211,9 @@ void AlgoTestEnviro::KeyPress(const unsigned char key) {
 
 
 // Handle mouse action
-void AlgoTestEnviro::MousePress(const unsigned char mouse) {
+void AlgoTestEnviro::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -285,20 +283,18 @@ void AlgoTestEnviro::Draw() {
 
   // Draw scalar field
   if (D.displayMode4) {
-    int nbX, nbY, nbZ;
-    Field::GetFieldDimensions(ScalarField, nbX, nbY, nbZ);
-    if (nbX > 0 && nbY > 0 && nbZ > 0) {
+    if (ScalarField.nXYZ > 0) {
       double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
-      BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);
+      BoxGrid::GetVoxelSizes(ScalarField.nX, ScalarField.nY, ScalarField.nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);
       BoxGrid::GetVoxelStart(D.boxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
       glPointSize(5.0f);
       glBegin(GL_POINTS);
-      for (int x= 0; x < nbX; x++) {
-        for (int y= 0; y < nbY; y++) {
-          for (int z= 0; z < nbZ; z++) {
-            if (ScalarField[x][y][z] < D.UI[Isocut__________].D()) continue;
+      for (int x= 0; x < ScalarField.nX; x++) {
+        for (int y= 0; y < ScalarField.nY; y++) {
+          for (int z= 0; z < ScalarField.nZ; z++) {
+            if (ScalarField.at(x, y, z) < D.UI[Isocut__________].D()) continue;
             float r= 0.0f, g= 0.0f, b= 0.0f;
-            Colormap::RatioToJetBrightSmooth(0.5 * (ScalarField[x][y][z] + 0.5) * D.UI[ColorFactor_____].D(), r, g, b);
+            Colormap::RatioToJetBrightSmooth(0.5 * (ScalarField.at(x, y, z) + 0.5) * D.UI[ColorFactor_____].D(), r, g, b);
             glColor3f(r, g, b);
             glVertex3f(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
           }

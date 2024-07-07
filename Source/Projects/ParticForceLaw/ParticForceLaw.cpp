@@ -182,8 +182,6 @@ void ParticForceLaw::Allocate() {
   BCPos.clear();
   BCVel.clear();
   BCFor.clear();
-  Buckets.clear();
-  nX= nY= nZ= 0;
   MetaballIsUpdated= false;
   Verts.clear();
   Tris.clear();
@@ -232,18 +230,16 @@ void ParticForceLaw::Refresh() {
 
 
 // Handle keypress
-void ParticForceLaw::KeyPress(const unsigned char key) {
+void ParticForceLaw::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 }
 
 
 // Handle mouse action
-void ParticForceLaw::MousePress(const unsigned char mouse) {
+void ParticForceLaw::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 
@@ -350,18 +346,18 @@ void ParticForceLaw::Draw() {
     glLineWidth(2.0f);
     // Get dimensions
     double stepX, stepY, stepZ;
-    BoxGrid::GetVoxelSizes(nX, nY, nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ);
+    BoxGrid::GetVoxelSizes(Buckets.nX, Buckets.nY, Buckets.nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ);
     const int bucketCapacity= std::max(D.UI[BucketCapacity__].I(), 1);
     // Set transformation
     glPushMatrix();
     glTranslatef(D.boxMin[0] + 0.5f * (float)stepX, D.boxMin[1] + 0.5f * (float)stepY, D.boxMin[2] + 0.5f * (float)stepZ);
     glScalef((float)stepX, (float)stepY, (float)stepZ);
-    for (int x= 0; x < nX; x++) {
-      for (int y= 0; y < nY; y++) {
-        for (int z= 0; z < nZ; z++) {
+    for (int x= 0; x < Buckets.nX; x++) {
+      for (int y= 0; y < Buckets.nY; y++) {
+        for (int z= 0; z < Buckets.nZ; z++) {
           // Color by occupancy
           float r= 0.5f, g= 0.5f, b= 0.5f;
-          Colormap::RatioToJetBrightSmooth((float)Buckets[x][y][z].size() / (float)bucketCapacity, r, g, b);
+          Colormap::RatioToJetBrightSmooth((float)Buckets.at(x, y, z).size() / (float)bucketCapacity, r, g, b);
           glColor3f(r, g, b);
           // Draw wire box
           glPushMatrix();
@@ -409,7 +405,7 @@ void ParticForceLaw::Draw() {
   // Write the status
   D.Status.clear();
   D.Status.resize(4);
-  D.Status[0]= std::format("NbBuckets:{}", nX * nY * nZ);
+  D.Status[0]= std::format("NbBuckets:{}", Buckets.nXYZ);
   D.Status[1]= std::format("NbParticles:{}", (int)Pos.size());
   D.Status[2]= std::format("SimTime:{:.6f}ms", SimTime);
   if (BucketOverflown) D.Status[3]= std::string{"BUCKET OVERFLOW"};
@@ -510,11 +506,11 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
       GetBucketIdx(candidate - vecOffset, idxXBeg, idxYBeg, idxZBeg);
       GetBucketIdx(candidate + vecOffset, idxXEnd, idxYEnd, idxZEnd);
       // Check range in spatial partition
-      for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, nX - 1) && keep; x++) {
-        for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, nY - 1) && keep; y++) {
-          for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, nZ - 1) && keep; z++) {
+      for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, Buckets.nX - 1) && keep; x++) {
+        for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, Buckets.nY - 1) && keep; y++) {
+          for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, Buckets.nZ - 1) && keep; z++) {
             // Check candidate particles
-            for (int k : Buckets[x][y][z]) {
+            for (int k : Buckets.at(x, y, z)) {
               // Skip if invalid neighbor
               if ((candidate - oPointCloud[k]).normSquared() < std::pow(D.UI[LatticePitch____].F() * relMinDist, 2.0f)) {
                 keep= false;
@@ -529,9 +525,9 @@ void ParticForceLaw::BuildBaseCloud(std::vector<Vec::Vec3<float>>& oPointCloud) 
         oPointCloud.push_back(candidate);
         int idxX, idxY, idxZ;
         GetBucketIdx(candidate, idxX, idxY, idxZ);
-        if (idxX >= 0 && idxX < nX && idxY >= 0 && idxY < nY && idxZ >= 0 && idxZ < nZ)
-          if ((int)Buckets[idxX][idxY][idxZ].size() < bucketCapacity)
-            Buckets[idxX][idxY][idxZ].push_back((int)oPointCloud.size() - 1);
+        if (idxX >= 0 && idxX < Buckets.nX && idxY >= 0 && idxY < Buckets.nY && idxZ >= 0 && idxZ < Buckets.nZ)
+          if ((int)Buckets.at(idxX, idxY, idxZ).size() < bucketCapacity)
+            Buckets.at(idxX, idxY, idxZ).push_back((int)oPointCloud.size() - 1);
       }
       else {
         failStreak++;
@@ -882,19 +878,15 @@ void ParticForceLaw::ComputeBuckets() {
   const float boxDZ= (float)(D.boxMax[2] - D.boxMin[2]);
   const float theoryBucketCount= particleDensity * boxDX * boxDY * boxDZ / (float)bucketCapacity;
   const float stepSize= std::pow(boxDX * boxDY * boxDZ, 1.0f / 3.0f) / std::pow(theoryBucketCount, 1.0f / 3.0f);
-  nX= std::max(1, (int)std::round(boxDX / stepSize));
-  nY= std::max(1, (int)std::round(boxDY / stepSize));
-  nZ= std::max(1, (int)std::round(boxDZ / stepSize));
+  int const nX= std::max(1, (int)std::round(boxDX / stepSize));
+  int const nY= std::max(1, (int)std::round(boxDY / stepSize));
+  int const nZ= std::max(1, (int)std::round(boxDZ / stepSize));
 
-  // Allocate and initialize the spatial partition if needed
-  int nXOld, nYOld, nZOld, nBOld;
-  Field::GetFieldDimensions(Buckets, nXOld, nYOld, nZOld, nBOld);
-  if (nXOld != nX || nYOld != nY || nZOld != nZ || (int)Buckets[0][0][0].capacity() != bucketCapacity)
-    Buckets= Field::AllocField4D(nX, nY, nZ, bucketCapacity, -1);
-  for (int x= 0; x < nX; x++)
-    for (int y= 0; y < nY; y++)
-      for (int z= 0; z < nZ; z++)
-        Buckets[x][y][z].clear();
+  // Allocate and initialize the spatial partition if neede
+  if (Buckets.nX != nX || Buckets.nY != nY || Buckets.nZ != nZ || (int)Buckets.at(0, 0, 0).capacity() != bucketCapacity)
+    Buckets= Field::Field3<std::vector<int>>(nX, nY, nZ, std::vector<int>(bucketCapacity, -1));
+  for (int xyz= 0; xyz < Buckets.nXYZ; xyz++)
+    Buckets.at(xyz).clear();
   BucketOverflown= false;
 
   // Fill the spatial partition
@@ -902,8 +894,8 @@ void ParticForceLaw::ComputeBuckets() {
     int idxX, idxY, idxZ;
     GetBucketIdx(Pos[k], idxX, idxY, idxZ);
     if (idxX >= 0 && idxX < nX && idxY >= 0 && idxY < nY && idxZ >= 0 && idxZ < nZ) {
-      if ((int)Buckets[idxX][idxY][idxZ].size() < bucketCapacity)
-        Buckets[idxX][idxY][idxZ].push_back(k);
+      if ((int)Buckets.at(idxX, idxY, idxZ).size() < bucketCapacity)
+        Buckets.at(idxX, idxY, idxZ).push_back(k);
       else
         BucketOverflown= true;
     }
@@ -912,22 +904,20 @@ void ParticForceLaw::ComputeBuckets() {
   // Plot spatial partition occupancy
   if (D.Plot.size() < 1) D.Plot.resize(1);
   D.Plot[0].name= "Buckets";
-  D.Plot[0].val.resize(nX * nY * nZ + 2);
-  D.Plot[0].val[nX * nY * nZ + 0]= 0;
-  D.Plot[0].val[nX * nY * nZ + 1]= bucketCapacity;
-  for (int x= 0; x < nX; x++)
-    for (int y= 0; y < nY; y++)
-      for (int z= 0; z < nZ; z++)
-        D.Plot[0].val[x * nY * nZ + y * nZ + z]= (double)Buckets[x][y][z].size();
+  D.Plot[0].val.resize(Buckets.nXYZ + 2);
+  D.Plot[0].val[Buckets.nXYZ + 0]= 0;
+  D.Plot[0].val[Buckets.nXYZ + 1]= bucketCapacity;
+  for (int xyz= 0; xyz < Buckets.nXYZ; xyz++)
+    D.Plot[0].val[xyz]= (double)Buckets.at(xyz).size();
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("SpatialSortT %f\n", Timer::PopTimer());
 }
 
 
 void ParticForceLaw::GetBucketIdx(const Vec::Vec3<float>& iPos, int& oIdxX, int& oIdxY, int& oIdxZ) {
-  oIdxX= (iPos[0] == D.boxMax[0]) ? (nX - 1) : ((int)std::floor((float)nX * (iPos[0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0])));
-  oIdxY= (iPos[1] == D.boxMax[1]) ? (nY - 1) : ((int)std::floor((float)nY * (iPos[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1])));
-  oIdxZ= (iPos[2] == D.boxMax[2]) ? (nZ - 1) : ((int)std::floor((float)nZ * (iPos[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2])));
+  oIdxX= (iPos[0] == D.boxMax[0]) ? (Buckets.nX - 1) : ((int)std::floor((float)Buckets.nX * (iPos[0] - D.boxMin[0]) / (D.boxMax[0] - D.boxMin[0])));
+  oIdxY= (iPos[1] == D.boxMax[1]) ? (Buckets.nY - 1) : ((int)std::floor((float)Buckets.nY * (iPos[1] - D.boxMin[1]) / (D.boxMax[1] - D.boxMin[1])));
+  oIdxZ= (iPos[2] == D.boxMax[2]) ? (Buckets.nZ - 1) : ((int)std::floor((float)Buckets.nZ * (iPos[2] - D.boxMin[2]) / (D.boxMax[2] - D.boxMin[2])));
 }
 
 
@@ -963,11 +953,11 @@ void ParticForceLaw::ComputeForces() {
     GetBucketIdx(Pos[k0] - vecOffset, idxXBeg, idxYBeg, idxZBeg);
     GetBucketIdx(Pos[k0] + vecOffset, idxXEnd, idxYEnd, idxZEnd);
     // Check range in spatial partition
-    for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, nX - 1); x++) {
-      for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, nY - 1); y++) {
-        for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, nZ - 1); z++) {
+    for (int x= std::max(0, idxXBeg); x <= std::min(idxXEnd, Buckets.nX - 1); x++) {
+      for (int y= std::max(0, idxYBeg); y <= std::min(idxYEnd, Buckets.nY - 1); y++) {
+        for (int z= std::max(0, idxZBeg); z <= std::min(idxZEnd, Buckets.nZ - 1); z++) {
           // Check candidate particles
-          for (int k1 : Buckets[x][y][z]) {
+          for (int k1 : Buckets.at(x, y, z)) {
             // Skip if invalid neighbor
             // if (BCVel[k0] != 0 && BCVel[k1] != 0) continue;
             // if (BCPos[k0] != 0 && BCPos[k1] != 0) continue;
@@ -1123,7 +1113,7 @@ void ParticForceLaw::ComputeMetaballs() {
   const int tmpNX= std::max((int)std::round((D.boxMax[0] - D.boxMin[0]) / D.UI[MetaballVoxSize_].D()), 1);
   const int tmpNY= std::max((int)std::round((D.boxMax[1] - D.boxMin[1]) / D.UI[MetaballVoxSize_].D()), 1);
   const int tmpNZ= std::max((int)std::round((D.boxMax[2] - D.boxMin[2]) / D.UI[MetaballVoxSize_].D()), 1);
-  std::vector<std::vector<std::vector<double>>> tmpField= Field::AllocField3D(tmpNX, tmpNY, tmpNZ, 0.0);
+  Field::Field3<double> tmpField(tmpNX, tmpNY, tmpNZ, 0.0);
   double stepX, stepY, stepZ;
   BoxGrid::GetVoxelSizes(tmpNX, tmpNY, tmpNZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ);
   for (int k= 0; k < (int)Pos.size(); k++) {
@@ -1139,14 +1129,14 @@ void ParticForceLaw::ComputeMetaballs() {
           const Vec::Vec3<float> pos(D.boxMin[0] + (x + 0.5f) * stepX, D.boxMin[1] + (y + 0.5f) * stepY, D.boxMin[2] + (z + 0.5f) * stepZ);
           if ((pos - Pos[k]).normSquared() < (2.0 * metaballSize) * (2.0 * metaballSize)) {
             // TODO tweak decay function for cleaner results
-            tmpField[x][y][z]+= std::max(0.0, 1.0 - (pos - Pos[k]).norm() / metaballSize);
+            tmpField.at(x, y, z)+= std::max(0.0, 1.0 - (pos - Pos[k]).norm() / metaballSize);
           }
         }
       }
     }
   }
 
-  MarchingCubes::ComputeMarchingCubes(D.UI[MetaballIsoval__].F(), D.boxMin, D.boxMax, tmpField, Verts, Tris);
+  MarchingCubes::ComputeMarchingCubes(tmpField.nX, tmpField.nY, tmpField.nZ, D.UI[MetaballIsoval__].F(), D.boxMin, D.boxMax, tmpField.data, Verts, Tris);
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("MetaballT %f\n", Timer::PopTimer());
 }

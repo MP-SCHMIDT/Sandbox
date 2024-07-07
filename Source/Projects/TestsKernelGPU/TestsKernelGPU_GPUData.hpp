@@ -7,9 +7,9 @@
 struct
 {
   int N;
-  Device device;
-  Kernel kernelABC;
-  Kernel kernelBCA;
+  Device deviceLink;
+  Kernel kernelFuncABC;
+  Kernel kernelFuncBCA;
   Memory<int> A;
   Memory<int> B;
   Memory<int> C;
@@ -19,8 +19,8 @@ struct
 {
   int N;
   int size;
-  Device device;
-  Kernel kernel;
+  Device deviceLink;
+  Kernel kernelFunc;
   Memory<int> arr;
   Memory<int> par;
   Memory<int> loc;
@@ -35,8 +35,8 @@ struct
   float timestep;
   float epsilon;
   float gravity;
-  Device device;
-  Kernel kernel;
+  Device deviceLink;
+  Kernel kernelFunc;
   Memory<cl_float4> PosOld;
   Memory<cl_float4> PosNew;
   Memory<cl_float4> VelOld;

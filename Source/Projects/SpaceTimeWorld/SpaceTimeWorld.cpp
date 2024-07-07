@@ -59,9 +59,6 @@ void SpaceTimeWorld::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -117,18 +114,16 @@ void SpaceTimeWorld::Refresh() {
 
 
 // Handle keypress
-void SpaceTimeWorld::KeyPress(const unsigned char key) {
+void SpaceTimeWorld::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 }
 
 
 // Handle mouse action
-void SpaceTimeWorld::MousePress(const unsigned char mouse) {
+void SpaceTimeWorld::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 

@@ -1,13 +1,35 @@
-#define ENABLE_OPENCL_KERNEL
-#ifdef ENABLE_OPENCL_KERNEL
+#include "TestsKernelGPU_GPUKernel.hpp"
+
+// Standard lib
+#include <string>
 
 // OpenCL lib and wrapper
-#include "OpenCL_Wrapper/stringification.hpp"
 #include "OpenCL_Wrapper/utilities.hpp"
 
+// OpenCL Syntax highlighting
+#include "OpenCL_Wrapper/highlight.hpp"
 
-// #### Begin of stringified OpenCL C code ####
-string opencl_c_container() {
+
+// Evil stringification macro, similar syntax to raw string R"(...)"
+// Note: unbalanced round brackets () are not allowed and string literals can't be arbitrarily long, so periodically interrupt with )+R(
+#define R(...) std::string(" " #__VA_ARGS__ " ")
+
+
+std::string TestsKernelGPU_GPUKernel::get_opencl_c_code() {
+  std::string r= TestsKernelGPU_GPUKernel::opencl_c_container();
+  r= replace(r, " ", "\n");              // replace all spaces by new lines
+  r= replace(r, "#ifdef\n", "#ifdef ");  // except for the arguments after some preprocessor options that need to be in the same line
+  r= replace(r, "#ifndef\n", "#ifndef ");
+  r= replace(r, "#define\n", "#define ");  // #define with two arguments will not work
+  r= replace(r, "#if\n", "#if ");          // don't leave any spaces in arguments
+  r= replace(r, "#elif\n", "#elif ");      // don't leave any spaces in arguments
+  r= replace(r, "#pragma\n", "#pragma ");
+  return "\n" + r;
+}
+
+
+// Begin of stringified OpenCL C code
+std::string TestsKernelGPU_GPUKernel::opencl_c_container() {
   return R(
 
       kernel void kernel_AddVec(global const int* A, global const int* B, global int* C) {
@@ -54,6 +76,4 @@ string opencl_c_container() {
       }
 
   );
-}
-// #### End of stringified OpenCL C code ####
-#endif
+}  // End of stringified OpenCL C code

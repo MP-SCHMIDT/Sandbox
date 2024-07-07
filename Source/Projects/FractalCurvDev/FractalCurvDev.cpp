@@ -46,9 +46,6 @@ void FractalCurvDev::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -169,12 +166,12 @@ void FractalCurvDev::Refresh() {
 
 
 // Handle keypress
-void FractalCurvDev::KeyPress(const unsigned char key) {
+void FractalCurvDev::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
   // Save OBJ file of developed surface
-  if (key == 'O') {
+  if (D.keyLetterUpperCase == 'O') {
     std::string iFullpath= "FileOutput/test.obj";
     printf("Saving OBJ mesh file [%s]\n", iFullpath.c_str());
     FILE* outputFile= nullptr;
@@ -199,10 +196,9 @@ void FractalCurvDev::KeyPress(const unsigned char key) {
 
 
 // Handle mouse action
-void FractalCurvDev::MousePress(const unsigned char mouse) {
+void FractalCurvDev::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 

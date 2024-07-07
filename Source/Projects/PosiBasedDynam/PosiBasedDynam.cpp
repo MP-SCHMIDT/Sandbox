@@ -53,9 +53,6 @@ void PosiBasedDynam::SetActiveProject() {
     printf("[ERROR] Invalid parameter count in UI\n");
   }
 
-  D.boxMin= {0.0, 0.0, 0.0};
-  D.boxMax= {1.0, 1.0, 1.0};
-
   isActivProj= true;
   isAllocated= false;
   isRefreshed= false;
@@ -128,18 +125,16 @@ void PosiBasedDynam::Refresh() {
 
 
 // Handle keypress
-void PosiBasedDynam::KeyPress(const unsigned char key) {
+void PosiBasedDynam::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)key;  // Disable warning unused variable
 }
 
 
 // Handle mouse action
-void PosiBasedDynam::MousePress(const unsigned char mouse) {
+void PosiBasedDynam::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
-  (void)mouse;  // Disable warning unused variable
 }
 
 

@@ -4,6 +4,7 @@
 #include <vector>
 
 // Algo headers
+#include "Math/Field.hpp"
 #include "Math/Vec.hpp"
 
 
@@ -37,10 +38,10 @@ class TerrainErosion
   int terrainNbX;
   int terrainNbY;
   int terrainNbC;
-  std::vector<std::vector<Vec::Vec3<float>>> terrainPos;
-  std::vector<std::vector<Vec::Vec3<float>>> terrainNor;
-  std::vector<std::vector<Vec::Vec3<float>>> terrainCol;
-  std::vector<std::vector<float>> terrainChg;
+  Field::Field2<Vec::Vec3<float>> terrainPos;
+  Field::Field2<Vec::Vec3<float>> terrainNor;
+  Field::Field2<Vec::Vec3<float>> terrainCol;
+  Field::Field2<float> terrainChg;
 
   int dropletNbK;
   std::vector<Vec::Vec3<float>> dropletPosOld;
@@ -66,8 +67,8 @@ class TerrainErosion
   bool CheckRefresh();
   void Allocate();
   void Refresh();
-  void KeyPress(const unsigned char key);
-  void MousePress(const unsigned char mouse);
+  void KeyPress();
+  void MousePress();
   void Animate();
   void Draw();
 };
