@@ -53,11 +53,14 @@ void SpaceTimeWorld::SetActiveProject() {
     D.UI.push_back(ParamUI("FactorDoppl_____", 1.0));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Vox";
+    D.displayModeLabel[2]= "Flow";
+    D.displayModeLabel[3]= "Screen";
+    D.displayModeLabel[4]= "Photon";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -113,6 +116,11 @@ void SpaceTimeWorld::Refresh() {
 }
 
 
+// Handle UI parameter change
+void SpaceTimeWorld::ParamChange() {
+}
+
+
 // Handle keypress
 void SpaceTimeWorld::KeyPress() {
   if (!isActivProj) return;
@@ -142,7 +150,7 @@ void SpaceTimeWorld::Draw() {
   if (!isRefreshed) return;
 
   // Draw the solid voxels
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     int idxT= std::min(std::max(D.UI[CursorWorldT____].I(), 0), worldNbT - 1);
     glPushMatrix();
     glScalef(1.0f / float(worldNbX), 1.0f / float(worldNbY), 1.0f / float(worldNbZ));
@@ -164,7 +172,7 @@ void SpaceTimeWorld::Draw() {
   }
 
   // Draw the space time flow field
-  if (D.displayMode2) {
+  if (D.displayMode[2]) {
     int idxT= std::min(std::max(D.UI[CursorWorldT____].I(), 0), worldNbT - 1);
     glBegin(GL_LINES);
     // int displaySkipsize= std::pow((worldNbX * worldNbY * worldNbZ) / 10000, 1.0 / 3.0);
@@ -189,7 +197,7 @@ void SpaceTimeWorld::Draw() {
   }
 
   // Draw the screen
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     glPushMatrix();
     glTranslatef(1.0f, 0.0f, 0.0f);
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
@@ -204,7 +212,7 @@ void SpaceTimeWorld::Draw() {
   }
 
   // Draw the photon paths
-  if (D.displayMode4) {
+  if (D.displayMode[4]) {
     glBegin(GL_LINES);
     // for (int h= 0; h < screenNbH; h++) {
     //   for (int v= 0; v < screenNbV; v++) {

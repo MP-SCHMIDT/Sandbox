@@ -22,7 +22,7 @@ bool FileOutput::SaveBoxTXTFile(
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving TXT box file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving TXT box file [%s] ", iFullpath.c_str());
 
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
@@ -52,7 +52,7 @@ bool FileOutput::SaveScalarFieldFile(
     std::vector<std::vector<std::vector<int>>> const& iIntField,
     std::vector<std::vector<std::vector<bool>>> const& iBoolField,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving TXT scalar field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving TXT scalar field file [%s] ", iFullpath.c_str());
 
   int type= 0, nbX= 0, nbY= 0, nbZ= 0;
   if (!iDoubleField.empty() && !iDoubleField[0].empty() && !iDoubleField[0][0].empty()) {
@@ -114,7 +114,7 @@ bool FileOutput::SaveScalarListTXTFile(
     std::string const iFullpath,
     std::vector<double> const& iVector,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving vector of scalars TXT file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving vector of scalars TXT file [%s] ", iFullpath.c_str());
 
   if (iVector.empty()) {
     printf("[ERROR] Invalid vector dimensions\n");
@@ -143,12 +143,12 @@ bool FileOutput::SaveScalarListBinaryFile(
     std::string const iFullpath,
     std::vector<double> const& iField,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving RAW scalar field binary file [%s] ", iFullpath.c_str());
+
   if (iField.empty()) {
     printf("[ERROR] Invalid field dimensions\n");
     return false;
   }
-
-  if (iVerbose) printf("Saving RAW scalar field binary file [%s]\n", iFullpath.c_str());
 
   std::ofstream outputFile;
   outputFile.open(iFullpath, std::ios::binary);
@@ -176,7 +176,7 @@ bool FileOutput::SaveSparseMatrixMarketFile(
     std::vector<int> const& iCol,
     std::vector<double> const& iVal,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving Sparse MatrixMarket file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving Sparse MatrixMarket file [%s] ", iFullpath.c_str());
 
   if (iRow.size() != iCol.size() || iRow.size() != iVal.size()) {
     printf("[ERROR] Invalid matrix dimensions\n");
@@ -210,7 +210,7 @@ bool FileOutput::SaveVectorFieldFile(
     std::vector<std::vector<std::vector<std::array<int, 3>>>> const& iIntField,
     std::vector<std::vector<std::vector<std::array<bool, 3>>>> const& iBoolField,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving TXT vector field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving TXT vector field file [%s] ", iFullpath.c_str());
 
   int type= 0, nbX= 0, nbY= 0, nbZ= 0;
   if (!iDoubleField.empty() && !iDoubleField[0].empty() && !iDoubleField[0][0].empty()) {
@@ -270,7 +270,7 @@ bool FileOutput::SaveTensorFieldFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<std::array<double, 9>>>> const& iDoubleField,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving TXT tensor field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving TXT tensor field file [%s] ", iFullpath.c_str());
 
   int nbX, nbY, nbZ;
   Field::GetDim(iDoubleField, nbX, nbY, nbZ);
@@ -318,6 +318,8 @@ bool FileOutput::SaveScalarFieldRawVTIFile(
     std::array<double, 3> const& iBBoxMax,
     std::vector<std::vector<std::vector<double>>> const& iField,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving raw scalar VTI file [%s] ", iFullpath.c_str());
+
   // Create the file
   std::ofstream outputFile;
   outputFile.open(iFullpath, std::ios::binary);
@@ -377,7 +379,7 @@ bool FileOutput::SaveScalarFieldRawVTIFile(
   outputFile.flush();
   outputFile.close();
 
-  if (iVerbose) printf("Raw VTI scalar field [%s] saved: %d x %d x %d voxels\n", iFullpath.c_str(), nbX, nbY, nbZ);
+  if (iVerbose) printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
   return true;
 }
 
@@ -388,6 +390,8 @@ bool FileOutput::SaveVectorFieldRawVTIFile(
     std::array<double, 3> const& iBBoxMax,
     std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iField,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving raw vector VTI file [%s] ", iFullpath.c_str());
+
   // Create the file
   std::ofstream outputFile;
   outputFile.open(iFullpath, std::ios::binary);
@@ -452,7 +456,7 @@ bool FileOutput::SaveVectorFieldRawVTIFile(
   outputFile.flush();
   outputFile.close();
 
-  if (iVerbose) printf("Raw VTI vector field [%s] saved: %d x %d x %d voxels\n", iFullpath.c_str(), nbX, nbY, nbZ);
+  if (iVerbose) printf("File saved: %d x %d x %d voxels\n", nbX, nbY, nbZ);
   return true;
 }
 
@@ -464,7 +468,7 @@ bool FileOutput::SaveMeshOBJFile(
     std::vector<std::array<int, 3>> const& iTriangles,
     std::vector<std::array<int, 4>> const& iQuads,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving OBJ mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving OBJ mesh file [%s] ", iFullpath.c_str());
 
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
@@ -509,7 +513,7 @@ bool FileOutput::SaveGraphINPFile(
     bool const iWriteTris,
     bool const iWriteTets,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving INP graph file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving INP graph file [%s] ", iFullpath.c_str());
 
   std::ofstream ofs;
   ofs.imbue(std::locale::classic());
@@ -604,7 +608,7 @@ bool FileOutput::SaveGraphINPFile(
   ofs << "*END STEP" << std::endl;
   ofs.close();
 
-  if (iVerbose) printf("File saved\n");
+  if (iVerbose) printf("File saved: %d nodes, %d elements\n", int(iNodes.size()), numElement - 1);
   return true;
 }
 
@@ -618,6 +622,8 @@ bool FileOutput::SaveHexaMeshINPFile(
     std::vector<std::vector<std::vector<std::array<double, 3>>>> const& iLoadField,
     double const iDensityThreshold,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving hexa mesh INP file [%s] ", iFullpath.c_str());
+
   // Get field dimensions
   int nbX, nbY, nbZ;
   Field::GetDim(iDensityField, nbX, nbY, nbZ);
@@ -829,7 +835,7 @@ bool FileOutput::SaveHexaMeshINPFile(
 
   ofs.close();
 
-  if (iVerbose) printf("Saved INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("File saved: %d nodes, %d elements\n", nodeNum - 1, elemNum - 1);
   return true;
 }
 
@@ -839,6 +845,7 @@ bool FileOutput::SaveHexaMeshElemValuesINPFile(
     std::vector<std::vector<std::vector<double>>> const& iElemValueField,
     std::vector<std::vector<std::vector<int>>> const& iDesignSpaceField,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving hexa mesh densities INP file [%s] ", iFullpath.c_str());
   // Get field dimensions
   int nbX, nbY, nbZ;
   Field::GetDim(iElemValueField, nbX, nbY, nbZ);
@@ -870,7 +877,7 @@ bool FileOutput::SaveHexaMeshElemValuesINPFile(
 
   ofs.close();
 
-  if (iVerbose) printf("Saved INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("File saved: %d elements\n", elemNum - 1);
   return true;
 }
 
@@ -885,7 +892,7 @@ bool FileOutput::SaveHexaMeshWithElsetINPFile(
     double const iPoissonRatio,
     double const iDensityThreshold,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving INP Hexa mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving hexa mesh elset INP file [%s] ", iFullpath.c_str());
 
   std::ofstream ofs;
   ofs.imbue(std::locale::classic());
@@ -1016,7 +1023,7 @@ bool FileOutput::SaveHexaMeshWithElsetINPFile(
 
   ofs.close();
 
-  if (iVerbose) printf("File saved\n");
+  if (iVerbose) printf("File saved: %d nodes, %d elements\n", nodeNum - 1, numElement - 1);
   return true;
 }
 
@@ -1040,14 +1047,13 @@ bool FileOutput::SaveOrthotropicHexaMeshINPFile(
     double const iShearYZ,
     double const iDensityThreshold,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving hexa mesh ortho elem INP file [%s] ", iFullpath.c_str());
   int nbX, nbY, nbZ;
   Field::GetDim(iDensityField, nbX, nbY, nbZ);
   if (nbX == 0 || nbY == 0 || nbZ == 0) return false;
   double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
   BoxGrid::GetVoxelSizes(nbX, nbY, nbZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ, voxDiag);
   BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, false, startX, startY, startZ);
-
-  if (iVerbose) printf("Saving INP Orthotropic Hexa mesh file [%s]\n", iFullpath.c_str());
 
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
@@ -1158,7 +1164,7 @@ bool FileOutput::SaveOrthotropicHexaMeshINPFile(
 
   fclose(outputFile);
 
-  if (iVerbose) printf("File saved\n");
+  if (iVerbose) printf("File saved: %d nodes, %d elements\n", nodeNum - 1, numElement - 1);
   return true;
 }
 
@@ -1174,7 +1180,8 @@ bool FileOutput::SaveGraphO3PFile(
     bool const iWriteTris,
     bool const iWriteTets,
     bool const iVerbose) {
-  if (iVerbose) printf("Saving O3P graph file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Saving O3P graph file [%s] ", iFullpath.c_str());
+
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
   if (outputFile == nullptr) {
@@ -1211,10 +1218,11 @@ bool FileOutput::SaveGraphTXTFile(
     std::vector<std::array<int, 2>> const& iBars,
     std::vector<double> const& iBarRadii,
     bool const iVerbose) {
+  if (iVerbose) printf("Saving TXT graph file [%s] ", iFullpath.c_str());
+
   if (iNodes.size() != iLoads.size()) return false;
   if (iNodes.size() != iClamps.size()) return false;
 
-  if (iVerbose) printf("Saving TXT graph file [%s]\n", iFullpath.c_str());
   FILE* outputFile= nullptr;
   outputFile= fopen(iFullpath.c_str(), "w");
   if (outputFile == nullptr) {

@@ -13,13 +13,13 @@ bool FileInput::LoadBoxTXTFile(
     std::array<double, 3>& oBBoxMin,
     std::array<double, 3>& oBBoxMax,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading TXT box file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT box file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -63,7 +63,7 @@ bool FileInput::LoadScalarListTXTFile(
     std::string const iFullpath,
     std::vector<double>& oVector,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading vector of scalars TXT file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading vector of scalars TXT file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
@@ -90,7 +90,7 @@ bool FileInput::LoadScalarListTXTFile(
   // Close the file
   fclose(inputFile);
 
-  if (iVerbose) printf("Vector of scalars loaded: %d\n", int(oVector.size()));
+  if (iVerbose) printf("File loaded: %d scalar values\n", int(oVector.size()));
   return true;
 }
 
@@ -99,13 +99,13 @@ bool FileInput::LoadScalarFieldTXTFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<int>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading TXT scalar field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT scalar field file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -147,13 +147,13 @@ bool FileInput::LoadScalarFieldTXTFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<double>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading TXT scalar field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT scalar field file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -195,13 +195,13 @@ bool FileInput::LoadVectorFieldTXTFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<std::array<bool, 3>>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading TXT vector field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT vector field file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -243,13 +243,13 @@ bool FileInput::LoadVectorFieldTXTFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading TXT vector field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT vector field file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -291,13 +291,13 @@ bool FileInput::LoadTensorFieldTXTFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<std::array<double, 9>>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading TXT tensor field file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading TXT tensor field file [%s] ", iFullpath.c_str());
 
   // Open the file
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -342,7 +342,7 @@ bool FileInput::LoadScalarFieldRawVTIFile(
     std::array<double, 3>& oBBoxMax,
     std::vector<std::vector<std::vector<double>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Reading file [%s] ", iFullpath.c_str());
+  if (iVerbose) printf("Loading raw scalar VTI file [%s] ", iFullpath.c_str());
 
   // Open the file
   std::ifstream inputFile;
@@ -400,10 +400,9 @@ bool FileInput::LoadScalarFieldRawVTIFile(
       }
     }
   }
+  inputFile.close();
 
   if (iVerbose) printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
-
-  inputFile.close();
   return true;
 }
 
@@ -414,7 +413,7 @@ bool FileInput::LoadVectorFieldRawVTIFile(
     std::array<double, 3>& oBBoxMax,
     std::vector<std::vector<std::vector<std::array<double, 3>>>>& oField,
     bool const iVerbose) {
-  if (iVerbose) printf("Reading file [%s] ", iFullpath.c_str());
+  if (iVerbose) printf("Loading raw vector VTI file [%s] ", iFullpath.c_str());
 
   // Open the file
   std::ifstream inputFile;
@@ -475,9 +474,9 @@ bool FileInput::LoadVectorFieldRawVTIFile(
     }
   }
 
-  if (iVerbose) printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
-
   inputFile.close();
+
+  if (iVerbose) printf("File loaded: %d x %d x %d\n", nbX, nbY, nbZ);
   return true;
 }
 
@@ -486,10 +485,12 @@ bool FileInput::LoadImageBMPFile(
     std::string const iFullpath,
     std::vector<std::vector<std::array<float, 4>>>& oImageRGBA,
     bool const iVerbose) {
+  if (iVerbose) printf("Loading image BMP file [%s] ", iFullpath.c_str());
+
   // Open the file
   FILE* inputFile= fopen(iFullpath.c_str(), "rb");
   if (!inputFile) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 
@@ -527,6 +528,8 @@ bool FileInput::LoadImageBMPFile(
   delete[] data;
 
   fclose(inputFile);
+
+  if (iVerbose) printf("File loaded: %d width, %d height\n", width, height);
   return true;
 }
 
@@ -537,12 +540,12 @@ bool FileInput::LoadMeshOBJFile(
     std::vector<std::array<double, 3>>& oColors,
     std::vector<std::array<int, 3>>& oTriangles,
     bool const iVerbose) {
-  if (iVerbose) printf("Loading OBJ mesh file [%s]\n", iFullpath.c_str());
+  if (iVerbose) printf("Loading OBJ mesh file [%s] ", iFullpath.c_str());
 
   FILE* inputFile= nullptr;
   inputFile= fopen(iFullpath.c_str(), "r");
   if (inputFile == nullptr) {
-    printf("[ERROR] Unable to open the file\n\n");
+    printf("[ERROR] Unable to open the file\n");
     return false;
   }
 

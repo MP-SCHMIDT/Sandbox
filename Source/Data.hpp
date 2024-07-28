@@ -78,15 +78,8 @@ class Data
   bool playAnimation= false;
   bool stepAnimation= false;
 
-  bool displayMode1= true;
-  bool displayMode2= true;
-  bool displayMode3= true;
-  bool displayMode4= true;
-  bool displayMode5= true;
-  bool displayMode6= true;
-  bool displayMode7= true;
-  bool displayMode8= true;
-  bool displayMode9= true;
+  std::array<bool, 10> displayMode= {true, true, true, true, true, true, true, true, true, true};
+  std::array<std::string, 10> displayModeLabel;
 
   bool showAxis= true;
   std::array<double, 3> boxMin= {0.0, 0.0, 0.0};

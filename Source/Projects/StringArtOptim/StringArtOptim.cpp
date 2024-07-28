@@ -53,11 +53,16 @@ void StringArtOptim::SetActiveProject() {
     D.UI.push_back(ParamUI("CoeffColor______", 0.2));
     D.UI.push_back(ParamUI("MinRelChange____", -1.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "ImaCur";
+    D.displayModeLabel[2]= "ImaRef";
+    D.displayModeLabel[3]= "Peg";
+    D.displayModeLabel[4]= "String";
+    D.displayModeLabel[5]= "Col";
+    D.displayMode[4]= false;
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -205,6 +210,11 @@ void StringArtOptim::Refresh() {
 }
 
 
+// Handle UI parameter change
+void StringArtOptim::ParamChange() {
+}
+
+
 // Handle keypress
 void StringArtOptim::KeyPress() {
   if (!isActivProj) return;
@@ -278,15 +288,15 @@ void StringArtOptim::Draw() {
   if (!isRefreshed) return;
 
   // Draw the reference and generated images
-  if (D.displayMode1 || D.displayMode2) {
+  if (D.displayMode[1] || D.displayMode[2]) {
     glPushMatrix();
     glTranslatef(0.5f, 0.0f, 0.0f);
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
-        if (D.displayMode1) glColor3fv(ImCur.at(w, h).array());
-        else if (D.displayMode2) glColor3fv(ImRef.at(w, h).array());
+        if (D.displayMode[1]) glColor3fv(ImCur.at(w, h).array());
+        else if (D.displayMode[2]) glColor3fv(ImRef.at(w, h).array());
         glRectf(float(w) / float(nW), float(h) / float(nH), float(w + 1) / float(nW), float(h + 1) / float(nH));
       }
     }
@@ -294,7 +304,7 @@ void StringArtOptim::Draw() {
   }
 
   // Draw the pegs
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     float avgPegCount= 0.0f;
     for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
       avgPegCount+= (float)Stings[idxCol].size();
@@ -313,7 +323,7 @@ void StringArtOptim::Draw() {
   }
 
   // Draw the string
-  if (!D.displayMode4) {
+  if (D.displayMode[4]) {
     for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++) {
       if (Stings[idxCol].size() >= 2) {
         glLineWidth(2.0f);
@@ -332,7 +342,7 @@ void StringArtOptim::Draw() {
   }
 
   // Draw the chosen string colors
-  if (D.displayMode5) {
+  if (D.displayMode[5]) {
     glPushMatrix();
     glTranslatef(0.5f, 0.0f, 0.0f);
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);

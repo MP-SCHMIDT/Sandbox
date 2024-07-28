@@ -71,11 +71,14 @@ void TheBoardGameAI::SetActiveProject() {
     D.UI.push_back(ParamUI("TestParamGAI_5__", 0.0));
     D.UI.push_back(ParamUI("______________05", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Board";
+    D.displayModeLabel[2]= "Pawns";
+    D.displayModeLabel[3]= "Moves";
+    D.displayModeLabel[4]= "Tree";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -152,8 +155,8 @@ void TheBoardGameAI::Allocate() {
     for (int w= 0; w < nW; w++)
       for (int h= 0; h < nH; h++)
         Cells.at(w, h).set(0.5f,
-                        0.5f + ((float(w) + 0.5f) * wStep + float(nH - 1 - h) * 0.5f * wStep - 0.5f * cloudWidth) * cellSize,
-                        0.5f - ((float(nH - 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
+                           0.5f + ((float(w) + 0.5f) * wStep + float(nH - 1 - h) * 0.5f * wStep - 0.5f * cloudWidth) * cellSize,
+                           0.5f - ((float(nH - 1 - h) + 0.5f) * hStep - 0.5f * cloudHeight) * cellSize);
   }
   else if (D.UI[GameMode________].I() == 1) {
     cellSize= 1.0f / (float)std::max(nW, nH);
@@ -161,8 +164,8 @@ void TheBoardGameAI::Allocate() {
     for (int w= 0; w < nW; w++)
       for (int h= 0; h < nH; h++)
         Cells.at(w, h).set(0.5f,
-                        0.5f * cellSize + float(w) * cellSize,
-                        0.5f * cellSize + float(h) * cellSize);
+                           0.5f * cellSize + float(w) * cellSize,
+                           0.5f * cellSize + float(h) * cellSize);
   }
   else if (D.UI[GameMode________].I() == 2) {
     cellSize= 1.0f / (float)std::max(nW, nH);
@@ -170,8 +173,8 @@ void TheBoardGameAI::Allocate() {
     for (int w= 0; w < nW; w++)
       for (int h= 0; h < nH; h++)
         Cells.at(w, h).set(0.5f,
-                        0.5f * cellSize + float(w) * cellSize,
-                        0.5f * cellSize + float(h) * cellSize);
+                           0.5f * cellSize + float(w) * cellSize,
+                           0.5f * cellSize + float(h) * cellSize);
   }
 
   // Initialize the pawns
@@ -215,6 +218,11 @@ void TheBoardGameAI::Refresh() {
 
   // Plot the scores
   PlotData();
+}
+
+
+// Handle UI parameter change
+void TheBoardGameAI::ParamChange() {
 }
 
 
@@ -371,7 +379,7 @@ void TheBoardGameAI::Draw() {
   if (!isRefreshed) return;
 
   // Draw the board
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     if (D.UI[GameMode________].I() == 0) {
       glLineWidth(8.0f);
       glBegin(GL_LINES);
@@ -430,7 +438,7 @@ void TheBoardGameAI::Draw() {
   }
 
   // Draw the pawns
-  if (D.displayMode2) {
+  if (D.displayMode[2]) {
     glEnable(GL_LIGHTING);
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
@@ -448,7 +456,7 @@ void TheBoardGameAI::Draw() {
   }
 
   // Draw the possible moves
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     for (BoardState *subBoard : RootBoard->SubBoards) {
       float r, g, b;
       if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5f + D.UI[ColorFactor_____].F() * float(subBoard->Score), r, g, b);
@@ -465,7 +473,7 @@ void TheBoardGameAI::Draw() {
   }
 
   // Draw the board tree
-  if (D.displayMode4) {
+  if (D.displayMode[4]) {
     float px= 0.5f * (D.boxMin[0] + D.boxMax[0]);
     float py= D.boxMax[1] + 0.1f * (D.boxMax[1] - D.boxMin[1]);
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);

@@ -33,9 +33,7 @@ void SkeletonFolder::SetActiveProject() {
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -76,6 +74,11 @@ void SkeletonFolder::Refresh() {
   isRefreshed= true;
 
   if (D.UI[VerboseLevel____].I() >= 5) printf("Refresh()\n");
+}
+
+
+// Handle UI parameter change
+void SkeletonFolder::ParamChange() {
 }
 
 

@@ -45,11 +45,13 @@ void MarkovProcGene::SetActiveProject() {
     D.UI.push_back(ParamUI("NbSubsti________", 1));
     D.UI.push_back(ParamUI("ShadeCoeff______", 1));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Vox";
+    D.displayModeLabel[2]= "Dict";
+    D.displayModeLabel[3]= "Box";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -527,6 +529,11 @@ void MarkovProcGene::Refresh() {
 }
 
 
+// Handle UI parameter change
+void MarkovProcGene::ParamChange() {
+}
+
+
 // Handle keypress
 void MarkovProcGene::KeyPress() {
   if (!isActivProj) return;
@@ -705,7 +712,7 @@ void MarkovProcGene::Draw() {
   }
 
   // Draw the voxels
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     glEnable(GL_LIGHTING);
     for (int x= 0; x < nbX; x++) {
       for (int y= 0; y < nbY; y++) {
@@ -724,7 +731,7 @@ void MarkovProcGene::Draw() {
   }
 
   // Draw the dictionnary
-  if (D.displayMode2) {
+  if (D.displayMode[2]) {
     glLineWidth(3.0);
     int curOffsetY= 1;
     int currentRul= 0;
@@ -773,7 +780,7 @@ void MarkovProcGene::Draw() {
   }
 
   // Draw the box
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     glLineWidth(3.0);
     glColor3f(0.5f, 0.5f, 0.5f);
     DrawShape::DrawBox(0.5f - 0.5f * (float)nbX / (float)maxDim,

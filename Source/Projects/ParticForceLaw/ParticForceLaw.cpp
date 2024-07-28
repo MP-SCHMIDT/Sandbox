@@ -120,11 +120,15 @@ void ParticForceLaw::SetActiveProject() {
     D.UI.push_back(ParamUI("TestParamMIP_4__", 0));      // Generic param for testing purposes
     D.UI.push_back(ParamUI("TestParamMIP_5__", 0));      // Generic param for testing purposes
     D.UI.push_back(ParamUI("VerboseLevel____", 0));      // Verbose mode
+
+    D.displayModeLabel[1]= "Partic";
+    D.displayModeLabel[2]= "Bucket";
+    D.displayModeLabel[3]= "Tris";
+    D.displayMode[2]= false;
+    D.displayMode[3]= false;
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   RunID= 0;
 
@@ -229,6 +233,11 @@ void ParticForceLaw::Refresh() {
 }
 
 
+// Handle UI parameter change
+void ParticForceLaw::ParamChange() {
+}
+
+
 // Handle keypress
 void ParticForceLaw::KeyPress() {
   if (!isActivProj) return;
@@ -308,7 +317,7 @@ void ParticForceLaw::Draw() {
   }
 
   // Display particles
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     if (D.UI[VisuSimple______].B()) {
       glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
       glBegin(GL_POINTS);
@@ -342,7 +351,7 @@ void ParticForceLaw::Draw() {
   }
 
   // Display spatial partition buckets status
-  if (!D.displayMode2) {
+  if (D.displayMode[2]) {
     glLineWidth(2.0f);
     // Get dimensions
     double stepX, stepY, stepZ;
@@ -373,7 +382,7 @@ void ParticForceLaw::Draw() {
 
 
   // Draw triangles
-  if (!D.displayMode3) {
+  if (D.displayMode[3]) {
     if (!MetaballIsUpdated)
       ComputeMetaballs();
     glEnable(GL_LIGHTING);

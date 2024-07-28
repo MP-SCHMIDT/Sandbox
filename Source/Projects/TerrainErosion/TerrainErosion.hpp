@@ -32,6 +32,7 @@ class TerrainErosion
     ErosionCoeff____,
     SmoothResist____,
     CliffThresh_____,
+    ColorMode_______,
     VerboseLevel____,
   };
 
@@ -67,6 +68,7 @@ class TerrainErosion
   bool CheckRefresh();
   void Allocate();
   void Refresh();
+  void ParamChange();
   void KeyPress();
   void MousePress();
   void Animate();

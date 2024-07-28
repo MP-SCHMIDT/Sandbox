@@ -33,6 +33,7 @@ class PosiBasedDynam
     ForceBuoy_______,
     HeatInput_______,
     HeatOutput______,
+    ColorMode_______,
     VerboseLevel____,
   };
 
@@ -60,6 +61,7 @@ class PosiBasedDynam
   bool CheckRefresh();
   void Allocate();
   void Refresh();
+  void ParamChange();
   void KeyPress();
   void MousePress();
   void Animate();

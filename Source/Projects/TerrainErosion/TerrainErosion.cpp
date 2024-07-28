@@ -45,12 +45,15 @@ void TerrainErosion::SetActiveProject() {
     D.UI.push_back(ParamUI("ErosionCoeff____", 0.05));
     D.UI.push_back(ParamUI("SmoothResist____", 0.99));
     D.UI.push_back(ParamUI("CliffThresh_____", 0.80));
+    D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Terrain";
+    D.displayModeLabel[4]= "Normal";
+    D.displayModeLabel[5]= "Drop";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -194,6 +197,11 @@ void TerrainErosion::Refresh() {
       terrainNor.at(x, y).normalize();
     }
   }
+}
+
+
+// Handle UI parameter change
+void TerrainErosion::ParamChange() {
 }
 
 
@@ -392,16 +400,16 @@ void TerrainErosion::Draw() {
   }
   for (int x= 0; x < terrainNbX; x++) {
     for (int y= 0; y < terrainNbY; y++) {
-      if (D.displayMode1) {
+      if (D.UI[ColorMode_______].I() == 0) {
         float val= (terrainPos.at(x, y)[2] - terrainMinVal) / (terrainMaxVal - terrainMinVal);
         Colormap::RatioToJetBrightSmooth(val, terrainCol.at(x, y)[0], terrainCol.at(x, y)[1], terrainCol.at(x, y)[2]);
       }
-      else if (D.displayMode2) {
+      else if (D.UI[ColorMode_______].I() == 1) {
         terrainCol.at(x, y)[0]= 0.5f + terrainNor.at(x, y)[0] / 2.0f;
         terrainCol.at(x, y)[1]= 0.5f + terrainNor.at(x, y)[1] / 2.0f;
         terrainCol.at(x, y)[2]= 0.5f + terrainNor.at(x, y)[2] / 2.0f;
       }
-      else if (D.displayMode3) {
+      else if (D.UI[ColorMode_______].I() == 2) {
         if (terrainNor.at(x, y).dot(Vec::Vec3<float>(0.0f, 0.0f, 1.0f)) < D.UI[CliffThresh_____].F()) {
           terrainCol.at(x, y)[0]= 0.7f;
           terrainCol.at(x, y)[1]= 0.6f;
@@ -417,7 +425,7 @@ void TerrainErosion::Draw() {
   }
 
   // Draw the terrain
-  if (D.displayMode1 || D.displayMode2 || D.displayMode3) {
+  if (D.displayMode[1]) {
     glEnable(GL_LIGHTING);
     glBegin(GL_QUADS);
     for (int x= 0; x < terrainNbX - 1; x++) {
@@ -437,7 +445,7 @@ void TerrainErosion::Draw() {
   }
 
   // Draw the terrain normals
-  if (D.displayMode4) {
+  if (D.displayMode[4]) {
     glBegin(GL_LINES);
     for (int x= 0; x < terrainNbX; x++) {
       for (int y= 0; y < terrainNbY; y++) {
@@ -452,7 +460,7 @@ void TerrainErosion::Draw() {
   }
 
   // Draw the droplets
-  if (D.displayMode5) {
+  if (D.displayMode[5]) {
     for (int k= 0; k < dropletNbK; k++) {
       glPushMatrix();
       glTranslatef(dropletPosCur[k][0], dropletPosCur[k][1], dropletPosCur[k][2]);

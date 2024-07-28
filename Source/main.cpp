@@ -34,7 +34,7 @@
 #include "TestsKernelGPU/TestsKernelGPU.hpp"
 #include "TheBoardGameAI/TheBoardGameAI.hpp"
 #include "WavePropagSimu/WavePropagSimu.hpp"
-// #define PRIVATE_RESEARCH_SANDBOX_SUPERSET
+//#define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "CompuFluidDyna/CompuFluidDyna.hpp"
 #include "NonLinMMABench/NonLinMMABench.hpp"
@@ -62,7 +62,7 @@ constexpr int paramValSepaNbChar= 1;  // Number of characters in separator part 
 constexpr int paramValFracNbChar= 9;  // Number of characters in fractional part of the param value
 constexpr int paramValNbChar= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar + paramValFracNbChar;
 constexpr int plotAreaW= 600;  // Width of the plot area
-constexpr int plotAreaH= 100;  // Height of the plot area
+constexpr int plotAreaH= 120;  // Height of the plot area
 constexpr int scatAreaW= 240;  // Width of the scatter area
 constexpr int scatAreaH= 240;  // Height of the scatter area
 constexpr int winMarginL= 2;   // Margin size on the left of the window
@@ -135,28 +135,36 @@ void project_ForceHardInit() {
   D.boxMin= {0.0, 0.0, 0.0};
   D.boxMax= {1.0, 1.0, 1.0};
 
-  if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj) myAgentSwarmBoid= AgentSwarmBoid();
-  if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj) myAlgoTestEnviro= AlgoTestEnviro();
-  if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj) myFractalCurvDev= FractalCurvDev();
-  if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj) myFractalElevMap= FractalElevMap();
-  if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj) myImageExtruMesh= ImageExtruMesh();
-  if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj) myMarkovProcGene= MarkovProcGene();
-  if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj) myMassSpringSyst= MassSpringSyst();
-  if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj) myParticForceLaw= ParticForceLaw();
-  if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj) myParticLifeOrga= ParticLifeOrga();
-  if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj) myPosiBasedDynam= PosiBasedDynam();
-  if (currentProjectID != ProjectID::SkeletonFolderID && mySkeletonFolder.isActivProj) mySkeletonFolder= SkeletonFolder();
-  if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj) mySpaceTimeWorld= SpaceTimeWorld();
-  if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj) myStringArtOptim= StringArtOptim();
-  if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj) myTerrainErosion= TerrainErosion();
-  if (currentProjectID != ProjectID::TestsKernelGPUID && myTestsKernelGPU.isActivProj) myTestsKernelGPU= TestsKernelGPU();
-  if (currentProjectID != ProjectID::TheBoardGameAIID && myTheBoardGameAI.isActivProj) myTheBoardGameAI= TheBoardGameAI();
-  if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj) myWavePropagSimu= WavePropagSimu();
+  int newProjInit= D.UI.empty() ? 1 : 0;
+  if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj && ++newProjInit) myAgentSwarmBoid= AgentSwarmBoid();
+  if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj && ++newProjInit) myAlgoTestEnviro= AlgoTestEnviro();
+  if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj && ++newProjInit) myFractalCurvDev= FractalCurvDev();
+  if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj && ++newProjInit) myFractalElevMap= FractalElevMap();
+  if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj && ++newProjInit) myImageExtruMesh= ImageExtruMesh();
+  if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj && ++newProjInit) myMarkovProcGene= MarkovProcGene();
+  if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj && ++newProjInit) myMassSpringSyst= MassSpringSyst();
+  if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj && ++newProjInit) myParticForceLaw= ParticForceLaw();
+  if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj && ++newProjInit) myParticLifeOrga= ParticLifeOrga();
+  if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj && ++newProjInit) myPosiBasedDynam= PosiBasedDynam();
+  if (currentProjectID != ProjectID::SkeletonFolderID && mySkeletonFolder.isActivProj && ++newProjInit) mySkeletonFolder= SkeletonFolder();
+  if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj && ++newProjInit) mySpaceTimeWorld= SpaceTimeWorld();
+  if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj && ++newProjInit) myStringArtOptim= StringArtOptim();
+  if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj && ++newProjInit) myTerrainErosion= TerrainErosion();
+  if (currentProjectID != ProjectID::TestsKernelGPUID && myTestsKernelGPU.isActivProj && ++newProjInit) myTestsKernelGPU= TestsKernelGPU();
+  if (currentProjectID != ProjectID::TheBoardGameAIID && myTheBoardGameAI.isActivProj && ++newProjInit) myTheBoardGameAI= TheBoardGameAI();
+  if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj && ++newProjInit) myWavePropagSimu= WavePropagSimu();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
-  if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj) myCompuFluidDyna= CompuFluidDyna();
-  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj) myNonLinMMABench= NonLinMMABench();
-  if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj) myStructGenOptim= StructGenOptim();
+  if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj && ++newProjInit) myCompuFluidDyna= CompuFluidDyna();
+  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj && ++newProjInit) myNonLinMMABench= NonLinMMABench();
+  if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj && ++newProjInit) myStructGenOptim= StructGenOptim();
 #endif
+
+  if (newProjInit) {
+    for (int k= 0; k < 10; k++) {
+      D.displayMode[k]= true;
+      D.displayModeLabel[k]= "";
+    }
+  }
 
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.SetActiveProject();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.SetActiveProject();
@@ -180,6 +188,12 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
 #endif
+
+  if (newProjInit) {
+    for (int k= 1; k < 10; k++)
+      if (D.displayModeLabel[k].length() == 0)
+        D.displayMode[k]= false;
+  }
 
   D.idxFirstParamPageUI= (D.idxFirstParamPageUI < (int)D.UI.size()) ? D.idxFirstParamPageUI : 0;
   D.idxParamUI= (D.idxParamUI < (int)D.UI.size()) ? D.idxParamUI : 0;
@@ -208,6 +222,32 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Refresh();
+#endif
+}
+
+
+void project_ParamChange() {
+  if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.ParamChange();
+  if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.ParamChange();
+  if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.ParamChange();
+  if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.ParamChange();
+  if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.ParamChange();
+  if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.ParamChange();
+  if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.ParamChange();
+  if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.ParamChange();
+  if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.ParamChange();
+  if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.ParamChange();
+  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.ParamChange();
+  if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.ParamChange();
+  if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.ParamChange();
+  if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.ParamChange();
+  if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.ParamChange();
+  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.ParamChange();
+  if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.ParamChange();
+#ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
+  if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.ParamChange();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.ParamChange();
+  if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.ParamChange();
 #endif
 }
 
@@ -572,6 +612,28 @@ void callback_display() {
   }
   glLineWidth(1.0f);
 
+  // Draw the parameter list scroll bar
+  if (!D.UI.empty()) {
+    if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+    else glColor3f(0.4f, 0.4f, 0.4f);
+    glBegin(GL_LINES);
+    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+               winH - winMarginT, 0);
+    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+               winH - winMarginT - textBoxH * paramPerPage, 0);
+    glEnd();
+    glLineWidth(4.0f);
+    glBegin(GL_LINES);
+    const float barBeg= (float)D.idxFirstParamPageUI / (float)D.UI.size();
+    const float barEnd= (float)std::min(D.idxFirstParamPageUI + paramPerPage, (int)D.UI.size()) / (float)D.UI.size();
+    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+               winH - winMarginT - textBoxH * paramPerPage * barBeg, 0);
+    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+               winH - winMarginT - textBoxH * paramPerPage * barEnd, 0);
+    glEnd();
+    glLineWidth(1.0f);
+  }
+
   // Draw the 2D plot
   if (!D.Plot.empty()) {
     double valMin, valMax;
@@ -601,30 +663,30 @@ void callback_display() {
         }
       }
 
-      // Draw the text for legend and min max values
+      // Draw the text for legend, min max start end values
       glLineWidth(2.0f);
       char str[50];
-      strcpy(str, D.Plot[k0].name.c_str());
-      draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW,
-                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
-      sprintf(str, "N:%d", int(D.Plot[k0].val.size()));
-      draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW - 3 * textBoxW / 2,
-                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
-      if (D.Plot[k0].isLog) {
+      sprintf(str, "N:%d", int(D.Plot[k0].val.size()));  // Count
+      draw_text(winW - winMarginR - plotAreaW - 5 * textBoxW,
+                winH - winMarginT - textBoxH * (k0 + 2), str);
+      strcpy(str, D.Plot[k0].name.c_str());  // Name
+      draw_text(winW - winMarginR - plotAreaW - 4 * textBoxW,
+                winH - winMarginT - textBoxH * (k0 + 2), str);
+      if (D.Plot[k0].isLog) {  // Log flag
         sprintf(str, "log");
-        draw_text(winW - winMarginR - plotAreaW - 3 * textBoxW - textBoxW / 2,
-                  winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
+        draw_text(winW - winMarginR - plotAreaW - 2.5 * textBoxW,
+                  winH - winMarginT - textBoxH * (k0 + 2), str);
       }
-      sprintf(str, "%+.2e", valMax);
+      sprintf(str, "%+.2e", valMax);  // Max value
       draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * textBoxW,
                 winH - winMarginT - textBoxH, str);
-      sprintf(str, "%+.2e", valMin);
+      sprintf(str, "%+.2e", valMin);  // Min value
       draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * textBoxW,
                 winH - winMarginT - plotAreaH - 2 * textBoxH, str);
-      sprintf(str, "%+.2e", D.Plot[k0].val[0]);
+      sprintf(str, "%+.2e", D.Plot[k0].val[0]);  // Start value
       draw_text(winW - winMarginR - plotAreaW - 2 * textBoxW,
                 winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
-      sprintf(str, "%+.2e", D.Plot[k0].val[D.Plot[k0].val.size() - 1]);
+      sprintf(str, "%+.2e", D.Plot[k0].val[D.Plot[k0].val.size() - 1]);  // End value
       draw_text(winW - winMarginR - textBoxW,
                 winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
       glLineWidth(1.0f);
@@ -757,6 +819,24 @@ void callback_display() {
     glLineWidth(1.0f);
   }
 
+  // Draw the display mode labels
+  if (currentProjectID != 0) {
+    glLineWidth(2.0f);
+    for (int k= 1; k < 10; k++) {
+      if (D.displayMode[k]) {
+        if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+        else glColor3f(0.2f, 0.2f, 0.2f);
+      }
+      else {
+        glColor3f(0.5f, 0.5f, 0.5f);
+      }
+      char str[50];
+      sprintf(str, "%d:%s", k, D.displayModeLabel[k].c_str());
+      draw_text((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 2) * charWidth, winH - winMarginT - k * charHeight, str);
+    }
+    glLineWidth(1.0f);
+  }
+
   // Draw the status text
   {
     glLineWidth(2.0f);
@@ -814,19 +894,14 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if (key == ' ') D.playAnimation= !D.playAnimation;
   else if (key == '.') D.stepAnimation= !D.stepAnimation;
   else if (key == '\b') {
-    if (!std::isnan(D.UI[D.idxParamUI].D()))
+    if (!std::isnan(D.UI[D.idxParamUI].D())) {
       D.UI[D.idxParamUI].Set(0.0);
+      project_ParamChange();
+    }
   }
-  else if (key == '\t') D.idxFirstParamPageUI= (D.idxFirstParamPageUI + paramPerPage < (int)D.UI.size()) ? (D.idxFirstParamPageUI + paramPerPage) : (0);
-  else if (key == '1') D.displayMode1= !D.displayMode1;
-  else if (key == '2') D.displayMode2= !D.displayMode2;
-  else if (key == '3') D.displayMode3= !D.displayMode3;
-  else if (key == '4') D.displayMode4= !D.displayMode4;
-  else if (key == '5') D.displayMode5= !D.displayMode5;
-  else if (key == '6') D.displayMode6= !D.displayMode6;
-  else if (key == '7') D.displayMode7= !D.displayMode7;
-  else if (key == '8') D.displayMode8= !D.displayMode8;
-  else if (key == '9') D.displayMode9= !D.displayMode9;
+  else if (key == '\t' && !D.keyIsShift) D.idxFirstParamPageUI= (D.idxFirstParamPageUI + paramPerPage < (int)D.UI.size()) ? (D.idxFirstParamPageUI + paramPerPage) : (0);
+  else if (key == '\t' && D.keyIsShift) D.idxFirstParamPageUI= (D.idxFirstParamPageUI - paramPerPage >= 0) ? (D.idxFirstParamPageUI - paramPerPage) : (((int)D.UI.size() / paramPerPage) * paramPerPage);
+  else if (key >= '1' && key <= '9') D.displayMode[key - '0']= !D.displayMode[key - '0'];
   else if (key == '0') D.showAxis= !D.showAxis;
   else if (key == '=') {
     D.Plot.clear();
@@ -863,8 +938,8 @@ void callback_keyboard_special(int key, int x, int y) {
   // Handle arrow key to switch selected parameter
   if (key == GLUT_KEY_UP || key == GLUT_KEY_DOWN) {
     if (D.keyIsShift) {
-      if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 10 + int(D.UI.size())) % int(D.UI.size());
-      if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 10) % int(D.UI.size());
+      if (key == GLUT_KEY_UP) D.idxParamUI= (D.idxParamUI - 5 + int(D.UI.size())) % int(D.UI.size());
+      if (key == GLUT_KEY_DOWN) D.idxParamUI= (D.idxParamUI + 5) % int(D.UI.size());
       D.idxFirstParamPageUI= paramPerPage * (D.idxParamUI / paramPerPage);
     }
     else {
@@ -894,6 +969,7 @@ void callback_keyboard_special(int key, int x, int y) {
       if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0);
     }
     // Compute refresh
+    project_ParamChange();
     project_Refresh();
     glutPostRedisplay();
   }
@@ -949,8 +1025,10 @@ void callback_mouse_click(int button, int state, int x, int y) {
             hasParamChanged= false;
           }
           // Compute refresh
-          if (hasParamChanged)
+          if (hasParamChanged) {
+            project_ParamChange();
             project_Refresh();
+          }
         }
       }
     }

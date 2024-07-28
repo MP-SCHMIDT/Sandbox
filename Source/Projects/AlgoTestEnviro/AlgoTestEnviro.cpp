@@ -67,11 +67,14 @@ void AlgoTestEnviro::SetActiveProject() {
     D.UI.push_back(ParamUI("Isocut__________", 0.0));
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
+
+    D.displayModeLabel[1]= "Vert";
+    D.displayModeLabel[2]= "Bar";
+    D.displayModeLabel[3]= "Tri";
+    D.displayModeLabel[4]= "Field";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -110,6 +113,11 @@ void AlgoTestEnviro::Refresh() {
   isRefreshed= true;
 
   if (D.UI[VerboseLevel____].I() >= 5) printf("Refresh()\n");
+}
+
+
+// Handle UI parameter change
+void AlgoTestEnviro::ParamChange() {
 }
 
 
@@ -234,7 +242,7 @@ void AlgoTestEnviro::Draw() {
   if (D.UI[VerboseLevel____].I() >= 5) printf("Draw()\n");
 
   // Draw vertices
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     glPointSize(5.0f);
     glColor3f(0.6f, 0.6f, 0.6f);
     glBegin(GL_POINTS);
@@ -246,7 +254,7 @@ void AlgoTestEnviro::Draw() {
   }
 
   // Draw bars
-  if (D.displayMode2) {
+  if (D.displayMode[2]) {
     glColor3f(0.6f, 0.6f, 0.6f);
     glLineWidth(3.0f);
     glBegin(GL_LINES);
@@ -259,7 +267,7 @@ void AlgoTestEnviro::Draw() {
   }
 
   // Draw triangles
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     glEnable(GL_LIGHTING);
     glColor3f(0.6f, 0.6f, 0.6f);
     glBegin(GL_TRIANGLES);
@@ -282,7 +290,7 @@ void AlgoTestEnviro::Draw() {
   }
 
   // Draw scalar field
-  if (D.displayMode4) {
+  if (D.displayMode[4]) {
     if (ScalarField.nXYZ > 0) {
       double stepX, stepY, stepZ, voxDiag, startX, startY, startZ;
       BoxGrid::GetVoxelSizes(ScalarField.nX, ScalarField.nY, ScalarField.nZ, D.boxMin, D.boxMax, true, stepX, stepY, stepZ, voxDiag);

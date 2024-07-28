@@ -61,11 +61,12 @@ void TestsKernelGPU::SetActiveProject() {
     D.UI.push_back(ParamUI("TestParamGPU_08_", 0.0));
     D.UI.push_back(ParamUI("TestParamGPU_09_", 0.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
+
+    D.displayModeLabel[1]= "Point";
+    D.displayModeLabel[2]= "Sphere";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -100,6 +101,11 @@ void TestsKernelGPU::Refresh() {
   if (!CheckAlloc()) Allocate();
   if (CheckRefresh()) return;
   isRefreshed= true;
+}
+
+
+// Handle UI parameter change
+void TestsKernelGPU::ParamChange() {
 }
 
 
@@ -156,9 +162,9 @@ void TestsKernelGPU::Draw() {
   if (!isRefreshed) return;
 
   // Display particles
-  if (D.displayMode1 || D.displayMode2) {
+  if (D.displayMode[1] || D.displayMode[2]) {
     glPointSize(1000.0f * D.UI[ScaleShape______].F());
-    if (D.displayMode1) glBegin(GL_POINTS);
+    if (D.displayMode[1]) glBegin(GL_POINTS);
     else glEnable(GL_LIGHTING);
     for (unsigned int k= 0; k < Pos.size(); k++) {
       float r= 0.5, g= 0.5, b= 0.5;
@@ -171,7 +177,7 @@ void TestsKernelGPU::Draw() {
         b= 0.5f + Vel[k][2] * D.UI[ScaleColor______].F();
       }
       glColor3f(r, g, b);
-      if (D.displayMode1) {
+      if (D.displayMode[1]) {
         glVertex3fv(Pos[k].array());
       }
       else {
@@ -182,7 +188,7 @@ void TestsKernelGPU::Draw() {
         glPopMatrix();
       }
     }
-    if (D.displayMode1) glEnd();
+    if (D.displayMode[1]) glEnd();
     else glDisable(GL_LIGHTING);
   }
 }

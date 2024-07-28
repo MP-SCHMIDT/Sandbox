@@ -60,11 +60,11 @@ void ParticLifeOrga::SetActiveProject() {
     D.UI.push_back(ParamUI("ForceAdhesion___", 0.1));
     D.UI.push_back(ParamUI("ColorMode_______", 0));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
+
+    D.displayModeLabel[1]= "Partic";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -119,6 +119,11 @@ void ParticLifeOrga::Refresh() {
   if ((int)Type.size() != std::max(D.UI[NbPartic________].I(), 1)) {
     GenerateParticleCloud();
   }
+}
+
+
+// Handle UI parameter change
+void ParticLifeOrga::ParamChange() {
 }
 
 
@@ -202,7 +207,7 @@ void ParticLifeOrga::Draw() {
   if (nbParticles <= 0) return;
 
   // Display particles
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     glEnable(GL_LIGHTING);
     for (int k= 0; k < nbParticles; k++) {
       // Set particle color

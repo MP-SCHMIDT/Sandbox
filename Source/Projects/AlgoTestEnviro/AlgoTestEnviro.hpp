@@ -58,6 +58,7 @@ class AlgoTestEnviro
   bool CheckRefresh();
   void Allocate();
   void Refresh();
+  void ParamChange();
   void KeyPress();
   void MousePress();
   void Animate();

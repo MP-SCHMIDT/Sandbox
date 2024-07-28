@@ -40,11 +40,13 @@ void FractalCurvDev::SetActiveProject() {
     D.UI.push_back(ParamUI("StepZExpo_______", 1.5));
     D.UI.push_back(ParamUI("SpreadCoeff_____", 1.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Vert";
+    D.displayModeLabel[2]= "Wire";
+    D.displayModeLabel[3]= "Tris";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -165,6 +167,11 @@ void FractalCurvDev::Refresh() {
 }
 
 
+// Handle UI parameter change
+void FractalCurvDev::ParamChange() {
+}
+
+
 // Handle keypress
 void FractalCurvDev::KeyPress() {
   if (!isActivProj) return;
@@ -217,7 +224,7 @@ void FractalCurvDev::Draw() {
   if (!isRefreshed) return;
 
   // Draw vertices
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     glPointSize(2.0f);
     glBegin(GL_POINTS);
     for (int idxDepth= 0; idxDepth < int(Nodes.size()); idxDepth++) {
@@ -233,7 +240,7 @@ void FractalCurvDev::Draw() {
   }
 
   // Draw wireframe
-  if (D.displayMode2) {
+  if (D.displayMode[2]) {
     glLineWidth(2.0f);
     for (int idxDepth= 0; idxDepth < int(Nodes.size()); idxDepth++) {
       float r, g, b;
@@ -249,7 +256,7 @@ void FractalCurvDev::Draw() {
   }
 
   // Draw faces
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     glEnable(GL_LIGHTING);
     glColor3f(0.3f, 0.3f, 0.3f);
     glBegin(GL_TRIANGLES);

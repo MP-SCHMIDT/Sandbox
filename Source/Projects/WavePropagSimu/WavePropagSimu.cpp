@@ -77,11 +77,15 @@ void WavePropagSimu::SetActiveProject() {
     D.UI.push_back(ParamUI("TestParamWAV_9__", 0.0));
     D.UI.push_back(ParamUI("______________03", NAN));
     D.UI.push_back(ParamUI("VerboseLevel____", 1));
+
+    D.displayModeLabel[1]= "Val";
+    D.displayModeLabel[2]= "Densi";
+    D.displayModeLabel[3]= "Elev";
+    D.displayMode[1]= false;
+    D.displayMode[2]= false;
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -217,6 +221,11 @@ void WavePropagSimu::Refresh() {
 }
 
 
+// Handle UI parameter change
+void WavePropagSimu::ParamChange() {
+}
+
+
 // Handle keypress
 void WavePropagSimu::KeyPress() {
   if (!isActivProj) return;
@@ -286,7 +295,7 @@ void WavePropagSimu::Draw() {
   if (!isRefreshed) return;
 
   // Draw the wave field
-  if (D.displayMode1 || D.displayMode2) {
+  if (D.displayMode[1] || D.displayMode[2]) {
     Field::Field3<char> Show(nX, nY, nZ, 1);
     Field::Field3<std::array<float, 4>> Color(nX, nY, nZ, {0.0, 0.0, 0.0, 1.0});
     for (int x= 0; x < nX; x++) {
@@ -298,7 +307,7 @@ void WavePropagSimu::Draw() {
           if (!Show.at(x, y, z)) continue;
 
           // Color by wave value
-          if (D.displayMode1) {
+          if (D.displayMode[1]) {
             float r= 0.0, g= 0.0, b= 0.0;
             if (D.UI[ColorMode_______].I() == 0) Colormap::RatioToJetBrightSmooth(0.5 + UNew.at(x, y, z) * D.UI[ColorFactor_____].D(), r, g, b);
             if (D.UI[ColorMode_______].I() == 1) Colormap::RatioToPlasma(std::abs(UNew.at(x, y, z)) * D.UI[ColorFactor_____].D(), r, g, b);
@@ -306,12 +315,12 @@ void WavePropagSimu::Draw() {
           }
 
           // Add shading to visualize wave speed field
-          if (D.displayMode2) {
+          if (D.displayMode[2]) {
             float r= 0.0, g= 0.0, b= 0.0;
             Colormap::RatioToGrayscale(Speed.at(x, y, z), r, g, b);
-            if (D.displayMode1) Color.at(x, y, z)= {0.6f * Color.at(x, y, z)[0] + 0.4f * r,
-                                                    0.6f * Color.at(x, y, z)[1] + 0.4f * g,
-                                                    0.6f * Color.at(x, y, z)[2] + 0.4f * b, Color.at(x, y, z)[3] + 0.1f * (1.0f - (float)Speed.at(x, y, z))};
+            if (D.displayMode[1]) Color.at(x, y, z)= {0.6f * Color.at(x, y, z)[0] + 0.4f * r,
+                                                      0.6f * Color.at(x, y, z)[1] + 0.4f * g,
+                                                      0.6f * Color.at(x, y, z)[2] + 0.4f * b, Color.at(x, y, z)[3] + 0.1f * (1.0f - (float)Speed.at(x, y, z))};
             else Color.at(x, y, z)= {r, g, b, 0.1f * (1.0f - (float)Speed.at(x, y, z))};
           }
 
@@ -327,7 +336,7 @@ void WavePropagSimu::Draw() {
   }
 
   // Draw the wave field as a 2.5D elevation map
-  if (D.displayMode3) {
+  if (D.displayMode[3]) {
     if (nX == 1 && nY > 1 && nZ > 1) {
       const int x= 0;
       Field::Field2<Vec::Vec3<float>> terrainPos(nY, nZ, Vec::Vec3<float>(0.0, 0.0, 0.0));

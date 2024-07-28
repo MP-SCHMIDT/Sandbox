@@ -42,11 +42,11 @@ void FractalElevMap::SetActiveProject() {
     D.UI.push_back(ParamUI("CoeffB__________", -0.2241));      // Hand picked param for cool fractal zoom
     D.UI.push_back(ParamUI("HeightLvls______", 32.0));         // Divergence threshold of complex iterations
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Map";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -177,6 +177,11 @@ void FractalElevMap::Refresh() {
 }
 
 
+// Handle UI parameter change
+void FractalElevMap::ParamChange() {
+}
+
+
 // Handle keypress
 void FractalElevMap::KeyPress() {
   if (!isActivProj) return;
@@ -206,20 +211,22 @@ void FractalElevMap::Draw() {
   if (!isRefreshed) return;
 
   // Draw the map
-  glEnable(GL_LIGHTING);
-  glBegin(GL_QUADS);
-  for (int x= 0; x < nX - 1; x++) {
-    for (int y= 0; y < nY - 1; y++) {
-      Vec::Vec3<float> flatNormal= (mapNor.at(x, y) + mapNor.at(x + 1, y) + mapNor.at(x + 1, y + 1) + mapNor.at(x, y + 1)).normalized();
-      Vec::Vec3<float> flatColor= (mapCol.at(x, y) + mapCol.at(x + 1, y) + mapCol.at(x + 1, y + 1) + mapCol.at(x, y + 1)) / 4.0f;
-      glColor3fv(flatColor.array());
-      glNormal3fv(flatNormal.array());
-      glVertex3fv(mapPos.at(x, y).array());
-      glVertex3fv(mapPos.at(x + 1, y).array());
-      glVertex3fv(mapPos.at(x + 1, y + 1).array());
-      glVertex3fv(mapPos.at(x, y + 1).array());
+  if (D.displayMode[1]) {
+    glEnable(GL_LIGHTING);
+    glBegin(GL_QUADS);
+    for (int x= 0; x < nX - 1; x++) {
+      for (int y= 0; y < nY - 1; y++) {
+        Vec::Vec3<float> flatNormal= (mapNor.at(x, y) + mapNor.at(x + 1, y) + mapNor.at(x + 1, y + 1) + mapNor.at(x, y + 1)).normalized();
+        Vec::Vec3<float> flatColor= (mapCol.at(x, y) + mapCol.at(x + 1, y) + mapCol.at(x + 1, y + 1) + mapCol.at(x, y + 1)) / 4.0f;
+        glColor3fv(flatColor.array());
+        glNormal3fv(flatNormal.array());
+        glVertex3fv(mapPos.at(x, y).array());
+        glVertex3fv(mapPos.at(x + 1, y).array());
+        glVertex3fv(mapPos.at(x + 1, y + 1).array());
+        glVertex3fv(mapPos.at(x, y + 1).array());
+      }
     }
+    glEnd();
+    glDisable(GL_LIGHTING);
   }
-  glEnd();
-  glDisable(GL_LIGHTING);
 }

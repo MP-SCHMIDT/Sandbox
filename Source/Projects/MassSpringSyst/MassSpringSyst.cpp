@@ -52,11 +52,12 @@ void MassSpringSyst::SetActiveProject() {
     D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
     D.UI.push_back(ParamUI("ColorMode_______", 1.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
+
+    D.displayModeLabel[1]= "Node";
+    D.displayModeLabel[2]= "Spring";
   }
 
-  if (D.UI.size() != VerboseLevel____ + 1) {
-    printf("[ERROR] Invalid parameter count in UI\n");
-  }
+  if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
 
   isActivProj= true;
   isAllocated= false;
@@ -156,6 +157,11 @@ void MassSpringSyst::Refresh() {
 }
 
 
+// Handle UI parameter change
+void MassSpringSyst::ParamChange() {
+}
+
+
 // Handle keypress
 void MassSpringSyst::KeyPress() {
   if (!isActivProj) return;
@@ -199,7 +205,7 @@ void MassSpringSyst::Draw() {
   if (D.UI[VerboseLevel____].I() >= 5) printf("MassSpringSyst::Draw()\n");
 
   // Draw the nodes
-  if (D.displayMode1) {
+  if (D.displayMode[1]) {
     glPointSize(10.0f);
     glBegin(GL_POINTS);
     for (int k0= 0; k0 < N; k0++) {
@@ -214,7 +220,7 @@ void MassSpringSyst::Draw() {
   }
 
   // Draw the springs
-  if (D.displayMode2) {
+  if (D.displayMode[2]) {
     glLineWidth(2.0f);
     glBegin(GL_LINES);
     for (int k0= 0; k0 < N; k0++) {
