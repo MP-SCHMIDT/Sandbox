@@ -10,8 +10,8 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Random.hpp"
 
 // Global headers
@@ -159,7 +159,7 @@ void ParticLifeOrga::Animate() {
   if (nbParticles <= 0) return;
 
   // Project to 2D
-  if (D.UI[Use2DProj_______].B()) {
+  if (D.UI[Use2DProj_______].I() > 0) {
     for (int k= 0; k < nbParticles; k++) {
       Pos[k][0]= 0.5;
       Vel[k][0]= 0.0;
@@ -261,7 +261,7 @@ void ParticLifeOrga::GenerateParticleRules() {
     }
   }
 
-  if (D.UI[VerboseLevel____].B()) {
+  if (D.UI[VerboseLevel____].I() > 0) {
     printf("Mass:\n");
     for (int k0= 0; k0 < nbTypes; k0++) {
       printf(" %f", TypeMass[k0]);
@@ -317,7 +317,7 @@ void ParticLifeOrga::GenerateParticleCloud() {
   }
 
   // Project to 2D
-  if (D.UI[Use2DProj_______].B()) {
+  if (D.UI[Use2DProj_______].I() > 0) {
     for (int k= 0; k < nbParticles; k++) {
       Pos[k][0]= 0.5;
       Vel[k][0]= 0.0;

@@ -1,10 +1,11 @@
-#include "TheBoardGameAI.hpp"
+#include "BoardGameBotAI.hpp"
 
 
 // Standard lib
+#include <cassert>
 
 // Algo headers
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -14,7 +15,7 @@
 extern Data D;
 
 
-void TheBoardGameAI::FindPossibleMovesHex(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
+void BoardGameBotAI::FindPossibleMovesHex(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
   (void)iDepth;
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
@@ -26,7 +27,7 @@ void TheBoardGameAI::FindPossibleMovesHex(BoardState *ioBoard, const int iDepth,
 }
 
 
-void TheBoardGameAI::FindPossibleMovesJmp(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
+void BoardGameBotAI::FindPossibleMovesJmp(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
       if ((ioBoard->Pawns.at(w, h) > 0 && IsRedTurn(iDepth)) || (ioBoard->Pawns.at(w, h) < 0 && !IsRedTurn(iDepth))) {
@@ -46,7 +47,7 @@ void TheBoardGameAI::FindPossibleMovesJmp(BoardState *ioBoard, const int iDepth,
 }
 
 
-void TheBoardGameAI::FindPossibleMovesChk(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
+void BoardGameBotAI::FindPossibleMovesChk(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
   bool hasFoundCaptures= false;
   // Sweep through the current player pawns
   for (int w= 0; w < nW; w++) {
@@ -91,11 +92,11 @@ void TheBoardGameAI::FindPossibleMovesChk(BoardState *ioBoard, const int iDepth,
 }
 
 
-void TheBoardGameAI::JmpRecursivePawnMoves(BoardState *ioBoard,
+void BoardGameBotAI::JmpRecursivePawnMoves(BoardState *ioBoard,
                                            const int iJumpW, const int iJumpH,
                                            Field::Field2<char> &ioVisit,
                                            std::vector<std::array<int, 2>> &ioDestinations) {
-  if (ioBoard == nullptr) printf("[ERROR] JmpRecursivePawnMoves on a null board\n");
+  assert(ioBoard != nullptr);
 
   for (int idxDir= 0; idxDir < 4; idxDir++) {
     const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
@@ -123,19 +124,19 @@ void TheBoardGameAI::JmpRecursivePawnMoves(BoardState *ioBoard,
 }
 
 
-void TheBoardGameAI::ExecuteMoveHex(BoardState *ioBoard, const int iDepth) {
+void BoardGameBotAI::ExecuteMoveHex(BoardState *ioBoard, const int iDepth) {
   ioBoard->Pawns.at(ioBoard->Move[0][0], ioBoard->Move[0][1])= IsRedTurn(iDepth) ? +1 : -1;
 }
 
 
-void TheBoardGameAI::ExecuteMoveJmp(BoardState *ioBoard, const int iDepth) {
+void BoardGameBotAI::ExecuteMoveJmp(BoardState *ioBoard, const int iDepth) {
   (void)iDepth;
   ioBoard->Pawns.at(ioBoard->Move[1][0], ioBoard->Move[1][1])= ioBoard->Pawns.at(ioBoard->Move[0][0], ioBoard->Move[0][1]);
   ioBoard->Pawns.at(ioBoard->Move[0][0], ioBoard->Move[0][1])= 0;
 }
 
 
-void TheBoardGameAI::ExecuteMoveChk(BoardState *ioBoard, const int iDepth) {
+void BoardGameBotAI::ExecuteMoveChk(BoardState *ioBoard, const int iDepth) {
   (void)iDepth;
   if (ioBoard->Move.size() == 3) {
     ioBoard->Pawns.at(ioBoard->Move[2][0], ioBoard->Move[2][1])= ioBoard->Pawns.at(ioBoard->Move[0][0], ioBoard->Move[0][1]);

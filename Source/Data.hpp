@@ -31,7 +31,6 @@ class ParamUI
     return false;
   }
 
-  inline bool B() { return val >= 0.5; }
   inline int I() { return (int)((val < 0.0) ? (val - 0.5) : (val + 0.5)); }
   inline float F() { return (float)val; }
   inline double D() { return val; }
@@ -81,7 +80,7 @@ class Data
   std::array<bool, 10> displayMode= {true, true, true, true, true, true, true, true, true, true};
   std::array<std::string, 10> displayModeLabel;
 
-  bool showAxis= true;
+  int showAxisMode= 3;
   std::array<double, 3> boxMin= {0.0, 0.0, 0.0};
   std::array<double, 3> boxMax= {1.0, 1.0, 1.0};
 

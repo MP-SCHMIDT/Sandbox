@@ -14,8 +14,8 @@
 #include "Draw/Colormap.hpp"
 #include "FileIO/FileInput.hpp"
 #include "Geom/Bresenham.hpp"
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 // Global headers
 #include "Data.hpp"

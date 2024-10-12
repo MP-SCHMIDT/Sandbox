@@ -5,12 +5,12 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 
-// Jumpin board game AI
-class TheBoardGameAI
+// Board game AI experimentation based on game tree search
+class BoardGameBotAI
 {
   private:
   // List of UI parameters for this project
@@ -21,12 +21,14 @@ class TheBoardGameAI
     BoardH__________,
     MoveStreakRed___,
     MoveStreakBlu___,
+    BotStrategyRed__,
+    BotStrategyBlu__,
     ______________00,
     MaxSearchDepth__,
     MaxThinkTime____,
     MaxTreeBoards___,
-    MoveSortScore___,
     MoveSortNash____,
+    MoveSortScore___,
     MoveSortRand____,
     ABPruning_______,
     IterDeepening___,
@@ -39,10 +41,6 @@ class TheBoardGameAI
     JmpHardStranded_,
     ChkMaterial_____,
     ______________02,
-    RandomMoves_____,
-    BotStrategyRed__,
-    BotStrategyBlu__,
-    ______________03,
     ColorMode_______,
     ColorFactor_____,
     ______________04,
@@ -59,8 +57,8 @@ class TheBoardGameAI
   // Structure to store a board state
   struct BoardState
   {
-    std::vector<BoardState *> SubBoards;   // List of possible boards reachable from the current position sorted in Nash order
-    Field::Field2<int> Pawns;                    // Flag grid for presence of pawns on the board (Blu= -1, Red= +1)
+    std::vector<BoardState *> SubBoards;   // List of possible boards reachable from the current position
+    Field::Field2<char> Pawns;             // Flag grid for presence of pawns on the board (Blu= -1, Red= +1)
     std::vector<std::array<int, 2>> Move;  // Last move sequence that led to this board
     int Score;                             // Evaluated score of the board
     int NashScore;                         // Nash score found in sub tree
@@ -80,7 +78,7 @@ class TheBoardGameAI
 
   // Hex draw data
   Field::Field2<Vec::Vec3<float>> Cells;  // Cell centroid coordinates for display and picking
-  float cellSize;                   // Size of a cell
+  float cellSize;                         // Size of a cell
 
   // Draw
   void DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
@@ -89,7 +87,7 @@ class TheBoardGameAI
   void PlotData();
 
   // Board creation and destruction
-  BoardState *CreateBoard(const Field::Field2<int> &iPawns,
+  BoardState *CreateBoard(const Field::Field2<char> &iPawns,
                           const std::vector<std::array<int, 2>> &iMove,
                           const int iDepth);
   void DeleteBoard(BoardState *ioBoard);
@@ -124,7 +122,7 @@ class TheBoardGameAI
   bool isAllocated;
   bool isRefreshed;
 
-  TheBoardGameAI();
+  BoardGameBotAI();
 
   void SetActiveProject();
   bool CheckAlloc();

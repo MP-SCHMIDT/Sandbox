@@ -9,7 +9,7 @@
 
 // Algo headers
 #include "Geom/BoxGrid.hpp"
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 
 
 // Draw a scalar field as solid voxel boundary or as layered panels for transparency

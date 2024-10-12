@@ -5,8 +5,8 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 
 // String Art Generator

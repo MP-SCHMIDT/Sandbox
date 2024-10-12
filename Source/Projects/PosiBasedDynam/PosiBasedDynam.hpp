@@ -4,7 +4,7 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 
 
 // Particle system simulation with a Position-Based Dynamics (PBD) approach

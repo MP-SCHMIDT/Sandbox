@@ -12,7 +12,7 @@
 // Algo headers
 #include "Draw/DrawShape.hpp"
 #include "FileIO/FileInput.hpp"
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 #include "Util/Random.hpp"
 
 // Global headers

@@ -13,8 +13,8 @@
 #include "Draw/Colormap.hpp"
 #include "FileIO/FileInput.hpp"
 #include "Geom/Bresenham.hpp"
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Random.hpp"
 
 // Global headers
@@ -200,7 +200,7 @@ void StringArtOptim::Refresh() {
     Colors.push_back(Vec::Vec3<float>(-1.0f, -1.0f, 0.0f));
   }
 
-  if (D.UI[ColorsNormalize_].B())
+  if (D.UI[ColorsNormalize_].I() > 0)
     for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++)
       Colors[idxCol].normalize();
 
@@ -378,7 +378,7 @@ bool StringArtOptim::AddLineStep() {
         const int w= path[idxPos][0];
         const int h= path[idxPos][1];
         Vec::Vec3<float> newVal;
-        if (D.UI[BlendMode_______].B())
+        if (D.UI[BlendMode_______].I() > 0)
           newVal= (1.0f - D.UI[CoeffColor______].F()) * ImCur.at(w, h) + D.UI[CoeffColor______].F() * Colors[idxCol];
         else
           newVal= ImCur.at(w, h) + D.UI[CoeffColor______].F() * Colors[idxCol];
@@ -398,7 +398,7 @@ bool StringArtOptim::AddLineStep() {
   }
 
   // Optionally keep only the best color
-  if (D.UI[SingleLine______].B()) {
+  if (D.UI[SingleLine______].I() > 0) {
     int idxBestCol= 0;
     for (int idxCol= 0; idxCol < (int)Colors.size(); idxCol++)
       if (bestErr[idxBestCol] > bestErr[idxCol])
@@ -425,7 +425,7 @@ bool StringArtOptim::AddLineStep() {
         for (int idxPos= 0; idxPos < (int)path.size(); idxPos++) {
           const int w= path[idxPos][0];
           const int h= path[idxPos][1];
-          if (D.UI[BlendMode_______].B())
+          if (D.UI[BlendMode_______].I() > 0)
             ImCur.at(w, h)= (1.0f - D.UI[CoeffColor______].F()) * ImCur.at(w, h) + D.UI[CoeffColor______].F() * Colors[idxCol];
           else
             ImCur.at(w, h)= ImCur.at(w, h) + D.UI[CoeffColor______].F() * Colors[idxCol];

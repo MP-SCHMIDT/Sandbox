@@ -10,8 +10,8 @@
 
 // Algo headers
 #include "Geom/BoxGrid.hpp"
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 
 bool FileOutput::SaveBoxTXTFile(

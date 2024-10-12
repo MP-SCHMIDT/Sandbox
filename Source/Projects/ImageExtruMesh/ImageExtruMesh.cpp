@@ -15,8 +15,8 @@
 #include "FileIO/FileOutput.hpp"
 #include "Geom/BoxGrid.hpp"
 #include "Geom/MarchingCubes.hpp"
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 // Global headers
 #include "Data.hpp"

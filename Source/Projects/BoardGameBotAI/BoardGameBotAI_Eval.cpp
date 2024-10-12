@@ -1,10 +1,11 @@
-#include "TheBoardGameAI.hpp"
+#include "BoardGameBotAI.hpp"
 
 
 // Standard lib
+#include <cassert>
 
 // Algo headers
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -14,16 +15,16 @@
 extern Data D;
 
 
-bool TheBoardGameAI::IsRedTurn(const int iDepth) {
+bool BoardGameBotAI::IsRedTurn(const int iDepth) {
   return ((idxTurn + iDepth) % (streakRed + streakBlu)) < streakRed;
 }
 
 
-void TheBoardGameAI::ComputeBoardScoreHex(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] ComputeBoardScoreHex on a null board\n");
+void BoardGameBotAI::ComputeBoardScoreHex(BoardState *ioBoard) {
+  assert(ioBoard != nullptr);
 
   // Check for win state
-  Field::Field2<int> Label(nW, nH, 0);
+  Field::Field2<char> Label(nW, nH, 0);
   for (int h= 0; h < nH; h++)
     if (ioBoard->Pawns.at(0, h) == -1)
       Label.at(0, h)= -1;
@@ -37,18 +38,12 @@ void TheBoardGameAI::ComputeBoardScoreHex(BoardState *ioBoard) {
     for (int w= 0; w < nW; w++) {
       for (int h= 0; h < nH; h++) {
         if (Label.at(w, h) == 0) {
-          if (w - 1 >= 0 && Label.at(w - 1, h) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h))
-            Label.at(w, h)= Label.at(w - 1, h);
-          if (w - 1 >= 0 && h - 1 >= 0 && Label.at(w - 1, h - 1) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h - 1))
-            Label.at(w, h)= Label.at(w - 1, h - 1);
-          if (h - 1 >= 0 && Label.at(w, h - 1) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w, h - 1))
-            Label.at(w, h)= Label.at(w, h - 1);
-          if (w + 1 < nW && Label.at(w + 1, h) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w + 1, h))
-            Label.at(w, h)= Label.at(w + 1, h);
-          if (w + 1 < nW && h + 1 < nH && Label.at(w + 1, h + 1) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w + 1, h + 1))
-            Label.at(w, h)= Label.at(w + 1, h + 1);
-          if (h + 1 < nH && Label.at(w, h + 1) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w, h + 1))
-            Label.at(w, h)= Label.at(w, h + 1);
+          if (w - 1 >= 0 &&               Label.at(w - 1, h) != 0     && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h))     Label.at(w, h)= Label.at(w - 1, h);
+          if (w - 1 >= 0 && h - 1 >= 0 && Label.at(w - 1, h - 1) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h - 1)) Label.at(w, h)= Label.at(w - 1, h - 1);
+          if (h - 1 >= 0 &&               Label.at(w, h - 1) != 0     && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w, h - 1))     Label.at(w, h)= Label.at(w, h - 1);
+          if (w + 1 < nW &&               Label.at(w + 1, h) != 0     && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w + 1, h))     Label.at(w, h)= Label.at(w + 1, h);
+          if (w + 1 < nW && h + 1 < nH && Label.at(w + 1, h + 1) != 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w + 1, h + 1)) Label.at(w, h)= Label.at(w + 1, h + 1);
+          if (h + 1 < nH &&               Label.at(w, h + 1) != 0     && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w, h + 1))     Label.at(w, h)= Label.at(w, h + 1);
           if (Label.at(w, h) != 0)
             wasUpdated= true;
         }
@@ -74,12 +69,9 @@ void TheBoardGameAI::ComputeBoardScoreHex(BoardState *ioBoard) {
       for (int w= 0; w < nW; w++) {
         for (int h= 0; h < nH; h++) {
           if (ioBoard->Pawns.at(w, h) != 0) {
-            if (w > 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h))
-              ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[HexEdgeConnect__].I();
-            if (h > 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w, h - 1))
-              ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[HexEdgeConnect__].I();
-            if (w > 0 && h > 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h - 1))
-              ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[HexEdgeConnect__].I();
+            if (w > 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h))              ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[HexEdgeConnect__].I();
+            if (h > 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w, h - 1))              ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[HexEdgeConnect__].I();
+            if (w > 0 && h > 0 && ioBoard->Pawns.at(w, h) == ioBoard->Pawns.at(w - 1, h - 1)) ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[HexEdgeConnect__].I();
           }
         }
       }
@@ -109,8 +101,8 @@ void TheBoardGameAI::ComputeBoardScoreHex(BoardState *ioBoard) {
 }
 
 
-void TheBoardGameAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] ComputeBoardScoreJmp on a null board\n");
+void BoardGameBotAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
+  assert(ioBoard != nullptr);
 
   // Check for win state
   bool isWinRed= true;
@@ -166,9 +158,9 @@ void TheBoardGameAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
       for (int w= 0; w < nW; w++) {
         for (int h= 0; h < nH; h++) {
           if (ioBoard->Pawns.at(w, h) != 0 &&
-              (w - 1 < 0 || ioBoard->Pawns.at(w - 1, h) != ioBoard->Pawns.at(w, h)) &&
+              (w - 1 < 0   || ioBoard->Pawns.at(w - 1, h) != ioBoard->Pawns.at(w, h)) &&
               (w + 1 >= nW || ioBoard->Pawns.at(w + 1, h) != ioBoard->Pawns.at(w, h)) &&
-              (h - 1 < 0 || ioBoard->Pawns.at(w, h - 1) != ioBoard->Pawns.at(w, h)) &&
+              (h - 1 < 0   || ioBoard->Pawns.at(w, h - 1) != ioBoard->Pawns.at(w, h)) &&
               (h + 1 >= nH || ioBoard->Pawns.at(w, h + 1) != ioBoard->Pawns.at(w, h)))
             ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[JmpSoftStranded_].I();
         }
@@ -180,9 +172,9 @@ void TheBoardGameAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
       for (int w= 0; w < nW; w++) {
         for (int h= 0; h < nH; h++) {
           if (ioBoard->Pawns.at(w, h) != 0 &&
-              (w - 1 < 0 || ioBoard->Pawns.at(w - 1, h) == 0) &&
+              (w - 1 < 0   || ioBoard->Pawns.at(w - 1, h) == 0) &&
               (w + 1 >= nW || ioBoard->Pawns.at(w + 1, h) == 0) &&
-              (h - 1 < 0 || ioBoard->Pawns.at(w, h - 1) == 0) &&
+              (h - 1 < 0   || ioBoard->Pawns.at(w, h - 1) == 0) &&
               (h + 1 >= nH || ioBoard->Pawns.at(w, h + 1) == 0))
             ioBoard->Score+= ioBoard->Pawns.at(w, h) * D.UI[JmpHardStranded_].I();
         }
@@ -191,8 +183,8 @@ void TheBoardGameAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
   }
 }
 
-void TheBoardGameAI::ComputeBoardScoreChk(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] ComputeBoardScoreChk on a null board\n");
+void BoardGameBotAI::ComputeBoardScoreChk(BoardState *ioBoard) {
+  assert(ioBoard != nullptr);
 
   // Check for win state
   bool isWinRed= true;

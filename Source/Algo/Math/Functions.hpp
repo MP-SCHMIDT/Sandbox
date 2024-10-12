@@ -34,4 +34,17 @@ namespace Functions {
     if (iVal > 0.0 && iVal < 1.0) return 3.0 * iVal * iVal - 2.0 * iVal * iVal * iVal;  // y= 3x^2 - 2x^3
     else return (iVal < 0.5) ? 0.0 : 1.0;
   }
+
+  // Smooth min or max of a list of numbers
+  // Tends to max with alpha positive and min with alpha negative
+  // https://en.wikipedia.org/wiki/Smooth_maximum
+  template <std::floating_point element_type>
+  inline element_type SmoothMinMax(std::vector<element_type> const iVal, element_type const iAlpha) {
+    element_type valMinMax= 0.0, normali= 0.0;
+    for (auto val : iVal) {
+      valMinMax+= val * std::exp(iAlpha * val);
+      normali+= std::exp(iAlpha * val);
+    }
+    return valMinMax / normali;
+  }
 }  // namespace Functions

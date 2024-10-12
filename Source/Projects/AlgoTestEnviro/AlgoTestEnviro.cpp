@@ -20,9 +20,9 @@
 #include "Geom/MergeVertices.hpp"
 #include "Geom/PrimitiveCSG.hpp"
 #include "Geom/Sketch.hpp"
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 #include "Math/Functions.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -191,7 +191,7 @@ void AlgoTestEnviro::KeyPress() {
     Bars.clear();
     Tris.clear();
     MarchingCubes::ComputeMarchingCubes(ScalarField.nX, ScalarField.nY, ScalarField.nZ, 0.0, D.boxMin, D.boxMax, ScalarField.data, Verts, Tris);
-    if (D.UI[TestParamALG_06_].B())
+    if (D.UI[TestParamALG_06_].I() > 0)
       MergeVertices::QuadraticMerge(D.UI[TestParamALG_07_].D(), Verts, Tris);
   }
 
@@ -214,6 +214,43 @@ void AlgoTestEnviro::KeyPress() {
                                             D.boxMin[1] + (D.boxMax[1] - D.boxMin[1]) * ratio,
                                             D.boxMin[2] + (D.boxMax[2] - D.boxMin[2]) * Functions::PenalInterpo(ratio, D.UI[TestParamALG_08_].D(), true)});
     }
+  }
+
+  // Testing field handling
+  if (D.keyLetterUpperCase == 'I') {
+    const int nX= std::max(D.UI[TestParamALG_10_].I(), 1);
+    const int nY= std::max(D.UI[TestParamALG_11_].I(), 1);
+    const int nZ= std::max(D.UI[TestParamALG_12_].I(), 1);
+    const int nW= std::max(D.UI[TestParamALG_13_].I(), 1);
+    const int nXY= nX * nY;
+    const int nXYZ= nX * nY * nZ;
+    const int nXYZW= nX * nY * nZ * nW;
+    {
+      Field::Field2<int> tmpField2D(nX, nY, 0);
+      int ox, oy, oxy= nXY / 3;
+      tmpField2D.getMultiIndex(oxy, ox, oy);
+      printf("%d -> %d %d\n", oxy, ox, oy);
+      oxy= tmpField2D.getFlatIndex(ox, oy);
+      printf("%d %d -> %d\n", ox, oy, oxy);
+    }
+    {
+      Field::Field3<int> tmpField3D(nX, nY, nZ, 0);
+      int ox, oy, oz, oxyz= nXYZ / 3;
+      tmpField3D.getMultiIndex(oxyz, ox, oy, oz);
+      printf("%d -> %d %d %d\n", oxyz, ox, oy, oz);
+      oxyz= tmpField3D.getFlatIndex(ox, oy, oz);
+      printf("%d %d %d -> %d\n", ox, oy, oz, oxyz);
+    }
+
+    {
+      Field::Field4<int> tmpField4D(nX, nY, nZ, nW, 0);
+      int ox, oy, oz, ow, oxyzw= nXYZW / 3;
+      tmpField4D.getMultiIndex(oxyzw, ox, oy, oz, ow);
+      printf("%d -> %d %d %d %d\n", oxyzw, ox, oy, oz, ow);
+      oxyzw= tmpField4D.getFlatIndex(ox, oy, oz, ow);
+      printf("%d %d %d %d -> %d\n", ox, oy, oz, ow, oxyzw);
+    }
+    printf("\n");
   }
 }
 

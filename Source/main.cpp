@@ -19,6 +19,7 @@
 // Project classes
 #include "AgentSwarmBoid/AgentSwarmBoid.hpp"
 #include "AlgoTestEnviro/AlgoTestEnviro.hpp"
+#include "BoardGameBotAI/BoardGameBotAI.hpp"
 #include "FractalCurvDev/FractalCurvDev.hpp"
 #include "FractalElevMap/FractalElevMap.hpp"
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
@@ -32,7 +33,6 @@
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
 #include "TestsKernelGPU/TestsKernelGPU.hpp"
-#include "TheBoardGameAI/TheBoardGameAI.hpp"
 #include "WavePropagSimu/WavePropagSimu.hpp"
 //#define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
@@ -49,6 +49,8 @@ static int winPosW, winPosH;
 static int currentProjectID;
 static bool isDarkMode;
 static bool isSmoothDraw;
+static bool autoScalePlot;
+static bool autoScaleScatter;
 Camera *cam;
 
 // Global constants used by the display
@@ -63,14 +65,14 @@ constexpr int paramValFracNbChar= 9;  // Number of characters in fractional part
 constexpr int paramValNbChar= paramValSignNbChar + paramValInteNbChar + paramValSepaNbChar + paramValFracNbChar;
 constexpr int plotAreaW= 600;  // Width of the plot area
 constexpr int plotAreaH= 120;  // Height of the plot area
-constexpr int scatAreaW= 240;  // Width of the scatter area
-constexpr int scatAreaH= 240;  // Height of the scatter area
+constexpr int scatAreaW= 280;  // Width of the scatter area
+constexpr int scatAreaH= 280;  // Height of the scatter area
 constexpr int winMarginL= 2;   // Margin size on the left of the window
 constexpr int winMarginR= 2;   // Margin size on the right of the window
 constexpr int winMarginT= 0;   // Margin size on the top of the window
 constexpr int winMarginB= 5;   // Margin size on the bottom of the window
-constexpr int charHeight= 14;  // Character width in pizels
-constexpr int charWidth= 10;   // Character height in pizels
+constexpr int charHeight= 14;  // Character width in pixels
+constexpr int charWidth= 10;   // Character height in pixels
 constexpr int textBoxW= 9 * charWidth;
 constexpr int textBoxH= charHeight;
 
@@ -91,7 +93,7 @@ SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
 TestsKernelGPU myTestsKernelGPU;
-TheBoardGameAI myTheBoardGameAI;
+BoardGameBotAI myBoardGameBotAI;
 WavePropagSimu myWavePropagSimu;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 CompuFluidDyna myCompuFluidDyna;
@@ -104,6 +106,7 @@ enum ProjectID
   AaaaaaaaaaaaaaID,
   AgentSwarmBoidID,
   AlgoTestEnviroID,
+  BoardGameBotAIID,
   FractalCurvDevID,
   FractalElevMapID,
   ImageExtruMeshID,
@@ -117,7 +120,6 @@ enum ProjectID
   StringArtOptimID,
   TerrainErosionID,
   TestsKernelGPUID,
-  TheBoardGameAIID,
   WavePropagSimuID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   CompuFluidDynaID,
@@ -136,27 +138,27 @@ void project_ForceHardInit() {
   D.boxMax= {1.0, 1.0, 1.0};
 
   int newProjInit= D.UI.empty() ? 1 : 0;
-  if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj && ++newProjInit) myAgentSwarmBoid= AgentSwarmBoid();
-  if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj && ++newProjInit) myAlgoTestEnviro= AlgoTestEnviro();
-  if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj && ++newProjInit) myFractalCurvDev= FractalCurvDev();
-  if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj && ++newProjInit) myFractalElevMap= FractalElevMap();
-  if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj && ++newProjInit) myImageExtruMesh= ImageExtruMesh();
-  if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj && ++newProjInit) myMarkovProcGene= MarkovProcGene();
-  if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj && ++newProjInit) myMassSpringSyst= MassSpringSyst();
-  if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj && ++newProjInit) myParticForceLaw= ParticForceLaw();
-  if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj && ++newProjInit) myParticLifeOrga= ParticLifeOrga();
-  if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj && ++newProjInit) myPosiBasedDynam= PosiBasedDynam();
-  if (currentProjectID != ProjectID::SkeletonFolderID && mySkeletonFolder.isActivProj && ++newProjInit) mySkeletonFolder= SkeletonFolder();
-  if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj && ++newProjInit) mySpaceTimeWorld= SpaceTimeWorld();
-  if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj && ++newProjInit) myStringArtOptim= StringArtOptim();
-  if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj && ++newProjInit) myTerrainErosion= TerrainErosion();
-  if (currentProjectID != ProjectID::TestsKernelGPUID && myTestsKernelGPU.isActivProj && ++newProjInit) myTestsKernelGPU= TestsKernelGPU();
-  if (currentProjectID != ProjectID::TheBoardGameAIID && myTheBoardGameAI.isActivProj && ++newProjInit) myTheBoardGameAI= TheBoardGameAI();
-  if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj && ++newProjInit) myWavePropagSimu= WavePropagSimu();
+  if (currentProjectID != ProjectID::AgentSwarmBoidID && myAgentSwarmBoid.isActivProj && ++newProjInit) myAgentSwarmBoid.isActivProj= false;
+  if (currentProjectID != ProjectID::AlgoTestEnviroID && myAlgoTestEnviro.isActivProj && ++newProjInit) myAlgoTestEnviro.isActivProj= false;
+  if (currentProjectID != ProjectID::BoardGameBotAIID && myBoardGameBotAI.isActivProj && ++newProjInit) myBoardGameBotAI.isActivProj= false;
+  if (currentProjectID != ProjectID::FractalCurvDevID && myFractalCurvDev.isActivProj && ++newProjInit) myFractalCurvDev.isActivProj= false;
+  if (currentProjectID != ProjectID::FractalElevMapID && myFractalElevMap.isActivProj && ++newProjInit) myFractalElevMap.isActivProj= false;
+  if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj && ++newProjInit) myImageExtruMesh.isActivProj= false;
+  if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj && ++newProjInit) myMarkovProcGene.isActivProj= false;
+  if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj && ++newProjInit) myMassSpringSyst.isActivProj= false;
+  if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj && ++newProjInit) myParticForceLaw.isActivProj= false;
+  if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj && ++newProjInit) myParticLifeOrga.isActivProj= false;
+  if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj && ++newProjInit) myPosiBasedDynam.isActivProj= false;
+  if (currentProjectID != ProjectID::SkeletonFolderID && mySkeletonFolder.isActivProj && ++newProjInit) mySkeletonFolder.isActivProj= false;
+  if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj && ++newProjInit) mySpaceTimeWorld.isActivProj= false;
+  if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj && ++newProjInit) myStringArtOptim.isActivProj= false;
+  if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj && ++newProjInit) myTerrainErosion.isActivProj= false;
+  if (currentProjectID != ProjectID::TestsKernelGPUID && myTestsKernelGPU.isActivProj && ++newProjInit) myTestsKernelGPU.isActivProj= false;
+  if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj && ++newProjInit) myWavePropagSimu.isActivProj= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
-  if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj && ++newProjInit) myCompuFluidDyna= CompuFluidDyna();
-  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj && ++newProjInit) myNonLinMMABench= NonLinMMABench();
-  if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj && ++newProjInit) myStructGenOptim= StructGenOptim();
+  if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj && ++newProjInit) myCompuFluidDyna.isActivProj= false;
+  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj && ++newProjInit) myNonLinMMABench.isActivProj= false;
+  if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj && ++newProjInit) myStructGenOptim.isActivProj= false;
 #endif
 
   if (newProjInit) {
@@ -168,6 +170,7 @@ void project_ForceHardInit() {
 
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.SetActiveProject();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.SetActiveProject();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.SetActiveProject();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.SetActiveProject();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.SetActiveProject();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
@@ -181,7 +184,6 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.SetActiveProject();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.SetActiveProject();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
@@ -203,6 +205,7 @@ void project_ForceHardInit() {
 void project_Refresh() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Refresh();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Refresh();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.Refresh();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Refresh();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Refresh();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
@@ -216,7 +219,6 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.Refresh();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Refresh();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
@@ -229,6 +231,7 @@ void project_Refresh() {
 void project_ParamChange() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.ParamChange();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.ParamChange();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.ParamChange();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.ParamChange();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.ParamChange();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.ParamChange();
@@ -242,7 +245,6 @@ void project_ParamChange() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.ParamChange();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.ParamChange();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.ParamChange();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.ParamChange();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.ParamChange();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.ParamChange();
@@ -255,6 +257,7 @@ void project_ParamChange() {
 void project_KeyPress() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.KeyPress();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.KeyPress();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.KeyPress();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.KeyPress();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.KeyPress();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress();
@@ -268,7 +271,6 @@ void project_KeyPress() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.KeyPress();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.KeyPress();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.KeyPress();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress();
@@ -281,6 +283,7 @@ void project_KeyPress() {
 void project_MousePress() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.MousePress();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.MousePress();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.MousePress();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.MousePress();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.MousePress();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.MousePress();
@@ -294,7 +297,6 @@ void project_MousePress() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.MousePress();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.MousePress();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.MousePress();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.MousePress();
@@ -306,6 +308,7 @@ void project_MousePress() {
 void project_Animate() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Animate();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Animate();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.Animate();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Animate();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Animate();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
@@ -319,7 +322,6 @@ void project_Animate() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.Animate();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Animate();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
@@ -332,6 +334,7 @@ void project_Animate() {
 void project_Draw() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.Draw();
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.Draw();
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.Draw();
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.Draw();
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.Draw();
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
@@ -345,7 +348,6 @@ void project_Draw() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.Draw();
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.Draw();
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
@@ -358,6 +360,7 @@ void project_Draw() {
 void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::AgentSwarmBoidID) myAgentSwarmBoid.isRefreshed= false;
   if (currentProjectID == ProjectID::AlgoTestEnviroID) myAlgoTestEnviro.isRefreshed= false;
+  if (currentProjectID == ProjectID::BoardGameBotAIID) myBoardGameBotAI.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalCurvDevID) myFractalCurvDev.isRefreshed= false;
   if (currentProjectID == ProjectID::FractalElevMapID) myFractalElevMap.isRefreshed= false;
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
@@ -371,7 +374,6 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
   if (currentProjectID == ProjectID::TestsKernelGPUID) myTestsKernelGPU.isRefreshed= false;
-  if (currentProjectID == ProjectID::TheBoardGameAIID) myTheBoardGameAI.isRefreshed= false;
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
@@ -539,9 +541,8 @@ void callback_display() {
   glMultMatrixf(viewMat);
   D.camDir= {viewMat[2], viewMat[6], viewMat[10]};
 
-  // Draw the reference frame and box
-  if (D.showAxis) {
-    // XZY basis lines
+  // Draw the origin unit frame
+  if (D.showAxisMode == 1 || D.showAxisMode == 3) {
     glLineWidth(3.0f);
     glBegin(GL_LINES);
     glColor3f(1.0, 0.0, 0.0);
@@ -556,7 +557,6 @@ void callback_display() {
     glEnd();
     glLineWidth(1.0f);
 
-    // XZY basis ends
     glPointSize(6.0f);
     glBegin(GL_POINTS);
     glColor3f(1.0, 0.0, 0.0);
@@ -567,8 +567,10 @@ void callback_display() {
     glVertex3f(0.0f, 0.0f, 1.0f);
     glEnd();
     glPointSize(1.0f);
+  }
 
-    // Bounding box
+  // Draw the reference box
+  if (D.showAxisMode == 2 || D.showAxisMode == 3) {
     glColor3f(0.5f, 0.5f, 0.5f);
     glPushMatrix();
     glTranslatef((float)D.boxMin[0], (float)D.boxMin[1], (float)D.boxMin[2]);
@@ -581,6 +583,9 @@ void callback_display() {
   // Draw stuff in the scene
   project_Draw();
 
+  // Disable potential clipping before drawing the UI
+  glDisable(GL_CLIP_PLANE0);
+
   // Set the camera transformation matrix for the HUD
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -590,14 +595,23 @@ void callback_display() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
+  // Add the rectangle backgrounds behind UI elements
+  if (isDarkMode) glColor4f(0.4f, 0.4f, 0.4f, 0.5f);
+  else glColor4f(0.8f, 0.8f, 0.8f, 0.5f);
+  glRecti(0, 0, winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, winH);
+  glRecti(winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, 0, winW, winMarginB + charHeight);
+  glRecti(winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, winH - winMarginT - plotAreaH - 2.3 * charHeight, winW, winH);
+
   // Draw the parameter list
   glLineWidth(2.0f);
   for (int k= D.idxFirstParamPageUI; k < std::min((int)D.UI.size(), D.idxFirstParamPageUI + paramPerPage); k++) {
-    if (k == D.idxParamUI)
-      glColor3f(0.8f, 0.4f, 0.4f);
+    if (k == D.idxParamUI) {
+      if (isDarkMode) glColor3f(0.8f, 0.4f, 0.4f);
+      else glColor3f(0.8f, 0.2f, 0.2f);
+    }
     else {
       if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-      else glColor3f(0.4f, 0.4f, 0.4f);
+      else glColor3f(0.2f, 0.2f, 0.2f);
     }
     char str[50];
     sprintf(str, "%s %+020.9f", D.UI[k].name.c_str(), D.UI[k].D());  // Format must match paramValNbChar settings
@@ -615,7 +629,7 @@ void callback_display() {
   // Draw the parameter list scroll bar
   if (!D.UI.empty()) {
     if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-    else glColor3f(0.4f, 0.4f, 0.4f);
+    else glColor3f(0.2f, 0.2f, 0.2f);
     glBegin(GL_LINES);
     glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
                winH - winMarginT, 0);
@@ -636,7 +650,7 @@ void callback_display() {
 
   // Draw the 2D plot
   if (!D.Plot.empty()) {
-    double valMin, valMax;
+    double valMin= 0.0, valMax= 1.0;
     for (int k0= 0; k0 < (int)D.Plot.size(); k0++) {
       if (D.Plot[k0].val.empty()) continue;
 
@@ -646,7 +660,7 @@ void callback_display() {
       glColor3f(r, g, b);
 
       // Find the min max range for vertical scaling
-      if (k0 == 0 || !D.Plot[k0].isSameRange) {
+      if (autoScalePlot && (k0 == 0 || !D.Plot[k0].isSameRange)) {
         valMin= std::numeric_limits<double>::max();
         valMax= std::numeric_limits<double>::lowest();
         // Also check following plots if using the same range
@@ -677,11 +691,12 @@ void callback_display() {
         draw_text(winW - winMarginR - plotAreaW - 2.5 * textBoxW,
                   winH - winMarginT - textBoxH * (k0 + 2), str);
       }
+      const int spacingMinMaxVal= (plotAreaW - textBoxW) / std::max(int(D.Plot.size() - 1), 1);
       sprintf(str, "%+.2e", valMax);  // Max value
-      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * textBoxW,
+      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * spacingMinMaxVal,
                 winH - winMarginT - textBoxH, str);
       sprintf(str, "%+.2e", valMin);  // Min value
-      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * textBoxW,
+      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * spacingMinMaxVal,
                 winH - winMarginT - plotAreaH - 2 * textBoxH, str);
       sprintf(str, "%+.2e", D.Plot[k0].val[0]);  // Start value
       draw_text(winW - winMarginR - plotAreaW - 2 * textBoxW,
@@ -730,16 +745,22 @@ void callback_display() {
   // Draw the 2D scatter
   if (!D.Scatter.empty()) {
     // Find the min max range for scaling
-    double valMinX= std::numeric_limits<double>::max();
-    double valMinY= std::numeric_limits<double>::max();
-    double valMaxX= std::numeric_limits<double>::lowest();
-    double valMaxY= std::numeric_limits<double>::lowest();
-    for (int k0= 0; k0 < int(D.Scatter.size()); k0++) {
-      for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
-        if (valMinX > D.Scatter[k0].val[k1][0]) valMinX= D.Scatter[k0].val[k1][0];
-        if (valMinY > D.Scatter[k0].val[k1][1]) valMinY= D.Scatter[k0].val[k1][1];
-        if (valMaxX < D.Scatter[k0].val[k1][0]) valMaxX= D.Scatter[k0].val[k1][0];
-        if (valMaxY < D.Scatter[k0].val[k1][1]) valMaxY= D.Scatter[k0].val[k1][1];
+    double valMinX= -1.0;
+    double valMinY= -1.0;
+    double valMaxX= 1.0;
+    double valMaxY= 1.0;
+    if (autoScaleScatter) {
+      valMinX= std::numeric_limits<double>::max();
+      valMinY= std::numeric_limits<double>::max();
+      valMaxX= std::numeric_limits<double>::lowest();
+      valMaxY= std::numeric_limits<double>::lowest();
+      for (int k0= 0; k0 < int(D.Scatter.size()); k0++) {
+        for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
+          if (valMinX > D.Scatter[k0].val[k1][0]) valMinX= D.Scatter[k0].val[k1][0];
+          if (valMinY > D.Scatter[k0].val[k1][1]) valMinY= D.Scatter[k0].val[k1][1];
+          if (valMaxX < D.Scatter[k0].val[k1][0]) valMaxX= D.Scatter[k0].val[k1][0];
+          if (valMaxY < D.Scatter[k0].val[k1][1]) valMaxY= D.Scatter[k0].val[k1][1];
+        }
       }
     }
 
@@ -789,9 +810,11 @@ void callback_display() {
       Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Scatter.size() - 1, 1), r, g, b);
       glColor3f(r, g, b);
 
-      // Draw the text for legend
+      // Draw the text for legend and point count
       strcpy(str, D.Scatter[k0].name.c_str());
-      draw_text(0, scatAreaH - k0 * textBoxH, str);
+      draw_text(0, scatAreaH - 2 * k0 * textBoxH, str);
+      sprintf(str, "N:%d", int(D.Scatter[k0].val.size()));
+      draw_text(0, scatAreaH - (2 * k0 + 1) * textBoxH, str);
 
       // Draw the points
       glBegin(GL_POINTS);
@@ -810,9 +833,14 @@ void callback_display() {
   // Draw the frame time
   {
     glLineWidth(2.0f);
-    if (D.playAnimation) glColor3f(1.0f, 0.6f, 0.6f);
-    else if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-    else glColor3f(0.2f, 0.2f, 0.2f);
+    if (D.playAnimation) {
+      if (isDarkMode) glColor3f(0.8f, 0.4f, 0.4f);
+      else glColor3f(0.8f, 0.2f, 0.2f);
+    }
+    else {
+      if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+      else glColor3f(0.2f, 0.2f, 0.2f);
+    }
     char str[50];
     sprintf(str, "%.3fs", elapsed_time());
     draw_text(winMarginL, winMarginB, str);
@@ -902,7 +930,7 @@ void callback_keyboard(unsigned char key, int x, int y) {
   else if (key == '\t' && !D.keyIsShift) D.idxFirstParamPageUI= (D.idxFirstParamPageUI + paramPerPage < (int)D.UI.size()) ? (D.idxFirstParamPageUI + paramPerPage) : (0);
   else if (key == '\t' && D.keyIsShift) D.idxFirstParamPageUI= (D.idxFirstParamPageUI - paramPerPage >= 0) ? (D.idxFirstParamPageUI - paramPerPage) : (((int)D.UI.size() / paramPerPage) * paramPerPage);
   else if (key >= '1' && key <= '9') D.displayMode[key - '0']= !D.displayMode[key - '0'];
-  else if (key == '0') D.showAxis= !D.showAxis;
+  else if (key == '0') D.showAxisMode= (D.showAxisMode + 1) % 4;
   else if (key == '=') {
     D.Plot.clear();
     D.Scatter.clear();
@@ -1111,6 +1139,14 @@ void callback_menu(int num) {
       glDisable(GL_LINE_SMOOTH);
     }
   }
+  // Toggle auto scale plot
+  if (num == -12) {
+    autoScalePlot= !autoScalePlot;
+  }
+  // Toggle auto scale scatter
+  if (num == -13) {
+    autoScaleScatter= !autoScaleScatter;
+  }
   // Save sandbox settings
   if (num == -20) {
     winPosW= glutGet((GLenum)GLUT_WINDOW_X);
@@ -1140,9 +1176,12 @@ void init_menu() {
   glutAddMenuEntry("View Z-", -6);
   glutAddMenuEntry("Dark mode", -10);
   glutAddMenuEntry("Smooth draw", -11);
+  glutAddMenuEntry("Auto scale plot", -12);
+  glutAddMenuEntry("Auto scale scatter", -13);
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
+  glutAddMenuEntry("BoardGameBotAI", ProjectID::BoardGameBotAIID);
   glutAddMenuEntry("FractalCurvDev", ProjectID::FractalCurvDevID);
   glutAddMenuEntry("FractalElevMap", ProjectID::FractalElevMapID);
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
@@ -1156,7 +1195,6 @@ void init_menu() {
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
   glutAddMenuEntry("TestsKernelGPU", ProjectID::TestsKernelGPUID);
-  glutAddMenuEntry("TheBoardGameAI", ProjectID::TheBoardGameAIID);
   glutAddMenuEntry("WavePropagSimu", ProjectID::WavePropagSimuID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
@@ -1180,6 +1218,8 @@ void init_menu() {
 void init_GL() {
   isDarkMode= true;
   isSmoothDraw= false;
+  autoScalePlot= true;
+  autoScaleScatter= true;
 
   // Set background color
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -1228,8 +1268,8 @@ void init_scene() {
 
   // Initialize camera and arcball positions
   cam= new Camera;
-  cam->setEye(2.5f, 0.5f, 0.5f);
-  cam->setCenter(0.5f, 0.5f, 0.5f);
+  cam->setEye(2.5f, 0.3f, 0.6f);
+  cam->setCenter(0.5f, 0.3f, 0.6f);
 }
 
 

@@ -11,7 +11,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Random.hpp"
 
 // Global headers

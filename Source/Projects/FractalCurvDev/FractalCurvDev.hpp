@@ -5,7 +5,7 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 
 
 // Generate 3D surfaces from fractal curves

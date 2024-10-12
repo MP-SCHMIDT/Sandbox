@@ -213,6 +213,22 @@ public:
       this->data.swap(refField.data);
     }
 
+    // Bool conversion operator O(n)
+    inline std::vector<bool> toBool() {
+      std::vector<bool> boolVec(nXY, false);
+      for (int xy= 0; xy < nXY; xy++)
+        if (data[xy])
+          boolVec[xy]= true;
+      return boolVec;
+    }
+
+    // Index getter
+    inline int getFlatIndex(int const ix, int const iy) { return ix * c0 + iy; }
+    inline void getMultiIndex(int const ixy, int& ox, int& oy) {
+      ox= ixy / c0;
+      oy= ixy % c0;
+    }
+
     // Accessor
     inline element_type& at(int const xy) { return data[xy]; }
     inline const element_type& at(int const xy) const { return data[xy]; }
@@ -304,6 +320,23 @@ public:
       std::swap(this->c0, refField.c0);
       std::swap(this->c1, refField.c1);
       this->data.swap(refField.data);
+    }
+
+    // Bool conversion operator O(n)
+    inline std::vector<bool> toBool() {
+      std::vector<bool> boolVec(nXYZ, false);
+      for (int xyz= 0; xyz < nXYZ; xyz++)
+        if (data[xyz])
+          boolVec[xyz]= true;
+      return boolVec;
+    }
+
+    // Index getter
+    inline int getFlatIndex(int const ix, int const iy, int const iz) { return ix * c0 + iy * c1 + iz; }
+    inline void getMultiIndex(int const ixyz, int& ox, int& oy, int& oz) {
+      ox= ixyz / c0;
+      oy= (ixyz - (ox * c0)) / c1;
+      oz= ixyz % c1;
     }
 
     // Accessor
@@ -408,6 +441,24 @@ public:
       std::swap(this->c1, refField.c1);
       std::swap(this->c2, refField.c2);
       this->data.swap(refField.data);
+    }
+
+    // Bool conversion operator O(n)
+    inline std::vector<bool> toBool() {
+      std::vector<bool> boolVec(nXYZW, false);
+      for (int xyzw= 0; xyzw < nXYZW; xyzw++)
+        if (data[xyzw])
+          boolVec[xyzw]= true;
+      return boolVec;
+    }
+
+    // Index getter
+    inline int getFlatIndex(int const ix, int const iy, int const iz, int const iw) { return ix * c0 + iy * c1 + iz * c2 + iw; }
+    inline void getMultiIndex(int const ixyzw, int& ox, int& oy, int& oz, int& ow) {
+      ox= ixyzw / c0;
+      oy= (ixyzw - (ox * c0)) / c1;
+      oz= (ixyzw - (ox * c0) - (oy * c1)) / c2;
+      ow= ixyzw % c2;
     }
 
     // Accessor

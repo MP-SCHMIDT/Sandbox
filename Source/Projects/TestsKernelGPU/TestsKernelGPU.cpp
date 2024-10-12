@@ -197,8 +197,8 @@ void TestsKernelGPU::Draw() {
 void TestsKernelGPU::RunVecAddGPU() {
   // Initialize the device
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  OCL_AddVec.deviceLink= Device((select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].B()))),
-                                TestsKernelGPU_GPUKernel::get_opencl_c_code(), D.UI[VerboseLevel____].B());
+  OCL_AddVec.deviceLink= Device((select_device_with_most_flops(get_devices(D.UI[VerboseLevel____].I() > 0))),
+                                TestsKernelGPU_GPUKernel::get_opencl_c_code(), D.UI[VerboseLevel____].I() > 0);
   if (D.UI[VerboseLevel____].I() >= 1) printf("CreateDeviceT %f\n", Timer::PopTimer());
 
   // Get the UI parameters
@@ -253,34 +253,34 @@ void TestsKernelGPU::RunVecAddGPU() {
 
 
 void TestsKernelGPU::RunReducSumGPU() {
-  OCL_ReducSum.deviceLink= Device((select_device_with_most_flops(get_devices(false))),
-                                  TestsKernelGPU_GPUKernel::get_opencl_c_code(), false);
+  OCL_ReducSum.deviceLink= Device((select_device_with_most_flops(get_devices(false))), TestsKernelGPU_GPUKernel::get_opencl_c_code(), false);
   OCL_ReducSum.N= std::max(D.UI[ReducSumSize____].I(), 1);
-  OCL_ReducSum.arr= Memory<int>(OCL_ReducSum.deviceLink, (ulong)OCL_ReducSum.N, 1u, true, true, 0);
-  OCL_ReducSum.par= Memory<int>(OCL_ReducSum.deviceLink, OCL_ReducSum.N / WORKGROUP_SIZE + 1u, 1u, true, true, 0);
-  OCL_ReducSum.kernelFunc= Kernel(OCL_ReducSum.deviceLink, (ulong)OCL_ReducSum.N, "kernel_ReducSum", OCL_ReducSum.arr, OCL_ReducSum.par);
+  OCL_ReducSum.arr= Memory<float>(OCL_ReducSum.deviceLink, OCL_ReducSum.N, 1u, true, true, 0.0f);
+  OCL_ReducSum.par= Memory<float>(OCL_ReducSum.deviceLink, OCL_ReducSum.N / WORKGROUP_SIZE + 1u, 1u, true, true, 0.0f);
+  OCL_ReducSum.kernelFunc= Kernel(OCL_ReducSum.deviceLink, OCL_ReducSum.N, "kernel_ReducSum", OCL_ReducSum.arr, OCL_ReducSum.par);
 
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
   for (int k= 0; k < OCL_ReducSum.N; k++)
-    OCL_ReducSum.arr[k]= 1;
+    OCL_ReducSum.arr[k]= float(k)/float(OCL_ReducSum.N);
   OCL_ReducSum.arr.write_to_device();
-  if (D.UI[VerboseLevel____].I() >= 1) printf("ValSetup %f\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("ValSetup %f ", Timer::PopTimer());
 
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
   OCL_ReducSum.kernelFunc.run();
   OCL_ReducSum.par.read_from_device();
-  int sumGPU= 0;
+  float sumGPU= 0;
   for (int k= 0; k < (int)OCL_ReducSum.par.length(); k++)
     sumGPU+= OCL_ReducSum.par[k];
-  if (D.UI[VerboseLevel____].I() >= 1) printf("SumGPUT %f\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SumGPUT %f ", Timer::PopTimer());
 
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
-  int sumCPU= 0;
+  float sumCPU= 0;
+  OCL_ReducSum.arr.read_from_device();
   for (int k= 0; k < (int)OCL_ReducSum.arr.length(); k++)
     sumCPU+= OCL_ReducSum.arr[k];
-  if (D.UI[VerboseLevel____].I() >= 1) printf("SumCPUT %f\n", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("SumCPUT %f ", Timer::PopTimer());
 
-  printf("GPU:%d    CPU:%d\n", sumGPU, sumCPU);
+  printf("GPU:%f CPU:%f DIF:%f ", sumGPU, sumCPU, sumCPU-sumGPU);
 }
 
 

@@ -21,9 +21,8 @@ struct
   int size;
   Device deviceLink;
   Kernel kernelFunc;
-  Memory<int> arr;
-  Memory<int> par;
-  Memory<int> loc;
+  Memory<float> arr;
+  Memory<float> par;
 } OCL_ReducSum;
 
 struct

@@ -12,7 +12,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 
 // Global headers
 #include "Data.hpp"

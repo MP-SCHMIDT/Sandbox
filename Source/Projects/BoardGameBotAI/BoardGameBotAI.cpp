@@ -1,7 +1,8 @@
-#include "TheBoardGameAI.hpp"
+#include "BoardGameBotAI.hpp"
 
 
 // Standard lib
+#include <cassert>
 #include <cmath>
 #include <format>
 
@@ -10,7 +11,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Random.hpp"
 
 // Global headers
@@ -22,7 +23,7 @@ extern Data D;
 
 
 // Constructor
-TheBoardGameAI::TheBoardGameAI() {
+BoardGameBotAI::BoardGameBotAI() {
   isActivProj= false;
   isAllocated= false;
   isRefreshed= false;
@@ -30,47 +31,45 @@ TheBoardGameAI::TheBoardGameAI() {
 
 
 // Initialize Project UI parameters
-void TheBoardGameAI::SetActiveProject() {
+void BoardGameBotAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("GameMode________", 0));
-    D.UI.push_back(ParamUI("BoardW__________", 6));
-    D.UI.push_back(ParamUI("BoardH__________", 6));
-    D.UI.push_back(ParamUI("MoveStreakRed___", 1));
-    D.UI.push_back(ParamUI("MoveStreakBlu___", 1));
-    D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("MaxSearchDepth__", 4));
-    D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));
-    D.UI.push_back(ParamUI("MaxTreeBoards___", 0));
-    D.UI.push_back(ParamUI("MoveSortScore___", 1));
-    D.UI.push_back(ParamUI("MoveSortNash____", 1));
-    D.UI.push_back(ParamUI("MoveSortRand____", 1));
-    D.UI.push_back(ParamUI("ABPruning_______", 1));
-    D.UI.push_back(ParamUI("IterDeepening___", 1));
-    D.UI.push_back(ParamUI("______________01", NAN));
-    D.UI.push_back(ParamUI("HexEdgeConnect__", 10));
-    D.UI.push_back(ParamUI("HexCornConnect__", 25));
-    D.UI.push_back(ParamUI("JmpPushTotal____", 1));
-    D.UI.push_back(ParamUI("JmpPushLast_____", 0));
-    D.UI.push_back(ParamUI("JmpSoftStranded_", 0));
-    D.UI.push_back(ParamUI("JmpHardStranded_", 0));
-    D.UI.push_back(ParamUI("ChkMaterial_____", 10));
-    D.UI.push_back(ParamUI("______________02", NAN));
-    D.UI.push_back(ParamUI("RandomMoves_____", 0));
-    D.UI.push_back(ParamUI("BotStrategyRed__", 3));
-    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));
-    D.UI.push_back(ParamUI("______________03", NAN));
-    D.UI.push_back(ParamUI("ColorMode_______", 0));
-    D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2));
-    D.UI.push_back(ParamUI("______________04", NAN));
-    D.UI.push_back(ParamUI("TestParamGAI_0__", 0.0));
-    D.UI.push_back(ParamUI("TestParamGAI_1__", 0.0));
-    D.UI.push_back(ParamUI("TestParamGAI_2__", 0.0));
-    D.UI.push_back(ParamUI("TestParamGAI_3__", 0.0));
-    D.UI.push_back(ParamUI("TestParamGAI_4__", 0.0));
-    D.UI.push_back(ParamUI("TestParamGAI_5__", 0.0));
-    D.UI.push_back(ParamUI("______________05", NAN));
-    D.UI.push_back(ParamUI("VerboseLevel____", 0));
+    D.UI.push_back(ParamUI("GameMode________", 0));     // Selected game: Hex, Jumpin, Checkers
+    D.UI.push_back(ParamUI("BoardW__________", 6));     // Board width
+    D.UI.push_back(ParamUI("BoardH__________", 6));     // Board height
+    D.UI.push_back(ParamUI("MoveStreakRed___", 1));     // Number of consecutive move for each player, 0 to disable the player
+    D.UI.push_back(ParamUI("MoveStreakBlu___", 1));     // Number of consecutive move for each player, 0 to disable the player
+    D.UI.push_back(ParamUI("BotStrategyRed__", 3));     // Choose if Red is a bot and which strategy it adopts
+    D.UI.push_back(ParamUI("BotStrategyBlu__", 3));     // Choose if Blu is a bot and which strategy it adopts
+    D.UI.push_back(ParamUI("______________00", NAN));   //
+    D.UI.push_back(ParamUI("MaxSearchDepth__", 4));     // Max depth for the tree search
+    D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));   // Max time for the game tree search in seconds
+    D.UI.push_back(ParamUI("MaxTreeBoards___", 0));     // Max number of boards explored in the game tree search
+    D.UI.push_back(ParamUI("MoveSortNash____", 1));     // Flag to sort the moves according to their Nash scores
+    D.UI.push_back(ParamUI("MoveSortScore___", 1));     // Flag to sort the moves according to their board score (if nash is equal)
+    D.UI.push_back(ParamUI("MoveSortRand____", 1));     // Flag to sort the moves randomly (if nash and score are equal)
+    D.UI.push_back(ParamUI("ABPruning_______", 1));     // Enable alpha-beta pruning (only useful for 2 player mode)
+    D.UI.push_back(ParamUI("IterDeepening___", 1));     // Enable iterative deepening
+    D.UI.push_back(ParamUI("______________01", NAN));   //
+    D.UI.push_back(ParamUI("HexEdgeConnect__", 10));    // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("HexCornConnect__", 25));    // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("JmpPushTotal____", 1));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("JmpPushLast_____", 0));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("JmpSoftStranded_", 0));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("JmpHardStranded_", 0));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("ChkMaterial_____", 10));    // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("______________02", NAN));   //
+    D.UI.push_back(ParamUI("ColorMode_______", 0));     // Color mode for move preview and game tree display
+    D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2)); // Color multiplier
+    D.UI.push_back(ParamUI("______________04", NAN));   //
+    D.UI.push_back(ParamUI("TestParamGAI_0__", 0.0));   //
+    D.UI.push_back(ParamUI("TestParamGAI_1__", 0.0));   //
+    D.UI.push_back(ParamUI("TestParamGAI_2__", 0.0));   //
+    D.UI.push_back(ParamUI("TestParamGAI_3__", 0.0));   //
+    D.UI.push_back(ParamUI("TestParamGAI_4__", 0.0));   //
+    D.UI.push_back(ParamUI("TestParamGAI_5__", 0.0));   //
+    D.UI.push_back(ParamUI("______________05", NAN));   //
+    D.UI.push_back(ParamUI("VerboseLevel____", 0));     //
 
     D.displayModeLabel[1]= "Board";
     D.displayModeLabel[2]= "Pawns";
@@ -87,7 +86,7 @@ void TheBoardGameAI::SetActiveProject() {
 
 
 // Check if parameter changes should trigger an allocation
-bool TheBoardGameAI::CheckAlloc() {
+bool BoardGameBotAI::CheckAlloc() {
   if (D.UI[GameMode________].hasChanged()) isAllocated= false;
   if (D.UI[BoardW__________].hasChanged()) isAllocated= false;
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
@@ -98,7 +97,7 @@ bool TheBoardGameAI::CheckAlloc() {
 
 
 // Check if parameter changes should trigger a refresh
-bool TheBoardGameAI::CheckRefresh() {
+bool BoardGameBotAI::CheckRefresh() {
   if (D.UI[MaxSearchDepth__].hasChanged()) isRefreshed= false;
   if (D.UI[MaxThinkTime____].hasChanged()) isRefreshed= false;
   if (D.UI[MaxTreeBoards___].hasChanged()) isRefreshed= false;
@@ -120,7 +119,7 @@ bool TheBoardGameAI::CheckRefresh() {
 
 
 // Allocate the project data
-void TheBoardGameAI::Allocate() {
+void BoardGameBotAI::Allocate() {
   if (!isActivProj) return;
   if (CheckAlloc()) return;
   isRefreshed= false;
@@ -178,7 +177,7 @@ void TheBoardGameAI::Allocate() {
   }
 
   // Initialize the pawns
-  Field::Field2<int> Pawns(nW, nH, 0);
+  Field::Field2<char> Pawns(nW, nH, 0);
   for (int w= 0; w < nW; w++) {
     for (int h= 0; h < nH; h++) {
       if (D.UI[GameMode________].I() == 0) {
@@ -207,7 +206,7 @@ void TheBoardGameAI::Allocate() {
 
 
 // Refresh the project
-void TheBoardGameAI::Refresh() {
+void BoardGameBotAI::Refresh() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (CheckRefresh()) return;
@@ -222,12 +221,12 @@ void TheBoardGameAI::Refresh() {
 
 
 // Handle UI parameter change
-void TheBoardGameAI::ParamChange() {
+void BoardGameBotAI::ParamChange() {
 }
 
 
 // Handle keypress
-void TheBoardGameAI::KeyPress() {
+void BoardGameBotAI::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 
@@ -260,22 +259,6 @@ void TheBoardGameAI::KeyPress() {
   if (D.keyLetterUpperCase == 'C') {
     idxTurn++;
     wSel= hSel= -1;
-    ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
-  }
-
-  // Play a sequence random moves
-  if (D.keyLetterUpperCase == 'A') {
-    for (int k= 0; k < D.UI[RandomMoves_____].I(); k++) {
-      ComputeGameTreeSearch(1);
-      if (!RootBoard->SubBoards.empty()) {
-        const int idxMove= Random::Val(0, (int)RootBoard->SubBoards.size() - 1);
-        RootBoard->Move= RootBoard->SubBoards[idxMove]->Move;
-        if (D.UI[GameMode________].I() == 0) ExecuteMoveHex(RootBoard, 0);
-        else if (D.UI[GameMode________].I() == 1) ExecuteMoveJmp(RootBoard, 0);
-        else if (D.UI[GameMode________].I() == 2) ExecuteMoveChk(RootBoard, 0);
-      }
-      idxTurn++;
-    }
     ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
   }
 
@@ -320,14 +303,14 @@ void TheBoardGameAI::KeyPress() {
 
 
 // Handle mouse action
-void TheBoardGameAI::MousePress() {
+void BoardGameBotAI::MousePress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
 }
 
 
 // Animate the project
-void TheBoardGameAI::Animate() {
+void BoardGameBotAI::Animate() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
@@ -373,7 +356,7 @@ void TheBoardGameAI::Animate() {
 
 
 // Draw the project
-void TheBoardGameAI::Draw() {
+void BoardGameBotAI::Draw() {
   if (!isActivProj) return;
   if (!isAllocated) return;
   if (!isRefreshed) return;
@@ -491,10 +474,10 @@ void TheBoardGameAI::Draw() {
 }
 
 
-void TheBoardGameAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
+void BoardGameBotAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, const int iDrawMode,
                                    const float px, const float py, const float pz,
                                    const float radius, const float arcBeg, const float arcEnd) {
-  if (iBoard == nullptr) printf("[ERROR] DrawBoardTree on a null board\n");
+  assert(iBoard != nullptr);
 
   // Precompute distances and arc radians
   const float arcStep= (arcEnd - arcBeg) / float(iBoard->SubBoards.size());
@@ -522,7 +505,7 @@ void TheBoardGameAI::DrawBoardTree(const BoardState *iBoard, const int iDepth, c
 }
 
 
-void TheBoardGameAI::PlotData() {
+void BoardGameBotAI::PlotData() {
   // Plot score evolution
   if (D.Plot.size() < 2) D.Plot.resize(2);
   D.Plot[0].name= "Score";

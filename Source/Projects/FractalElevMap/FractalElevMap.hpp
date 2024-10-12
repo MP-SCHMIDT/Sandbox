@@ -4,8 +4,8 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 
 // Generate 2.5D surface based on the Julia Set fractal

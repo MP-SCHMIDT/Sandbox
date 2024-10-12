@@ -1,7 +1,8 @@
-#include "TheBoardGameAI.hpp"
+#include "BoardGameBotAI.hpp"
 
 
 // Standard lib
+#include <cassert>
 
 // Algo headers
 
@@ -13,7 +14,7 @@
 extern Data D;
 
 
-TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const Field::Field2<int> &iPawns,
+BoardGameBotAI::BoardState *BoardGameBotAI::CreateBoard(const Field::Field2<char> &iPawns,
                                                         const std::vector<std::array<int, 2>> &iMove,
                                                         const int iDepth) {
   BoardState *newBoard= new BoardState;
@@ -26,8 +27,8 @@ TheBoardGameAI::BoardState *TheBoardGameAI::CreateBoard(const Field::Field2<int>
 }
 
 
-void TheBoardGameAI::DeleteBoard(BoardState *ioBoard) {
-  if (ioBoard == nullptr) printf("[ERROR] DeleteBoard on a null board\n");
+void BoardGameBotAI::DeleteBoard(BoardState *ioBoard) {
+  assert(ioBoard != nullptr);
   for (BoardState *subBoard : ioBoard->SubBoards)
     DeleteBoard(subBoard);
   delete ioBoard;

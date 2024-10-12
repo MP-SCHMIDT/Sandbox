@@ -15,24 +15,95 @@
 #include "utilities.hpp"
 using cl::Event;
 
+static const string driver_installation_instructions =
+#ifdef _WIN32
+R"(|----------------.------------------------------------------------------------'
+|       AMD GPUs | https://www.amd.com/en/support/download/drivers.html
+|     Intel GPUs | https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html
+|    Nvidia GPUs | https://www.nvidia.com/Download/index.aspx
+| AMD/Intel CPUs | https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html
+|----------------'------------------------------------------------------------.
+| Don't forget to reboot after installation! Press Enter to exit.             |
+'-----------------------------------------------------------------------------')""\n";
+#else // Linux
+string("'-----------------------------------------------------------------------------'\n")+R"(
+)"+string("\033[31m")+R"(.-----------------------------------------------------------------------------.
+| AMD GPU Drivers, which contain the OpenCL Runtime                           |
+'-----------------------------------------------------------------------------'
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
+mkdir -p ~/amdgpu
+wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.1.3/ubuntu/jammy/amdgpu-install_6.1.60103-1_all.deb
+sudo apt install -y ~/amdgpu/amdgpu-install*.deb
+sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
+sudo usermod -a -G render,video $(whoami)
+rm -r ~/amdgpu
+sudo shutdown -r now
+
+)"+string("\033[36m")+R"(.-----------------------------------------------------------------------------.
+| Intel GPU Drivers are already installed, only the OpenCL Runtime is needed  |
+'-----------------------------------------------------------------------------'
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev intel-opencl-icd
+sudo usermod -a -G render $(whoami)
+sudo shutdown -r now
+
+)"+string("\033[32m")+R"(.-----------------------------------------------------------------------------.
+| Nvidia GPU Drivers, which contain the OpenCL Runtime                        |
+'-----------------------------------------------------------------------------'
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-550
+sudo shutdown -r now
+
+)"+string("\033[96m")+R"(.-----------------------------------------------------------------------------.
+| CPU Option 1: Intel CPU Runtime for OpenCL (works for both AMD/Intel CPUs)  |
+'-----------------------------------------------------------------------------'
+export OCLV="2024.18.6.0.02_rel"
+export TBBV="2021.13.0"
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
+sudo mkdir -p ~/cpurt /opt/intel/oclcpuexp_${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
+sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-${OCLV}.tar.gz
+sudo wget -P ~/cpurt https://github.com/oneapi-src/oneTBB/releases/download/v${TBBV}/oneapi-tbb-${TBBV}-lin.tgz
+sudo tar -zxvf ~/cpurt/oclcpuexp-${OCLV}.tar.gz -C /opt/intel/oclcpuexp_${OCLV}
+sudo tar -zxvf ~/cpurt/oneapi-tbb-${TBBV}-lin.tgz -C /opt/intel
+echo /opt/intel/oclcpuexp_${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
+echo /opt/intel/oclcpuexp_${OCLV}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
+sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_${OCLV}/x64
+sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_${OCLV}/x64
+sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_${OCLV}/x64
+sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_${OCLV}/x64
+sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
+sudo rm -r ~/cpurt
+
+)"+string("\033[33m")+R"(.-----------------------------------------------------------------------------.
+| CPU Option 2: PoCL                                                          |
+'-----------------------------------------------------------------------------'
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev pocl-opencl-icd
+
+)"+string("\033[0m");
+#endif // Linux
+
 struct Device_Info {
 	cl::Device cl_device; // OpenCL device
 	cl::Context cl_context; // multiple devices in the same context can communicate buffers
 	uint id = 0u; // unique device ID assigned by get_devices()
-	string name, vendor; // device name, vendor
-	string driver_version, opencl_c_version; // device driver version, OpenCL C version
-	uint memory=0u; // global memory in MB
-	uint memory_used=0u; // track global memory usage in MB
+	string name="", vendor=""; // device name, vendor
+	string driver_version="", opencl_c_version=""; // device driver version, OpenCL C version
+	uint memory = 0u; // global memory in MB
+	uint memory_used = 0u; // track global memory usage in MB
 	uint global_cache=0u, local_cache=0u; // global cache in KB, local cache in KB
 	uint max_global_buffer=0u, max_constant_buffer=0u; // maximum global buffer size in MB, maximum constant buffer size in KB
-	uint compute_units=0u; // compute units (CUs) can contain multiple cores depending on the microarchitecture
-	uint clock_frequency=0u; // in MHz
+	uint compute_units = 0u; // compute units (CUs) can contain multiple cores depending on the microarchitecture
+	uint clock_frequency = 0u; // in MHz
 	bool is_cpu=false, is_gpu=false;
-	bool intel_gpu_above_4gb_patch = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
-	bool arm_fma_patch = false;  // ARM GPUs have terrible fma performance, so replace with a*b+c
+	bool patch_nvidia_fp16 = false; // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
+	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
+	bool patch_legacy_gpu_fma = false; // some old GPUs have terrible fma performance, so replace with a*b+c
 	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u;
-	uint cores=0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
-	float tflops=0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
+	uint cores = 0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
+	float tflops = 0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
 	inline Device_Info(const cl::Device& cl_device, const cl::Context& cl_context, const uint id) {
 		this->cl_device = cl_device; // see https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/clGetDeviceInfo.html
 		this->cl_context = cl_context;
@@ -44,7 +115,7 @@ struct Device_Info {
 		memory = (uint)(cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()/1048576ull); // global memory in MB
 		global_cache = (uint)(cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>()/1024ull); // global cache in KB
 		local_cache = (uint)(cl_device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()/1024ull); // local cache in KB
-		max_global_buffer = (uint)(cl_device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()/1048576ull); // maximum global buffer size in MB
+		max_global_buffer = (uint)(min(cl_device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()/1048576ull, (ulong)memory)); // maximum global buffer size in MB
 		max_constant_buffer = (uint)(cl_device.getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>()/1024ull); // maximum constant buffer size in KB
 		compute_units = (uint)cl_device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>(); // compute units (CUs) can contain multiple cores depending on the microarchitecture
 		clock_frequency = (uint)cl_device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>(); // in MHz
@@ -81,8 +152,10 @@ struct Device_Info {
 				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // fix wrong (98% on Windows) memory reporting on Intel Arc
 			}
 		}
-		intel_gpu_above_4gb_patch = (intel==8.0f)&&(memory>4096); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
-		arm_fma_patch = contains(to_lower(vendor), "arm"); // enable for all ARM GPUs
+		patch_nvidia_fp16 = patch_nvidia_fp16||(nvidia>0.0f&&atof(driver_version.substr(0, 6).c_str())>=520.00&&!nvidia_192_cores_per_cu&&!contains_any(to_lower(name), {"gtx 8", "gtx 9", "quadro m", "tesla m", "gtx titan"})); // enable for all Nvidia GPUs with driver>=520.00 except Kepler and Maxwell
+		patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||((intel==8.0f)&&(memory>4096)); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
+		patch_legacy_gpu_fma = patch_legacy_gpu_fma||arm>0.0f; // enable for all ARM GPUs
+		if(patch_nvidia_fp16) is_fp16_capable = 2u;
 	}
 	inline Device_Info() {}; // default constructor
 };
@@ -109,6 +182,8 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 	println("|----------------'------------------------------------------------------------|");
 }
 inline vector<Device_Info> get_devices(const bool print_info=true) { // returns a vector of all available OpenCL devices
+	set_environment_variable((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
+	set_environment_variable((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
 	cl::Platform::get(&cl_platforms);
@@ -123,7 +198,12 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 		}
 	}
 	if((uint)cl_platforms.size()==0u||(uint)devices.size()==0u) {
-		print_error("There are no OpenCL devices available. Make sure that the OpenCL 1.2 Runtime for your device is installed. For GPUs it comes by default with the graphics driver, for CPUs it has to be installed separately.");
+		print_message("No OpenCL devices are available. Please install the drivers for your GPU(s) and/or the CPU Runtime for OpenCL. Instructions:", "Error", 12);
+		print(driver_installation_instructions);
+#ifdef _WIN32
+		wait();
+#endif // Windows
+		exit(1);
 	}
 	if(print_info) {
 		println("\r|----------------.------------------------------------------------------------|");
@@ -169,17 +249,18 @@ private:
 	cl::CommandQueue cl_queue;
 	bool exists = false;
 	inline string enable_device_capabilities() const { return // enable FP64/FP16 capabilities if available
-		"\n	#define def_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
-		"\n	#ifdef cl_khr_fp64"
-		"\n	#pragma OPENCL EXTENSION cl_khr_fp64 : enable" // make sure cl_khr_fp64 extension is enabled
-		"\n	#endif"
-		"\n	#ifdef cl_khr_fp16"
-		"\n	#pragma OPENCL EXTENSION cl_khr_fp16 : enable" // make sure cl_khr_fp16 extension is enabled
-		"\n	#endif"
-		"\n	#ifdef cl_khr_int64_base_atomics"
-		"\n	#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable" // make sure cl_khr_int64_base_atomics extension is enabled
-		"\n	#endif"
-		+(info.arm_fma_patch ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "") // ARM GPUs have terrible fma performance, so replace with a*b+c
+		string(info.patch_nvidia_fp16    ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
+		string(info.patch_legacy_gpu_fma ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
+		"\n #define def_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
+		"\n #ifdef cl_khr_fp64"
+		"\n #pragma OPENCL EXTENSION cl_khr_fp64 : enable" // make sure cl_khr_fp64 extension is enabled
+		"\n #endif"
+		"\n #ifdef cl_khr_fp16"
+		"\n #pragma OPENCL EXTENSION cl_khr_fp16 : enable" // make sure cl_khr_fp16 extension is enabled
+		"\n #endif"
+		"\n #ifdef cl_khr_int64_base_atomics"
+		"\n #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable" // make sure cl_khr_int64_base_atomics extension is enabled
+		"\n #endif"
 	;}
 public:
 	Device_Info info;
@@ -191,7 +272,7 @@ public:
 		const string kernel_code = enable_device_capabilities()+"\n"+opencl_c_code;
 		cl_source.push_back({ kernel_code.c_str(), kernel_code.length() });
 		this->cl_program = cl::Program(info.cl_context, cl_source);
-		const string build_options = string("-cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable")+(info.intel_gpu_above_4gb_patch ? " -cl-intel-greater-than-4GB-buffer-required" : "");
+		const string build_options = string("-cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable")+(info.patch_intel_gpu_above_4gb ? " -cl-intel-greater-than-4GB-buffer-required" : "");
 #ifndef LOG
 		int error = cl_program.build({ info.cl_device }, (build_options+" -w").c_str()); // compile OpenCL C code, disable warnings
 		if(error) print_warning(cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device)); // print build log
@@ -241,7 +322,7 @@ private:
 			device.info.memory_used += (uint)(capacity()/1048576ull); // track device memory usage
 			if(device.info.memory_used>device.info.memory) print_error("Device \""+device.info.name+"\" does not have enough memory. Allocating another "+to_string((uint)(capacity()/1048576ull))+" MB would use a total of "+to_string(device.info.memory_used)+" MB / "+to_string(device.info.memory)+" MB.");
 			int error = 0;
-			device_buffer = cl::Buffer(device.get_cl_context(), CL_MEM_READ_WRITE|((int)device.info.intel_gpu_above_4gb_patch<<23), capacity(), nullptr, &error); // for Intel GPUs, set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
+			device_buffer = cl::Buffer(device.get_cl_context(), CL_MEM_READ_WRITE|((int)device.info.patch_intel_gpu_above_4gb<<23), capacity(), nullptr, &error); // for Intel GPUs, set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
 			if(error==-61) print_error("Memory size is too large at "+to_string((uint)(capacity()/1048576ull))+" MB. Device \""+device.info.name+"\" accepts a maximum buffer size of "+to_string(device.info.max_global_buffer)+" MB.");
 			else if(error) print_error("Device buffer allocation failed with error code "+to_string(error)+".");
 			device_buffer_exists = true;
@@ -493,14 +574,14 @@ public:
 		if(!device.is_initialized()) print_error("No OpenCL Device selected. Call Device constructor.");
 		this->name = name;
 		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
-		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
+		link_parameters(0u, parameters...); // expand variadic template to link kernel parameters
 		set_ranges(N);
 		cl_queue = device.get_cl_queue();
 	}
 	template<class... T> inline Kernel(const Device& device, const ulong N, const uint workgroup_size, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
 		if(!device.is_initialized()) print_error("No OpenCL Device selected. Call Device constructor.");
 		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
-		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
+		link_parameters(0u, parameters...); // expand variadic template to link kernel parameters
 		set_ranges(N, (ulong)workgroup_size);
 		cl_queue = device.get_cl_queue();
 	}

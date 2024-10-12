@@ -4,7 +4,7 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 
 
 // Simple implementation of Reynolds Boids to produce emergent swarm intelligence

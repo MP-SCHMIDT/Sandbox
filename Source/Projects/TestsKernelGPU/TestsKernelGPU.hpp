@@ -4,7 +4,7 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 
 
 // Test environment for running GPU kernel using OpenCL Wrapper

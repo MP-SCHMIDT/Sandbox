@@ -4,8 +4,8 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 
 
 // Terrain generation and erosion simulation

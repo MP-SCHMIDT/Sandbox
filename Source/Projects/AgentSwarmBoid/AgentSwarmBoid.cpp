@@ -9,7 +9,7 @@
 
 // Algo headers
 #include "Draw/Colormap.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Random.hpp"
 
 // Global headers
@@ -105,7 +105,7 @@ void AgentSwarmBoid::Refresh() {
   }
 
   // Optionally constrain to 2D
-  if (D.UI[Constrain2D_____].B()) {
+  if (D.UI[Constrain2D_____].I() > 0) {
     for (int k0= 0; k0 < NbAgents; k0++) {
       Pos[k0][0]= 0.5;
       Vel[k0][0]= 0.0;
@@ -140,7 +140,7 @@ void AgentSwarmBoid::Animate() {
   if (!CheckRefresh()) Refresh();
 
   // Optionally constrain to 2D
-  if (D.UI[Constrain2D_____].B()) {
+  if (D.UI[Constrain2D_____].I() > 0) {
     for (int k0= 0; k0 < NbAgents; k0++) {
       Pos[k0][0]= 0.5;
       Vel[k0][0]= 0.0;

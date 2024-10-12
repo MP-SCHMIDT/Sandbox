@@ -15,9 +15,9 @@
 #include "Draw/DrawField.hpp"
 #include "FileIO/FileInput.hpp"
 #include "Geom/BoxGrid.hpp"
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 #include "Math/Functions.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Timer.hpp"
 
 
@@ -393,7 +393,7 @@ void WavePropagSimu::StepSimulation() {
   UCur.swap(UNew);
   // Explicit numerical integration of the wave equation
   // ∂²u/∂t² = c² ∂²u/∂x²
-#pragma omp parallel for collapse(3) if (D.UI[Parallelize_____].B())
+#pragma omp parallel for collapse(3) if (D.UI[Parallelize_____].I() > 0)
   for (int x= 0; x < nX; x++) {
     for (int y= 0; y < nY; y++) {
       for (int z= 0; z < nZ; z++) {

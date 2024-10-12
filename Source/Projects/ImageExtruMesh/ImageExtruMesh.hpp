@@ -6,7 +6,7 @@
 #include <vector>
 
 // Algo headers
-#include "Math/Field.hpp"
+#include "Type/Field.hpp"
 
 
 class ImageExtruMesh

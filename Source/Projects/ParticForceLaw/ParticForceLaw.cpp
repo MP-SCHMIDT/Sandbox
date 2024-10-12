@@ -16,8 +16,8 @@
 #include "Geom/BoxGrid.hpp"
 #include "Geom/MarchingCubes.hpp"
 #include "Geom/Sketch.hpp"
-#include "Math/Field.hpp"
-#include "Math/Vec.hpp"
+#include "Type/Field.hpp"
+#include "Type/Vec.hpp"
 #include "Util/Random.hpp"
 #include "Util/Timer.hpp"
 
@@ -318,11 +318,11 @@ void ParticForceLaw::Draw() {
 
   // Display particles
   if (D.displayMode[1]) {
-    if (D.UI[VisuSimple______].B()) {
+    if (D.UI[VisuSimple______].I() > 0) {
       glPointSize(1000.0f * D.UI[LatticePitch____].F() * D.UI[VisuScale_______].F());
       glBegin(GL_POINTS);
       for (int k= 0; k < (int)Pos.size(); k++) {
-        if (D.UI[VisuHideOOB_____].B() &&
+        if (D.UI[VisuHideOOB_____].I() > 0 &&
             (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
              Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
              Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2])) continue;
@@ -335,7 +335,7 @@ void ParticForceLaw::Draw() {
     else {
       glEnable(GL_LIGHTING);
       for (int k= 0; k < (int)Pos.size(); k++) {
-        if (D.UI[VisuHideOOB_____].B() &&
+        if (D.UI[VisuHideOOB_____].I() > 0 &&
             (Pos[k][0] < D.boxMin[0] || Pos[k][0] > D.boxMax[0] ||
              Pos[k][1] < D.boxMin[1] || Pos[k][1] > D.boxMax[1] ||
              Pos[k][2] < D.boxMin[2] || Pos[k][2] > D.boxMax[2])) continue;
@@ -1052,7 +1052,7 @@ void ParticForceLaw::StepSimulation() {
   const float dt= D.UI[TimeStep________].F();
   const float particleMass= D.UI[MaterialDensity_].F() * std::pow(D.UI[LatticePitch____].F(), 3.0f);
   const float damping= std::max(D.UI[DampingVelRel___].F(), 0.0f);
-  const bool useForceBC= D.UI[UseForceControl_].B();
+  const bool useForceBC= D.UI[UseForceControl_].I() > 0;
   const int use2D= D.UI[ConstrainDim2D__].I();
   const Vec::Vec3<float> ForNega(-D.UI[BCForX__________].F(), -D.UI[BCForY__________].F(), -D.UI[BCForZ__________].F());
   const Vec::Vec3<float> ForPosi(D.UI[BCForX__________].F(), D.UI[BCForY__________].F(), D.UI[BCForZ__________].F());
