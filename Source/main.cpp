@@ -25,6 +25,7 @@
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
 #include "MarkovProcGene/MarkovProcGene.hpp"
 #include "MassSpringSyst/MassSpringSyst.hpp"
+#include "NonLinMMABench/NonLinMMABench.hpp"
 #include "ParticForceLaw/ParticForceLaw.hpp"
 #include "ParticLifeOrga/ParticLifeOrga.hpp"
 #include "PosiBasedDynam/PosiBasedDynam.hpp"
@@ -37,7 +38,6 @@
 //#define PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 #include "CompuFluidDyna/CompuFluidDyna.hpp"
-#include "NonLinMMABench/NonLinMMABench.hpp"
 #include "StructGenOptim/StructGenOptim.hpp"
 #endif
 
@@ -85,6 +85,7 @@ FractalElevMap myFractalElevMap;
 ImageExtruMesh myImageExtruMesh;
 MarkovProcGene myMarkovProcGene;
 MassSpringSyst myMassSpringSyst;
+NonLinMMABench myNonLinMMABench;
 ParticForceLaw myParticForceLaw;
 ParticLifeOrga myParticLifeOrga;
 PosiBasedDynam myPosiBasedDynam;
@@ -97,7 +98,6 @@ BoardGameBotAI myBoardGameBotAI;
 WavePropagSimu myWavePropagSimu;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
 CompuFluidDyna myCompuFluidDyna;
-NonLinMMABench myNonLinMMABench;
 StructGenOptim myStructGenOptim;
 #endif
 
@@ -112,6 +112,7 @@ enum ProjectID
   ImageExtruMeshID,
   MarkovProcGeneID,
   MassSpringSystID,
+  NonLinMMABenchID,
   ParticForceLawID,
   ParticLifeOrgaID,
   PosiBasedDynamID,
@@ -123,7 +124,6 @@ enum ProjectID
   WavePropagSimuID,
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   CompuFluidDynaID,
-  NonLinMMABenchID,
   StructGenOptimID,
 #endif
   ZzzzzzzzzzzzzzID,
@@ -146,6 +146,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj && ++newProjInit) myImageExtruMesh.isActivProj= false;
   if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj && ++newProjInit) myMarkovProcGene.isActivProj= false;
   if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj && ++newProjInit) myMassSpringSyst.isActivProj= false;
+  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj && ++newProjInit) myNonLinMMABench.isActivProj= false;
   if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj && ++newProjInit) myParticForceLaw.isActivProj= false;
   if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj && ++newProjInit) myParticLifeOrga.isActivProj= false;
   if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj && ++newProjInit) myPosiBasedDynam.isActivProj= false;
@@ -157,7 +158,6 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::WavePropagSimuID && myWavePropagSimu.isActivProj && ++newProjInit) myWavePropagSimu.isActivProj= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID != ProjectID::CompuFluidDynaID && myCompuFluidDyna.isActivProj && ++newProjInit) myCompuFluidDyna.isActivProj= false;
-  if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj && ++newProjInit) myNonLinMMABench.isActivProj= false;
   if (currentProjectID != ProjectID::StructGenOptimID && myStructGenOptim.isActivProj && ++newProjInit) myStructGenOptim.isActivProj= false;
 #endif
 
@@ -176,6 +176,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.SetActiveProject();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.SetActiveProject();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.SetActiveProject();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.SetActiveProject();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.SetActiveProject();
@@ -187,7 +188,6 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.SetActiveProject();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
 #endif
 
@@ -211,6 +211,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Refresh();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Refresh();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Refresh();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Refresh();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Refresh();
@@ -222,7 +223,6 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Refresh();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Refresh();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Refresh();
 #endif
 }
@@ -237,6 +237,7 @@ void project_ParamChange() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.ParamChange();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.ParamChange();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.ParamChange();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.ParamChange();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.ParamChange();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.ParamChange();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.ParamChange();
@@ -248,7 +249,6 @@ void project_ParamChange() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.ParamChange();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.ParamChange();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.ParamChange();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.ParamChange();
 #endif
 }
@@ -263,6 +263,7 @@ void project_KeyPress() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress();
@@ -274,7 +275,6 @@ void project_KeyPress() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.KeyPress();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.KeyPress();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.KeyPress();
 #endif
 }
@@ -289,6 +289,7 @@ void project_MousePress() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.MousePress();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.MousePress();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.MousePress();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.MousePress();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.MousePress();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.MousePress();
@@ -300,7 +301,6 @@ void project_MousePress() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.MousePress();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.MousePress();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.MousePress();
 #endif
 }
@@ -314,6 +314,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Animate();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Animate();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Animate();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Animate();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Animate();
@@ -325,7 +326,6 @@ void project_Animate() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Animate();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Animate();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Animate();
 #endif
 }
@@ -340,6 +340,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Draw();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Draw();
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Draw();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Draw();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Draw();
@@ -351,7 +352,6 @@ void project_Draw() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.Draw();
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.Draw();
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.Draw();
 #endif
 }
@@ -366,6 +366,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.isRefreshed= false;
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.isRefreshed= false;
+  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.isRefreshed= false;
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.isRefreshed= false;
@@ -377,7 +378,6 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::WavePropagSimuID) myWavePropagSimu.isRefreshed= false;
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.isRefreshed= false;
-  if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.isRefreshed= false;
 #endif
 }
@@ -589,245 +589,265 @@ void callback_display() {
   // Set the camera transformation matrix for the HUD
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(0.0, double(winW), 0.0, double(winH), -1.0, 1.0);
+  glOrtho(0.0, double(winW), 0.0, double(winH), -0.001, 10.0);
 
   // Set the world transformation matrix for the HUD
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  // Add the rectangle backgrounds behind UI elements
-  if (isDarkMode) glColor4f(0.4f, 0.4f, 0.4f, 0.5f);
-  else glColor4f(0.8f, 0.8f, 0.8f, 0.5f);
-  glRecti(0, 0, winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, winH);
-  glRecti(winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, 0, winW, winMarginB + charHeight);
-  glRecti(winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, winH - winMarginT - plotAreaH - 2.3 * charHeight, winW, winH);
-
-  // Draw the parameter list
-  glLineWidth(2.0f);
-  for (int k= D.idxFirstParamPageUI; k < std::min((int)D.UI.size(), D.idxFirstParamPageUI + paramPerPage); k++) {
-    if (k == D.idxParamUI) {
-      if (isDarkMode) glColor3f(0.8f, 0.4f, 0.4f);
-      else glColor3f(0.8f, 0.2f, 0.2f);
+  if (D.showUI) {
+    // Add the rectangle backgrounds behind UI elements
+    if (isDarkMode) glColor4f(0.4f, 0.4f, 0.4f, 0.5f);
+    else glColor4f(0.8f, 0.8f, 0.8f, 0.5f);
+    glRecti(0, 0, winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, winH);
+    glRecti(winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, 0, winW, winMarginB + charHeight);
+    glRecti(winMarginL + (paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1.1) * charWidth, winH - winMarginT - plotAreaH - 2.3 * charHeight, winW, winH);
+  
+    // Draw the parameter list
+    glLineWidth(2.0f);
+    for (int k= D.idxFirstParamPageUI; k < std::min((int)D.UI.size(), D.idxFirstParamPageUI + paramPerPage); k++) {
+      if (k == D.idxParamUI) {
+        if (isDarkMode) glColor3f(0.8f, 0.4f, 0.4f);
+        else glColor3f(0.8f, 0.2f, 0.2f);
+      }
+      else {
+        if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+        else glColor3f(0.2f, 0.2f, 0.2f);
+      }
+      char str[50];
+      sprintf(str, "%s %+020.9f", D.UI[k].name.c_str(), D.UI[k].D());  // Format must match paramValNbChar settings
+      draw_text(winMarginL, winH - winMarginT - (k - D.idxFirstParamPageUI + 1) * charHeight, str);
+      if (k == D.idxParamUI) {
+        sprintf(str, "_");
+        draw_text(winMarginL + (paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth,
+                  winH - winMarginT - (k - D.idxFirstParamPageUI + 1) * charHeight, str);
+        draw_text(winMarginL + (paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth,
+                  winH - winMarginT - (k - D.idxFirstParamPageUI) * charHeight, str);
+      }
     }
-    else {
+    glLineWidth(1.0f);
+  
+    // Draw the parameter list scroll bar
+    if (!D.UI.empty()) {
       if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
       else glColor3f(0.2f, 0.2f, 0.2f);
+      glBegin(GL_LINES);
+      glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+                 winH - winMarginT, 0);
+      glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+                 winH - winMarginT - textBoxH * paramPerPage, 0);
+      glEnd();
+      glLineWidth(4.0f);
+      glBegin(GL_LINES);
+      const float barBeg= (float)D.idxFirstParamPageUI / (float)D.UI.size();
+      const float barEnd= (float)std::min(D.idxFirstParamPageUI + paramPerPage, (int)D.UI.size()) / (float)D.UI.size();
+      glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+                 winH - winMarginT - textBoxH * paramPerPage * barBeg, 0);
+      glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
+                 winH - winMarginT - textBoxH * paramPerPage * barEnd, 0);
+      glEnd();
+      glLineWidth(1.0f);
     }
-    char str[50];
-    sprintf(str, "%s %+020.9f", D.UI[k].name.c_str(), D.UI[k].D());  // Format must match paramValNbChar settings
-    draw_text(winMarginL, winH - winMarginT - (k - D.idxFirstParamPageUI + 1) * charHeight, str);
-    if (k == D.idxParamUI) {
-      sprintf(str, "_");
-      draw_text(winMarginL + (paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth,
-                winH - winMarginT - (k - D.idxFirstParamPageUI + 1) * charHeight, str);
-      draw_text(winMarginL + (paramLabelNbChar + paramSpaceNbChar + D.idxCursorUI) * charWidth,
-                winH - winMarginT - (k - D.idxFirstParamPageUI) * charHeight, str);
-    }
-  }
-  glLineWidth(1.0f);
-
-  // Draw the parameter list scroll bar
-  if (!D.UI.empty()) {
-    if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-    else glColor3f(0.2f, 0.2f, 0.2f);
-    glBegin(GL_LINES);
-    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
-               winH - winMarginT, 0);
-    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
-               winH - winMarginT - textBoxH * paramPerPage, 0);
-    glEnd();
-    glLineWidth(4.0f);
-    glBegin(GL_LINES);
-    const float barBeg= (float)D.idxFirstParamPageUI / (float)D.UI.size();
-    const float barEnd= (float)std::min(D.idxFirstParamPageUI + paramPerPage, (int)D.UI.size()) / (float)D.UI.size();
-    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
-               winH - winMarginT - textBoxH * paramPerPage * barBeg, 0);
-    glVertex3i((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 1) * charWidth,
-               winH - winMarginT - textBoxH * paramPerPage * barEnd, 0);
-    glEnd();
-    glLineWidth(1.0f);
-  }
-
-  // Draw the 2D plot
-  if (!D.Plot.empty()) {
-    double valMin= 0.0, valMax= 1.0;
-    for (int k0= 0; k0 < (int)D.Plot.size(); k0++) {
-      if (D.Plot[k0].val.empty()) continue;
-
-      // Set the color
-      float r, g, b;
-      Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Plot.size() - 1, 1), r, g, b);
-      glColor3f(r, g, b);
-
-      // Find the min max range for vertical scaling
-      if (autoScalePlot && (k0 == 0 || !D.Plot[k0].isSameRange)) {
-        valMin= std::numeric_limits<double>::max();
-        valMax= std::numeric_limits<double>::lowest();
-        // Also check following plots if using the same range
-        for (int k1= k0; k1 < (int)D.Plot.size(); k1++) {
-          if (k1 > k0 && !D.Plot[k1].isSameRange) break;
-          for (double valCur : D.Plot[k1].val) {
-            if (valMin > valCur) valMin= valCur;
-            if (valMax < valCur) valMax= valCur;
-          }
-          if (D.Plot[k1].isSymmetric) {
-            valMax= std::max(std::abs(valMin), std::abs(valMax));
-            valMin= -valMax;
+  
+    // Draw the 2D plot
+    if (!D.Plot.empty()) {
+      double valMin= 0.0, valMax= 1.0;
+      for (int k0= 0; k0 < (int)D.Plot.size(); k0++) {
+        if (D.Plot[k0].val.empty()) continue;
+  
+        // Set the color
+        float r, g, b;
+        Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Plot.size() - 1, 1), r, g, b);
+        glColor3f(r, g, b);
+  
+        // Find the min max range for vertical scaling
+        if (autoScalePlot && (k0 == 0 || !D.Plot[k0].isSameRange)) {
+          valMin= std::numeric_limits<double>::max();
+          valMax= std::numeric_limits<double>::lowest();
+          // Also check following plots if using the same range
+          for (int k1= k0; k1 < (int)D.Plot.size(); k1++) {
+            if (k1 > k0 && !D.Plot[k1].isSameRange) break;
+            for (double valCur : D.Plot[k1].val) {
+              if (valMin > valCur) valMin= valCur;
+              if (valMax < valCur) valMax= valCur;
+            }
+            if (D.Plot[k1].isSymmetric) {
+              valMax= std::max(std::abs(valMin), std::abs(valMax));
+              valMin= -valMax;
+            }
           }
         }
-      }
-
-      // Draw the text for legend, min max start end values
-      glLineWidth(2.0f);
-      char str[50];
-      sprintf(str, "N:%d", int(D.Plot[k0].val.size()));  // Count
-      draw_text(winW - winMarginR - plotAreaW - 5 * textBoxW,
-                winH - winMarginT - textBoxH * (k0 + 2), str);
-      strcpy(str, D.Plot[k0].name.c_str());  // Name
-      draw_text(winW - winMarginR - plotAreaW - 4 * textBoxW,
-                winH - winMarginT - textBoxH * (k0 + 2), str);
-      if (D.Plot[k0].isLog) {  // Log flag
-        sprintf(str, "log");
-        draw_text(winW - winMarginR - plotAreaW - 2.5 * textBoxW,
+  
+        // Draw the text for legend, min max start end values
+        glLineWidth(2.0f);
+        char str[50];
+        sprintf(str, "N:%d", int(D.Plot[k0].val.size()));  // Count
+        draw_text(winW - winMarginR - plotAreaW - 5 * textBoxW,
                   winH - winMarginT - textBoxH * (k0 + 2), str);
-      }
-      const int spacingMinMaxVal= (plotAreaW - textBoxW) / std::max(int(D.Plot.size() - 1), 1);
-      sprintf(str, "%+.2e", valMax);  // Max value
-      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * spacingMinMaxVal,
-                winH - winMarginT - textBoxH, str);
-      sprintf(str, "%+.2e", valMin);  // Min value
-      draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * spacingMinMaxVal,
-                winH - winMarginT - plotAreaH - 2 * textBoxH, str);
-      sprintf(str, "%+.2e", D.Plot[k0].val[0]);  // Start value
-      draw_text(winW - winMarginR - plotAreaW - 2 * textBoxW,
-                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
-      sprintf(str, "%+.2e", D.Plot[k0].val[D.Plot[k0].val.size() - 1]);  // End value
-      draw_text(winW - winMarginR - textBoxW,
-                winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
-      glLineWidth(1.0f);
-
-      // Draw the zero axes
-      if (valMax > valMin && !D.Plot[k0].isLog) {
-        double valScaled= -valMin / (valMax - valMin);
-        if (valScaled >= 0.0 && valScaled <= 1.0) {
-          glBegin(GL_LINES);
-          glVertex3i(winW - winMarginR - plotAreaW - textBoxW,
-                     winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
-          glVertex3i(winW - winMarginR - plotAreaW - textBoxW + plotAreaW,
-                     winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
+        strcpy(str, D.Plot[k0].name.c_str());  // Name
+        draw_text(winW - winMarginR - plotAreaW - 4 * textBoxW,
+                  winH - winMarginT - textBoxH * (k0 + 2), str);
+        if (D.Plot[k0].isLog) {  // Log flag
+          sprintf(str, "log");
+          draw_text(winW - winMarginR - plotAreaW - 2.5 * textBoxW,
+                    winH - winMarginT - textBoxH * (k0 + 2), str);
+        }
+        const int spacingMinMaxVal= (plotAreaW - textBoxW) / std::max(int(D.Plot.size() - 1), 1);
+        sprintf(str, "%+.2e", valMax);  // Max value
+        draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * spacingMinMaxVal,
+                  winH - winMarginT - textBoxH, str);
+        sprintf(str, "%+.2e", valMin);  // Min value
+        draw_text(winW - winMarginR - textBoxW - plotAreaW + k0 * spacingMinMaxVal,
+                  winH - winMarginT - plotAreaH - 2 * textBoxH, str);
+        sprintf(str, "%+.2e", D.Plot[k0].val[0]);  // Start value
+        draw_text(winW - winMarginR - plotAreaW - 2 * textBoxW,
+                  winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
+        sprintf(str, "%+.2e", D.Plot[k0].val[D.Plot[k0].val.size() - 1]);  // End value
+        draw_text(winW - winMarginR - textBoxW,
+                  winH - winMarginT - textBoxH - textBoxH * k0 - textBoxH, str);
+        glLineWidth(1.0f);
+  
+        // Draw the zero axes
+        if (valMax > valMin && !D.Plot[k0].isLog) {
+          double valScaled= -valMin / (valMax - valMin);
+          if (valScaled >= 0.0 && valScaled <= 1.0) {
+            glBegin(GL_LINES);
+            glVertex3i(winW - winMarginR - plotAreaW - textBoxW,
+                       winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
+            glVertex3i(winW - winMarginR - plotAreaW - textBoxW + plotAreaW,
+                       winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
+            glEnd();
+          }
+        }
+  
+        // Draw the plot curves and markers
+        glLineWidth(2.0f);
+        glPointSize(3.0f);
+        for (int mode= 0; mode < (D.Plot[k0].showPoints ? 2 : 1); mode++) {
+          if (mode == 0) glBegin(GL_LINE_STRIP);
+          if (mode == 1) glBegin(GL_POINTS);
+          for (int k1= 0; k1 < (int)D.Plot[k0].val.size(); k1++) {
+            double valScaled;
+            if (valMax - valMin == 0.0) valScaled= 0.0;
+            else if (!D.Plot[k0].isLog) valScaled= (D.Plot[k0].val[k1] - valMin) / (valMax - valMin);
+            else if (D.Plot[k0].val[k1] <= 0.0) valScaled= 0.0;
+            else if (valMin < 0.0) valScaled= 1.0;
+            else valScaled= (std::log10(D.Plot[k0].val[k1]) - std::log10(valMin)) / (std::log10(valMax) - std::log10(valMin));
+            glVertex3i(winW - winMarginR - plotAreaW - textBoxW + plotAreaW * k1 / std::max((int)D.Plot[k0].val.size() - 1, 1),
+                       winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
+          }
           glEnd();
         }
+        glLineWidth(1.0f);
+        glPointSize(1.0f);
       }
+    }
 
-      // Draw the plot curves and markers
+    // Draw the display mode labels
+    if (currentProjectID != 0) {
+      glLineWidth(2.0f);
+      for (int k= 1; k < 10; k++) {
+        if (D.displayMode[k]) {
+          if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+          else glColor3f(0.2f, 0.2f, 0.2f);
+        }
+        else {
+          glColor3f(0.5f, 0.5f, 0.5f);
+        }
+        char str[50];
+        sprintf(str, "%d:%s", k, D.displayModeLabel[k].c_str());
+        draw_text((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 2) * charWidth, winH - winMarginT - k * charHeight, str);
+      }
+      glLineWidth(1.0f);
+    }
+  
+    // Draw the 2D scatter
+    if (!D.Scatter.empty()) {
+      // Find the min max range for scaling
+      double valMinX= -1.0;
+      double valMinY= -1.0;
+      double valMaxX= 1.0;
+      double valMaxY= 1.0;
+      if (autoScaleScatter) {
+        valMinX= std::numeric_limits<double>::max();
+        valMinY= std::numeric_limits<double>::max();
+        valMaxX= std::numeric_limits<double>::lowest();
+        valMaxY= std::numeric_limits<double>::lowest();
+        for (int k0= 0; k0 < int(D.Scatter.size()); k0++) {
+          for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
+            if (valMinX > D.Scatter[k0].val[k1][0]) valMinX= D.Scatter[k0].val[k1][0];
+            if (valMinY > D.Scatter[k0].val[k1][1]) valMinY= D.Scatter[k0].val[k1][1];
+            if (valMaxX < D.Scatter[k0].val[k1][0]) valMaxX= D.Scatter[k0].val[k1][0];
+            if (valMaxY < D.Scatter[k0].val[k1][1]) valMaxY= D.Scatter[k0].val[k1][1];
+          }
+        }
+      }
+  
+      // Draw the axes and zero lines
+      if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+      else glColor3f(0.2f, 0.2f, 0.2f);
+      glBegin(GL_LINE_LOOP);
+      glVertex3i(winMarginL + textBoxW, winMarginB + scatAreaH + 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW, winMarginB + 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + 3 * textBoxH, 0);
+      glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + scatAreaH + 3 * textBoxH, 0);
+      glEnd();
+      if (valMinX < 0.0 && valMaxX > 0.0) {
+        int offsetW= ((0.0 - valMinX) / (valMaxX - valMinX)) * scatAreaW;
+        glBegin(GL_LINES);
+        glVertex3i(winMarginL + textBoxW + offsetW, winMarginB + scatAreaH + 3 * textBoxH, 0);
+        glVertex3i(winMarginL + textBoxW + offsetW, winMarginB + 3 * textBoxH, 0);
+        glEnd();
+      }
+      if (valMinY < 0.0 && valMaxY > 0.0) {
+        int offsetH= ((0.0 - valMinY) / (valMaxY - valMinY)) * scatAreaH;
+        glBegin(GL_LINES);
+        glVertex3i(winMarginL + textBoxW, winMarginB + offsetH + 3 * textBoxH, 0);
+        glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + offsetH + 3 * textBoxH, 0);
+        glEnd();
+      }
+  
+      // Draw the min max values
+      char str[50];
+      glLineWidth(2.0f);
+      sprintf(str, "%+.2e", valMinX);
+      draw_text(winMarginL + textBoxW, winMarginB + 2 * textBoxH, str);
+      sprintf(str, "%+.2e", valMaxX);
+      draw_text(winMarginL + textBoxW + scatAreaW - textBoxW, winMarginB + 2 * textBoxH, str);
+      sprintf(str, "%+.2e", valMinY);
+      draw_text(winMarginL, winMarginB + 3 * textBoxH, str);
+      sprintf(str, "%+.2e", valMaxY);
+      draw_text(winMarginL, winMarginB + 3 * textBoxH + scatAreaH - textBoxH, str);
+      glLineWidth(1.0f);
+  
+      // Draw the scatter legend and points
       glLineWidth(2.0f);
       glPointSize(3.0f);
-      for (int mode= 0; mode < (D.Plot[k0].showPoints ? 2 : 1); mode++) {
-        if (mode == 0) glBegin(GL_LINE_STRIP);
-        if (mode == 1) glBegin(GL_POINTS);
-        for (int k1= 0; k1 < (int)D.Plot[k0].val.size(); k1++) {
-          double valScaled;
-          if (valMax - valMin == 0.0) valScaled= 0.0;
-          else if (!D.Plot[k0].isLog) valScaled= (D.Plot[k0].val[k1] - valMin) / (valMax - valMin);
-          else if (D.Plot[k0].val[k1] <= 0.0) valScaled= 0.0;
-          else if (valMin < 0.0) valScaled= 1.0;
-          else valScaled= (std::log10(D.Plot[k0].val[k1]) - std::log10(valMin)) / (std::log10(valMax) - std::log10(valMin));
-          glVertex3i(winW - winMarginR - plotAreaW - textBoxW + plotAreaW * k1 / std::max((int)D.Plot[k0].val.size() - 1, 1),
-                     winH - winMarginT - plotAreaH - textBoxH + plotAreaH * valScaled, 0);
+      for (int k0= 0; k0 < (int)D.Scatter.size(); k0++) {
+        // Set the color
+        float r, g, b;
+        Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Scatter.size() - 1, 1), r, g, b);
+        glColor3f(r, g, b);
+  
+        // Draw the text for legend and point count
+        strcpy(str, D.Scatter[k0].name.c_str());
+        draw_text(0, scatAreaH - 2 * k0 * textBoxH, str);
+        sprintf(str, "N:%d", int(D.Scatter[k0].val.size()));
+        draw_text(0, scatAreaH - (2 * k0 + 1) * textBoxH, str);
+  
+        // Draw the points
+        glBegin(GL_POINTS);
+        for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
+          const double relPosX= (D.Scatter[k0].val[k1][0] - valMinX) / (valMaxX - valMinX);
+          const double relPosY= (D.Scatter[k0].val[k1][1] - valMinY) / (valMaxY - valMinY);
+          glVertex3i(winMarginL + textBoxW + (int)std::round((double)scatAreaW * relPosX),
+                     winMarginB + 3 * textBoxH + (int)std::round((double)scatAreaH * relPosY), 0);
         }
         glEnd();
       }
       glLineWidth(1.0f);
       glPointSize(1.0f);
     }
-  }
-
-  // Draw the 2D scatter
-  if (!D.Scatter.empty()) {
-    // Find the min max range for scaling
-    double valMinX= -1.0;
-    double valMinY= -1.0;
-    double valMaxX= 1.0;
-    double valMaxY= 1.0;
-    if (autoScaleScatter) {
-      valMinX= std::numeric_limits<double>::max();
-      valMinY= std::numeric_limits<double>::max();
-      valMaxX= std::numeric_limits<double>::lowest();
-      valMaxY= std::numeric_limits<double>::lowest();
-      for (int k0= 0; k0 < int(D.Scatter.size()); k0++) {
-        for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
-          if (valMinX > D.Scatter[k0].val[k1][0]) valMinX= D.Scatter[k0].val[k1][0];
-          if (valMinY > D.Scatter[k0].val[k1][1]) valMinY= D.Scatter[k0].val[k1][1];
-          if (valMaxX < D.Scatter[k0].val[k1][0]) valMaxX= D.Scatter[k0].val[k1][0];
-          if (valMaxY < D.Scatter[k0].val[k1][1]) valMaxY= D.Scatter[k0].val[k1][1];
-        }
-      }
-    }
-
-    // Draw the axes and zero lines
-    if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-    else glColor3f(0.2f, 0.2f, 0.2f);
-    glBegin(GL_LINE_LOOP);
-    glVertex3i(winMarginL + textBoxW, winMarginB + scatAreaH + 3 * textBoxH, 0);
-    glVertex3i(winMarginL + textBoxW, winMarginB + 3 * textBoxH, 0);
-    glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + 3 * textBoxH, 0);
-    glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + scatAreaH + 3 * textBoxH, 0);
-    glEnd();
-    if (valMinX < 0.0 && valMaxX > 0.0) {
-      int offsetW= ((0.0 - valMinX) / (valMaxX - valMinX)) * scatAreaW;
-      glBegin(GL_LINES);
-      glVertex3i(winMarginL + textBoxW + offsetW, winMarginB + scatAreaH + 3 * textBoxH, 0);
-      glVertex3i(winMarginL + textBoxW + offsetW, winMarginB + 3 * textBoxH, 0);
-      glEnd();
-    }
-    if (valMinY < 0.0 && valMaxY > 0.0) {
-      int offsetH= ((0.0 - valMinY) / (valMaxY - valMinY)) * scatAreaH;
-      glBegin(GL_LINES);
-      glVertex3i(winMarginL + textBoxW, winMarginB + offsetH + 3 * textBoxH, 0);
-      glVertex3i(winMarginL + textBoxW + scatAreaW, winMarginB + offsetH + 3 * textBoxH, 0);
-      glEnd();
-    }
-
-    // Draw the min max values
-    char str[50];
-    glLineWidth(2.0f);
-    sprintf(str, "%+.2e", valMinX);
-    draw_text(winMarginL + textBoxW, winMarginB + 2 * textBoxH, str);
-    sprintf(str, "%+.2e", valMaxX);
-    draw_text(winMarginL + textBoxW + scatAreaW - textBoxW, winMarginB + 2 * textBoxH, str);
-    sprintf(str, "%+.2e", valMinY);
-    draw_text(winMarginL, winMarginB + 3 * textBoxH, str);
-    sprintf(str, "%+.2e", valMaxY);
-    draw_text(winMarginL, winMarginB + 3 * textBoxH + scatAreaH - textBoxH, str);
-    glLineWidth(1.0f);
-
-    // Draw the scatter legend and points
-    glLineWidth(2.0f);
-    glPointSize(3.0f);
-    for (int k0= 0; k0 < (int)D.Scatter.size(); k0++) {
-      // Set the color
-      float r, g, b;
-      Colormap::RatioToRainbow(float(k0) / (float)std::max((int)D.Scatter.size() - 1, 1), r, g, b);
-      glColor3f(r, g, b);
-
-      // Draw the text for legend and point count
-      strcpy(str, D.Scatter[k0].name.c_str());
-      draw_text(0, scatAreaH - 2 * k0 * textBoxH, str);
-      sprintf(str, "N:%d", int(D.Scatter[k0].val.size()));
-      draw_text(0, scatAreaH - (2 * k0 + 1) * textBoxH, str);
-
-      // Draw the points
-      glBegin(GL_POINTS);
-      for (int k1= 0; k1 < int(D.Scatter[k0].val.size()); k1++) {
-        const double relPosX= (D.Scatter[k0].val[k1][0] - valMinX) / (valMaxX - valMinX);
-        const double relPosY= (D.Scatter[k0].val[k1][1] - valMinY) / (valMaxY - valMinY);
-        glVertex3i(winMarginL + textBoxW + (int)std::round((double)scatAreaW * relPosX),
-                   winMarginB + 3 * textBoxH + (int)std::round((double)scatAreaH * relPosY), 0);
-      }
-      glEnd();
-    }
-    glLineWidth(1.0f);
-    glPointSize(1.0f);
   }
 
   // Draw the frame time
@@ -844,24 +864,6 @@ void callback_display() {
     char str[50];
     sprintf(str, "%.3fs", elapsed_time());
     draw_text(winMarginL, winMarginB, str);
-    glLineWidth(1.0f);
-  }
-
-  // Draw the display mode labels
-  if (currentProjectID != 0) {
-    glLineWidth(2.0f);
-    for (int k= 1; k < 10; k++) {
-      if (D.displayMode[k]) {
-        if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-        else glColor3f(0.2f, 0.2f, 0.2f);
-      }
-      else {
-        glColor3f(0.5f, 0.5f, 0.5f);
-      }
-      char str[50];
-      sprintf(str, "%d:%s", k, D.displayModeLabel[k].c_str());
-      draw_text((paramLabelNbChar + paramSpaceNbChar + paramValNbChar + 2) * charWidth, winH - winMarginT - k * charHeight, str);
-    }
     glLineWidth(1.0f);
   }
 
@@ -985,12 +987,12 @@ void callback_keyboard_special(int key, int x, int y) {
       if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * 2.0);
     }
     else if (D.keyIsCtrl) {
-      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / (1.0 + 1.0 / 16.0));
-      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * (1.0 + 1.0 / 16.0));
+      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0 / 64.0);
+      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0 / 64.0);
     }
     else if (D.keyIsAlt) {
-      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0 / 16.0);
-      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() + 1.0 / 16.0);
+      if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() / (1.0 + 1.0 / 16.0));
+      if (key == GLUT_KEY_RIGHT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() * (1.0 + 1.0 / 16.0));
     }
     else {
       if (key == GLUT_KEY_LEFT) D.UI[D.idxParamUI].Set(D.UI[D.idxParamUI].D() - 1.0);
@@ -1100,6 +1102,32 @@ void callback_passive_mouse_motion(int x, int y) {
 }
 
 
+// OpenGL initialization utility function
+void init_materials_GL() {
+  constexpr float mat_front_ambiant[4]=  {0.2f, 0.2f, 0.2f, 1.0f};
+  constexpr float mat_front_diffuse[4]=  {0.7f, 0.7f, 0.7f, 1.0f};
+  constexpr float mat_front_specular[4]= {0.4f, 0.4f, 0.4f, 1.0f};
+  constexpr float mat_front_emission[4]= {0.0f, 0.0f, 0.0f, 1.0f};
+  constexpr float mat_front_shininess= 32.0f;
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_front_ambiant);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_front_diffuse);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_front_specular);
+  glMaterialfv(GL_FRONT, GL_EMISSION, mat_front_emission);
+  glMaterialf(GL_FRONT, GL_SHININESS, mat_front_shininess);
+
+  constexpr float mat_back_ambiant[4]=  {0.2f, 0.2f, 0.2f, 1.0f};
+  constexpr float mat_back_diffuse[4]=  {0.5f, 0.5f, 0.5f, 1.0f};
+  constexpr float mat_back_specular[4]= {0.2f, 0.2f, 0.2f, 1.0f};
+  constexpr float mat_back_emission[4]= {0.0f, 0.0f, 0.0f, 1.0f};
+  constexpr float mat_back_shininess= 32.0f;
+  glMaterialfv(GL_BACK, GL_AMBIENT, mat_back_ambiant);
+  glMaterialfv(GL_BACK, GL_DIFFUSE, mat_back_diffuse);
+  glMaterialfv(GL_BACK, GL_SPECULAR, mat_back_specular);
+  glMaterialfv(GL_BACK, GL_EMISSION, mat_back_emission);
+  glMaterialf(GL_BACK, GL_SHININESS, mat_back_shininess);
+}
+
+
 // Menu selection callback
 void callback_menu(int num) {
   // Reset or activate the selected project
@@ -1147,6 +1175,20 @@ void callback_menu(int num) {
   if (num == -13) {
     autoScaleScatter= !autoScaleScatter;
   }
+  // Toggle material definition for polyhedral surfaces in opengl
+  if (num == -14) {
+    GLint param;
+    glDisable(GL_COLOR_MATERIAL);
+    glGetIntegerv(GL_COLOR_MATERIAL_FACE, &param);
+    init_materials_GL();
+    if (param == GLint(GL_FRONT_AND_BACK)) glColorMaterial(GL_FRONT,          GL_AMBIENT_AND_DIFFUSE);
+    else                                   glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
+  }
+  // Toggle UI display
+  if (num == -15) {
+    D.showUI= !D.showUI;
+  }
   // Save sandbox settings
   if (num == -20) {
     winPosW= glutGet((GLenum)GLUT_WINDOW_X);
@@ -1178,6 +1220,8 @@ void init_menu() {
   glutAddMenuEntry("Smooth draw", -11);
   glutAddMenuEntry("Auto scale plot", -12);
   glutAddMenuEntry("Auto scale scatter", -13);
+  glutAddMenuEntry("Toggle material two side", -14);
+  glutAddMenuEntry("Toggle UI", -15);
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
@@ -1187,6 +1231,7 @@ void init_menu() {
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
   glutAddMenuEntry("MarkovProcGene", ProjectID::MarkovProcGeneID);
   glutAddMenuEntry("MassSpringSyst", ProjectID::MassSpringSystID);
+  glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);
   glutAddMenuEntry("ParticForceLaw", ProjectID::ParticForceLawID);
   glutAddMenuEntry("ParticLifeOrga", ProjectID::ParticLifeOrgaID);
   glutAddMenuEntry("PosiBasedDynam", ProjectID::PosiBasedDynamID);
@@ -1198,7 +1243,6 @@ void init_menu() {
   glutAddMenuEntry("WavePropagSimu", ProjectID::WavePropagSimuID);
 #ifdef PRIVATE_RESEARCH_SANDBOX_SUPERSET
   glutAddMenuEntry("CompuFluidDyna", ProjectID::CompuFluidDynaID);
-  glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);
   glutAddMenuEntry("StructGenOptim", ProjectID::StructGenOptimID);
 #endif
   const int menuSave= glutCreateMenu(callback_menu);
@@ -1226,28 +1270,19 @@ void init_GL() {
 
   // Define light properties
   constexpr float light0_ambient[4]= {0.1f, 0.1f, 0.1f, 1.0f};
-  constexpr float light0_diffuse[4]= {0.7f, 0.7f, 0.7f, 1.0f};
+  constexpr float light0_diffuse[4]= {0.8f, 0.8f, 0.8f, 1.0f};
   constexpr float light0_specular[4]= {0.8f, 0.8f, 0.8f, 1.0f};
-  constexpr float position0[4]= {4.0f, 4.0f, 4.0f, 1.0f};
-  constexpr float global_ambient[4]= {0.2f, 0.2f, 0.2f, 1.0f};
+  constexpr float light0_position[4]= {4.0f, 4.0f, 4.0f, 1.0f};
   glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
   glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
-  glLightfv(GL_LIGHT0, GL_POSITION, position0);
+  glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+  constexpr float global_ambient[4]= {0.2f, 0.2f, 0.2f, 1.0f};
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
 
-  // Define material shader properties
-  constexpr float mat_ambiant[4]= {0.2f, 0.2f, 0.2f, 1.0f};
-  constexpr float mat_diffuse[4]= {0.8f, 0.8f, 0.8f, 1.0f};
-  constexpr float mat_specular[4]= {0.2f, 0.2f, 0.2f, 1.0f};
-  constexpr float mat_emission[4]= {0.0f, 0.0f, 0.0f, 1.0f};
-  constexpr float mat_shininess[1]= {64.0f};
-  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambiant);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
-
+  init_materials_GL();
+  
   // Misc
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1255,7 +1290,7 @@ void init_GL() {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
   glShadeModel(GL_SMOOTH);
-  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+  glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
   glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_LIGHT0);
 }

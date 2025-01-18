@@ -39,7 +39,7 @@ class FileOutput
 
   static bool SaveScalarListBinaryFile(
       std::string const iFullpath,
-      std::vector<double> const& iField,
+      std::vector<float> const& iField,
       bool const iVerbose);
 
   static bool SaveScalarFieldFile(

@@ -7,12 +7,12 @@
 
 namespace BoxGrid {
   inline void GetVoxelSizes(
-      int const iNbX,
-      int const iNbY,
-      int const iNbZ,
-      std::array<double, 3> const& iBBoxMin,
-      std::array<double, 3> const& iBBoxMax,
-      bool const iCentered,
+      const int iNbX,
+      const int iNbY,
+      const int iNbZ,
+      const std::array<double, 3>& iBBoxMin,
+      const std::array<double, 3>& iBBoxMax,
+      const bool iCentered,
       double& oVoxSizeX,
       double& oVoxSizeY,
       double& oVoxSizeZ) {
@@ -27,37 +27,30 @@ namespace BoxGrid {
       oVoxSizeZ= (iBBoxMax[2] - iBBoxMin[2]) / double(iNbZ - 1);
     }
   }
+
+  
   inline void GetVoxelSizes(
-      int const iNbX,
-      int const iNbY,
-      int const iNbZ,
-      std::array<double, 3> const& iBBoxMin,
-      std::array<double, 3> const& iBBoxMax,
-      bool const iCentered,
+      const int iNbX,
+      const int iNbY,
+      const int iNbZ,
+      const std::array<double, 3>& iBBoxMin,
+      const std::array<double, 3>& iBBoxMax,
+      const bool iCentered,
       double& oVoxSizeX,
       double& oVoxSizeY,
       double& oVoxSizeZ,
       double& oVoxSizeDiag) {
-    if (iCentered) {
-      oVoxSizeX= (iBBoxMax[0] - iBBoxMin[0]) / double(iNbX);
-      oVoxSizeY= (iBBoxMax[1] - iBBoxMin[1]) / double(iNbY);
-      oVoxSizeZ= (iBBoxMax[2] - iBBoxMin[2]) / double(iNbZ);
-    }
-    else {
-      oVoxSizeX= (iBBoxMax[0] - iBBoxMin[0]) / double(iNbX - 1);
-      oVoxSizeY= (iBBoxMax[1] - iBBoxMin[1]) / double(iNbY - 1);
-      oVoxSizeZ= (iBBoxMax[2] - iBBoxMin[2]) / double(iNbZ - 1);
-    }
+    GetVoxelSizes(iNbX, iNbY, iNbZ, iBBoxMin, iBBoxMax, iCentered, oVoxSizeX, oVoxSizeY, oVoxSizeZ);
     oVoxSizeDiag= std::sqrt(oVoxSizeX * oVoxSizeX + oVoxSizeY * oVoxSizeY + oVoxSizeZ * oVoxSizeZ);
   }
 
 
   inline void GetVoxelStart(
-      std::array<double, 3> const& iBBoxMin,
-      double const iVoxSizeX,
-      double const iVoxSizeY,
-      double const iVoxSizeZ,
-      bool const iCentered,
+      const std::array<double, 3>& iBBoxMin,
+      const double iVoxSizeX,
+      const double iVoxSizeY,
+      const double iVoxSizeZ,
+      const bool iCentered,
       double& oStartX,
       double& oStartY,
       double& oStartZ) {

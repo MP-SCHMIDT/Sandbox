@@ -5,6 +5,7 @@
 // Standard lib
 #include <array>
 #include <cmath>
+#include <cassert>
 #include <cstdio>
 #include <vector>
 
@@ -14,19 +15,14 @@
 
 void DistanceTransform::ApplyDistanceTransform(
     const int iMaxIterConvergence,
-    const float iSizeX,
-    const float iSizeY,
-    const float iSizeZ,
+    const float iElemSizeX,
+    const float iElemSizeY,
+    const float iElemSizeZ,
     const Field::Field3<char> &iVoxType,
     Field::Field3<float> &ioDist,
     const int iVerbose) {
   // Check inputs
-  if (iMaxIterConvergence <= 0 ||
-      iVoxType.nXYZ != ioDist.nXYZ ||
-      iVoxType.nXYZ <= 0) {
-    printf("[ERROR]: Invalid inputs for DistanceTransform::ApplyDistanceTransform\n");
-    return;
-  }
+  assert(iMaxIterConvergence > 0 && iVoxType.nXYZ == ioDist.nXYZ && iVoxType.nXYZ > 0);
 
   // Initialize variables
   const int nX= iVoxType.nX;
@@ -48,7 +44,9 @@ void DistanceTransform::ApplyDistanceTransform(
         if (nZ == 1 && dz != 0) continue;
         if ((dx < 0) || (dx == 0 && dy < 0) || (dx == 0 && dy == 0 && dz < 0)) {
           Neighbor.push_back({dx, dy, dz});
-          NeighborDist.push_back(std::sqrt(float(dx * dx * iSizeX * iSizeX + dy * dy * iSizeY * iSizeY + dz * dz * iSizeZ * iSizeZ)));
+          NeighborDist.push_back(std::sqrt(float(dx * dx * iElemSizeX * iElemSizeX +
+                                                 dy * dy * iElemSizeY * iElemSizeY +
+                                                 dz * dz * iElemSizeZ * iElemSizeZ)));
         }
       }
     }
@@ -76,23 +74,25 @@ void DistanceTransform::ApplyDistanceTransform(
       for (int x= xBeg; x != xEnd; x+= xInc) {
         for (int y= yBeg; y != yEnd; y+= yInc) {
           for (int z= zBeg; z != zEnd; z+= zInc) {
-            if (iVoxType.at(x, y, z) != 0) continue;
+            const int xyz= isSet.getFlatIndex(x, y, z);
+            if (iVoxType.at(xyz) != 0) continue;
             for (int k= 0; k < int(Neighbor.size()); k++) {
               const int xShift= (idxPass == 0) ? (x + Neighbor[k][0]) : (x - Neighbor[k][0]);
-              const int yShift= (idxPass == 0) ? (y + Neighbor[k][1]) : (y - Neighbor[k][1]);
-              const int zShift= (idxPass == 0) ? (z + Neighbor[k][2]) : (z - Neighbor[k][2]);
               if (xShift < 0 || xShift > nX - 1) continue;
+              const int yShift= (idxPass == 0) ? (y + Neighbor[k][1]) : (y - Neighbor[k][1]);
               if (yShift < 0 || yShift > nY - 1) continue;
+              const int zShift= (idxPass == 0) ? (z + Neighbor[k][2]) : (z - Neighbor[k][2]);
               if (zShift < 0 || zShift > nZ - 1) continue;
-              if (iVoxType.at(xShift, yShift, zShift) < 0) continue;
-              if (!isSet.at(xShift, yShift, zShift)) continue;
-              if (!isSet.at(x, y, z) || std::abs(ioDist.at(xShift, yShift, zShift)) + NeighborDist[k] < std::abs(ioDist.at(x, y, z))) {
-                isSet.at(x, y, z)= 1;
+              const int xyzShift= isSet.getFlatIndex(xShift, yShift, zShift);
+              if (iVoxType.at(xyzShift) < 0) continue;
+              if (!isSet.at(xyzShift)) continue;
+              if (!isSet.at(xyz) || std::abs(ioDist.at(xyzShift)) + NeighborDist[k] < std::abs(ioDist.at(xyz))) {
+                isSet.at(xyz)= 1;
                 isConverged= false;
-                if (ioDist.at(xShift, yShift, zShift) < 0.0f)
-                  ioDist.at(x, y, z)= ioDist.at(xShift, yShift, zShift) - NeighborDist[k];
+                if (ioDist.at(xyzShift) < 0.0f)
+                  ioDist.at(xyz)= ioDist.at(xyzShift) - NeighborDist[k];
                 else
-                  ioDist.at(x, y, z)= ioDist.at(xShift, yShift, zShift) + NeighborDist[k];
+                  ioDist.at(xyz)= ioDist.at(xyzShift) + NeighborDist[k];
               }
             }
           }

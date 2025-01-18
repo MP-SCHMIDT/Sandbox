@@ -220,7 +220,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
   // Check exit condition
   oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
   const float residNorm2Tol= iTolResidual * iTolResidual * rhsNorm2;
-  if (residNorm2 < residNorm2Tol) return;
+  if (residNorm2 <= residNorm2Tol) return;
 
   // Prepare additional fields    d= M^-1 r
   std::vector<float> qField(nbDofCompact, 0.0f);
@@ -288,7 +288,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
     // Check exit condition
     oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
-    if (residNorm2 < residNorm2Tol) return;
+    if (residNorm2 <= residNorm2Tol) return;
 
     // Compute error    errNew= r^T s
     const float errOld= errNew;
@@ -361,7 +361,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
   // Check exit condition
   oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
   const float residNorm2Tol= iTolResidual * iTolResidual * rhsNorm2;
-  if (residNorm2 < residNorm2Tol) return;
+  if (residNorm2 <= residNorm2Tol) return;
 
   // Prepare additional fields    d= r
   std::vector<float> qField(nbDofCompact, 0.0f);
@@ -415,7 +415,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
 
     // Check exit condition
     oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
-    if (residNorm2 < residNorm2Tol) return;
+    if (residNorm2 <= residNorm2Tol) return;
 
     // Compute error    errNew= r^T r
     const float errOld= errNew;

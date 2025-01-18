@@ -20,6 +20,11 @@ class FileInput
       std::vector<double>& oVector,
       bool const iVerbose);
 
+  static bool LoadScalarListBinaryFile(
+      std::string const iFullpath,
+      std::vector<float>& ioVector,
+      bool const iVerbose);
+
   static bool LoadScalarFieldTXTFile(
       std::string const iFullpath,
       std::vector<std::vector<std::vector<int>>>& oField,

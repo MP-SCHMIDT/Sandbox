@@ -95,6 +95,35 @@ bool FileInput::LoadScalarListTXTFile(
 }
 
 
+bool FileInput::LoadScalarListBinaryFile(
+    std::string const iFullpath,
+    std::vector<float>& ioVector,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading vector of scalars binary file [%s] ", iFullpath.c_str());
+
+  // Open the file
+  std::ifstream inputFile;
+  inputFile.open(iFullpath, std::ios::binary);
+  if (!inputFile.is_open()) {
+    if (iVerbose) printf("[ERROR] Unable to open the file\n");
+    return false;
+  }
+
+  // Read the raw data
+  for (unsigned int k= 0; k < ioVector.size(); k++) {
+    float val= 0.0f;
+    inputFile.read((char*)&val, sizeof(float));
+    ioVector[k]= float(val);
+  }
+
+  // Close the file
+  inputFile.close();
+
+  if (iVerbose) printf("File loaded: %d scalar values\n", int(ioVector.size()));
+  return true;
+}
+
+
 bool FileInput::LoadScalarFieldTXTFile(
     std::string const iFullpath,
     std::vector<std::vector<std::vector<int>>>& oField,

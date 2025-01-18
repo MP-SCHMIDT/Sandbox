@@ -141,7 +141,7 @@ bool FileOutput::SaveScalarListTXTFile(
 
 bool FileOutput::SaveScalarListBinaryFile(
     std::string const iFullpath,
-    std::vector<double> const& iField,
+    std::vector<float> const& iField,
     bool const iVerbose) {
   if (iVerbose) printf("Saving RAW scalar field binary file [%s] ", iFullpath.c_str());
 
@@ -158,7 +158,7 @@ bool FileOutput::SaveScalarListBinaryFile(
   }
 
   for (int k= 0; k < (int)iField.size(); k++) {
-    outputFile.write((char*)&iField[k], sizeof(double));
+    outputFile.write((char*)&iField[k], sizeof(float));
   }
 
   outputFile.close();

@@ -7,25 +7,25 @@
 
 class MarchingCubes
 {
-  private:
-  static void Interpolate(
-      double const iIsoval,
-      double const iEpsilon,
-      double const iVal1,
-      double const iVal2,
-      std::array<double, 3> const& iPos1,
-      std::array<double, 3> const& iPos2,
-      std::array<double, 3>& oPos);
-
   public:
-  static void ComputeMarchingCubes(
-      int const nX,
-      int const nY,
-      int const nZ,
-      double const iIsoval,
-      std::array<double, 3> const& iBBoxMin,
-      std::array<double, 3> const& iBBoxMax,
-      std::vector<double> const& iField,
-      std::vector<std::array<double, 3>>& oVertices,
-      std::vector<std::array<int, 3>>& oTriangles);
+  static void BuildMesh(const int nX,
+                        const int nY,
+                        const int nZ,
+                        const double iIsoval,
+                        const bool isCentered,
+                        const bool isPositiveInside,
+                        const std::array<double, 3>& iBBoxMin,
+                        const std::array<double, 3>& iBBoxMax,
+                        const std::vector<double>& iField,
+                        std::vector<std::array<double, 3>>& oVertices,
+                        std::vector<std::array<int, 3>>& oTriangles);
+
+  private:
+  static void Interpolate(const double iIsoval,
+                          const double iEpsilon,
+                          const double iVal1,
+                          const double iVal2,
+                          const std::array<double, 3>& iPos1,
+                          const std::array<double, 3>& iPos2,
+                          std::array<double, 3>& oPos);
 };

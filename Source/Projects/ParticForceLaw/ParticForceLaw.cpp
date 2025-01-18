@@ -1145,7 +1145,7 @@ void ParticForceLaw::ComputeMetaballs() {
     }
   }
 
-  MarchingCubes::ComputeMarchingCubes(tmpField.nX, tmpField.nY, tmpField.nZ, D.UI[MetaballIsoval__].F(), D.boxMin, D.boxMax, tmpField.data, Verts, Tris);
+  MarchingCubes::BuildMesh(tmpField.nX, tmpField.nY, tmpField.nZ, true, true, D.UI[MetaballIsoval__].F(), D.boxMin, D.boxMax, tmpField.data, Verts, Tris);
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("MetaballT %f\n", Timer::PopTimer());
 }

@@ -188,7 +188,7 @@ void ImageExtruMesh::Refresh() {
   VertsCol.clear();
   Tris.clear();
   Quads.clear();
-  MarchingCubes::ComputeMarchingCubes(TmpField.nX, TmpField.nY, TmpField.nZ, D.UI[Isovalue________].F(), tmpBoxMin, tmpBoxMax, TmpField.data, Verts, Tris);
+  MarchingCubes::BuildMesh(TmpField.nX, TmpField.nY, TmpField.nZ, true, true, D.UI[Isovalue________].F(), tmpBoxMin, tmpBoxMax, TmpField.data, Verts, Tris);
 
   if (D.UI[GeomSnapMode____].I() == 1) {
     // Snap the mesh nodes to the box in the extrusion direction

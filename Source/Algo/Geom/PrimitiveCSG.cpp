@@ -184,6 +184,53 @@ void PrimitiveCSG::ConeRound(
 }
 
 
+void PrimitiveCSG::AxisAlignedTorus(
+    const int nX,
+    const int nY,
+    const int nZ,
+    const int iDir,
+    std::array<double, 3> const& iCenter,
+    double const& iRadiusA,
+    double const& iRadiusB,
+    PrimitiveCSG::BooleanMode const& iMode,
+    std::array<double, 3> const& iBBoxMin,
+    std::array<double, 3> const& iBBoxMax,
+    std::vector<double>& ioDistanceField) {
+  // Check inputs
+  if (nX == 0 || nY == 0 || nZ == 0) return;
+  // Get field dimensions
+  double stepX, stepY, stepZ, startX, startY, startZ;
+  BoxGrid::GetVoxelSizes(nX, nY, nZ, iBBoxMin, iBBoxMax, true, stepX, stepY, stepZ);
+  BoxGrid::GetVoxelStart(iBBoxMin, stepX, stepY, stepZ, true, startX, startY, startZ);
+  // Get primitives properties
+  Eigen::Vector3d center(iCenter[0], iCenter[1], iCenter[2]);
+  // Sweep through the field
+  for (int x= 0; x < nX; x++) {
+    for (int y= 0; y < nY; y++) {
+      for (int z= 0; z < nZ; z++) {
+        int const xyz= x * (nY * nZ) + y * nZ + z;
+        // Get current point coordinates
+        Eigen::Vector3d P(double(x) * stepX + startX, double(y) * stepY + startY, double(z) * stepZ + startZ);
+        // Compute the distance
+        Eigen::Vector2d Q(Eigen::Vector2d((P - center)[1], (P - center)[2]).norm() - iRadiusA, (P - center)[0]);
+        if (iDir == 1) Q= Eigen::Vector2d(Eigen::Vector2d((P - center)[0], (P - center)[2]).norm() - iRadiusA, (P - center)[1]);
+        if (iDir == 2) Q= Eigen::Vector2d(Eigen::Vector2d((P - center)[0], (P - center)[1]).norm() - iRadiusA, (P - center)[2]);
+        double distVal= Q.norm() - iRadiusB;
+        // Update the distance
+        if (iMode == PrimitiveCSG::BooleanMode::Union)
+          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
+        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
+        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
+          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
+          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+      }
+    }
+  }
+}
+
+
 void PrimitiveCSG::AxisAlignedBox(
     const int nX,
     const int nY,

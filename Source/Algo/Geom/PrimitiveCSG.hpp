@@ -59,6 +59,20 @@ class PrimitiveCSG
       std::vector<double>& ioDistanceField);
 
 
+  static void AxisAlignedTorus(
+      const int nX,
+      const int nY,
+      const int nZ,
+      const int iDir,
+      std::array<double, 3> const& iCenter,
+      double const& iRadiusA,
+      double const& iRadiusB,
+      PrimitiveCSG::BooleanMode const& iMode,
+      std::array<double, 3> const& iBBoxMin,
+      std::array<double, 3> const& iBBoxMax,
+      std::vector<double>& ioDistanceField);
+
+
   static void AxisAlignedBox(
       const int nX,
       const int nY,

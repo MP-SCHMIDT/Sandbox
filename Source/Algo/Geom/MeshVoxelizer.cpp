@@ -30,21 +30,18 @@ void MeshVoxelizer::ComputeNarrowBandSignedDistanceField(const std::vector<std::
     return;
   }
 
-  // Adjust the bounding box if computing voxel-centered distance values
-  const double stepX= (iBoxMax[0] - iBoxMin[0]) / double(iNbX);
-  const double stepY= (iBoxMax[1] - iBoxMin[1]) / double(iNbY);
-  const double stepZ= (iBoxMax[2] - iBoxMin[2]) / double(iNbZ);
-  const double bandDist= 1.01 * std::sqrt(stepX * stepX + stepY * stepY + stepZ * stepZ);
-  std::array<double, 3> boxMin= iBoxMin;
-  std::array<double, 3> boxMax= iBoxMax;
-  if (iIsCentered) {
-    boxMin= {iBoxMin[0] + 0.5 * stepX, iBoxMin[1] + 0.5 * stepY, iBoxMin[2] + 0.5 * stepZ};
-    boxMax= {iBoxMax[0] - 0.5 * stepX, iBoxMax[1] - 0.5 * stepY, iBoxMax[2] - 0.5 * stepZ};
-  }
+  // Precompute dimensions and box values
+  double stepX, stepY, stepZ, stepDiag, startX, startY, startZ;
+  BoxGrid::GetVoxelSizes(iNbX, iNbY, iNbZ, iBoxMin, iBoxMax, iIsCentered, stepX, stepY, stepZ, stepDiag);
+  BoxGrid::GetVoxelStart(iBoxMin, stepX, stepY, stepZ, iIsCentered, startX, startY, startZ);
+  const double bandDist= 1.01 * stepDiag;
+  std::array<int, 3> nb({iNbX, iNbY, iNbZ});
+  std::array<double, 3> start({startX, startY, startZ});
+  std::array<double, 3> gridBoxSizeInv({1.0/(double(iNbX-1)*stepX), 1.0/(double(iNbY-1)*stepY), 1.0/(double(iNbZ-1)*stepZ)});
 
   // Initialize variables
   oIsSet= Field::Field3<char>(iNbX, iNbY, iNbZ, 0);
-  oDist= Field::Field3<double>(iNbX, iNbY, iNbZ, bandDist);
+  oDist= Field::Field3<double>(iNbX, iNbY, iNbZ, std::numeric_limits<double>::max());
   Field::Field3<char> distSign(iNbX, iNbY, iNbZ, 0);
 
   // Compute face edge and vertex normals with incident angle weights
@@ -54,32 +51,34 @@ void MeshVoxelizer::ComputeNarrowBandSignedDistanceField(const std::vector<std::
   std::vector<Vec::Vec3<double>> vertNormals((int)iVertices.size(), {0.0, 0.0, 0.0});
   std::map<std::pair<int, int>, Vec::Vec3<double>> edgeNormals;
   for (int k= 0; k < (int)iTriangles.size(); k++) {
-    Vec::Vec3<double> AB= Vec::Vec3<double>(iVertices[iTriangles[k][1]]) - Vec::Vec3<double>(iVertices[iTriangles[k][0]]);
-    Vec::Vec3<double> AC= Vec::Vec3<double>(iVertices[iTriangles[k][2]]) - Vec::Vec3<double>(iVertices[iTriangles[k][0]]);
-    Vec::Vec3<double> BC= Vec::Vec3<double>(iVertices[iTriangles[k][2]]) - Vec::Vec3<double>(iVertices[iTriangles[k][1]]);
+    const std::array<int, 3> tri= iTriangles[k];
+    const Vec::Vec3<double> AB= Vec::Vec3<double>(iVertices[tri[1]]) - Vec::Vec3<double>(iVertices[tri[0]]);
+    const Vec::Vec3<double> AC= Vec::Vec3<double>(iVertices[tri[2]]) - Vec::Vec3<double>(iVertices[tri[0]]);
+    const Vec::Vec3<double> BC= Vec::Vec3<double>(iVertices[tri[2]]) - Vec::Vec3<double>(iVertices[tri[1]]);
     faceNormals[k]= (AB).cross(AC).normalized();
 
-    edgeNormals[{iTriangles[k][0], iTriangles[k][1]}].set(0.0, 0.0, 0.0);
-    edgeNormals[{iTriangles[k][1], iTriangles[k][0]}].set(0.0, 0.0, 0.0);
-    edgeNormals[{iTriangles[k][0], iTriangles[k][2]}].set(0.0, 0.0, 0.0);
-    edgeNormals[{iTriangles[k][2], iTriangles[k][0]}].set(0.0, 0.0, 0.0);
-    edgeNormals[{iTriangles[k][1], iTriangles[k][2]}].set(0.0, 0.0, 0.0);
-    edgeNormals[{iTriangles[k][2], iTriangles[k][1]}].set(0.0, 0.0, 0.0);
+    edgeNormals[{tri[0], tri[1]}].set(0.0, 0.0, 0.0);
+    edgeNormals[{tri[1], tri[0]}].set(0.0, 0.0, 0.0);
+    edgeNormals[{tri[0], tri[2]}].set(0.0, 0.0, 0.0);
+    edgeNormals[{tri[2], tri[0]}].set(0.0, 0.0, 0.0);
+    edgeNormals[{tri[1], tri[2]}].set(0.0, 0.0, 0.0);
+    edgeNormals[{tri[2], tri[1]}].set(0.0, 0.0, 0.0);
 
-    double angleA= std::acos(AB.dot(AC) / (AB.norm() * AC.norm()));
-    double angleB= std::acos(BC.dot((-1.0 * AB)) / (BC.norm() * AB.norm()));
-    double angleC= std::acos((-1.0 * AC).dot((-1.0 * BC)) / (AC.norm() * BC.norm()));
-    vertNormals[iTriangles[k][0]]+= angleA * faceNormals[k];
-    vertNormals[iTriangles[k][1]]+= angleB * faceNormals[k];
-    vertNormals[iTriangles[k][2]]+= angleC * faceNormals[k];
+    const double angleA= std::acos(AB.dot(AC) / (AB.norm() * AC.norm()));
+    const double angleB= std::acos(BC.dot((-1.0 * AB)) / (BC.norm() * AB.norm()));
+    const double angleC= std::acos((-1.0 * AC).dot((-1.0 * BC)) / (AC.norm() * BC.norm()));
+    vertNormals[tri[0]]+= angleA * faceNormals[k];
+    vertNormals[tri[1]]+= angleB * faceNormals[k];
+    vertNormals[tri[2]]+= angleC * faceNormals[k];
   }
   for (int k= 0; k < (int)iTriangles.size(); k++) {
-    edgeNormals[{iTriangles[k][0], iTriangles[k][1]}]+= faceNormals[k];
-    edgeNormals[{iTriangles[k][1], iTriangles[k][0]}]+= faceNormals[k];
-    edgeNormals[{iTriangles[k][0], iTriangles[k][2]}]+= faceNormals[k];
-    edgeNormals[{iTriangles[k][2], iTriangles[k][0]}]+= faceNormals[k];
-    edgeNormals[{iTriangles[k][1], iTriangles[k][2]}]+= faceNormals[k];
-    edgeNormals[{iTriangles[k][2], iTriangles[k][1]}]+= faceNormals[k];
+    const std::array<int, 3> tri= iTriangles[k];
+    edgeNormals[{tri[0], tri[1]}]+= faceNormals[k];
+    edgeNormals[{tri[1], tri[0]}]+= faceNormals[k];
+    edgeNormals[{tri[0], tri[2]}]+= faceNormals[k];
+    edgeNormals[{tri[2], tri[0]}]+= faceNormals[k];
+    edgeNormals[{tri[1], tri[2]}]+= faceNormals[k];
+    edgeNormals[{tri[2], tri[1]}]+= faceNormals[k];
   }
   for (int k= 0; k < (int)iVertices.size(); k++)
     vertNormals[k].normalize();
@@ -88,57 +87,58 @@ void MeshVoxelizer::ComputeNarrowBandSignedDistanceField(const std::vector<std::
     it->second.normalize();
 
   // Intersect the mesh with the voxel field
-  for (int k= 0; k < (int)iTriangles.size(); k++) {
-    // Find triangle bounding box augmented by iMaxDistance
+  for (unsigned int k= 0; k < iTriangles.size(); k++) {
+    const std::array<int, 3> tri= iTriangles[k];
+    // Find triangle bounding box augmented by the narrow band distance
     std::array<double, 3> posMin, posMax;
-    posMin[0]= std::min(std::min(iVertices[iTriangles[k][0]][0], iVertices[iTriangles[k][1]][0]), iVertices[iTriangles[k][2]][0]) - bandDist;
-    posMin[1]= std::min(std::min(iVertices[iTriangles[k][0]][1], iVertices[iTriangles[k][1]][1]), iVertices[iTriangles[k][2]][1]) - bandDist;
-    posMin[2]= std::min(std::min(iVertices[iTriangles[k][0]][2], iVertices[iTriangles[k][1]][2]), iVertices[iTriangles[k][2]][2]) - bandDist;
-    posMax[0]= std::max(std::max(iVertices[iTriangles[k][0]][0], iVertices[iTriangles[k][1]][0]), iVertices[iTriangles[k][2]][0]) + bandDist;
-    posMax[1]= std::max(std::max(iVertices[iTriangles[k][0]][1], iVertices[iTriangles[k][1]][1]), iVertices[iTriangles[k][2]][1]) + bandDist;
-    posMax[2]= std::max(std::max(iVertices[iTriangles[k][0]][2], iVertices[iTriangles[k][1]][2]), iVertices[iTriangles[k][2]][2]) + bandDist;
+    for (unsigned int dim= 0; dim < 3; dim++) {
+      posMin[dim]= std::min(std::min(iVertices[tri[0]][dim], iVertices[tri[1]][dim]), iVertices[tri[2]][dim]) - bandDist;
+      posMax[dim]= std::max(std::max(iVertices[tri[0]][dim], iVertices[tri[1]][dim]), iVertices[tri[2]][dim]) + bandDist;
+    }
 
-    // Find voxelized version of augmented bounding box
+    // Find index ranges of bounding box
     std::array<int, 3> idxMin= {0, 0, 0}, idxMax= {0, 0, 0};
-    if (boxMax[0] > boxMin[0]) idxMin[0]= std::max((int)std::round(double(iNbX - 1) * (posMin[0] - boxMin[0]) / (boxMax[0] - boxMin[0])), 0);
-    if (boxMax[1] > boxMin[1]) idxMin[1]= std::max((int)std::round(double(iNbY - 1) * (posMin[1] - boxMin[1]) / (boxMax[1] - boxMin[1])), 0);
-    if (boxMax[2] > boxMin[2]) idxMin[2]= std::max((int)std::round(double(iNbZ - 1) * (posMin[2] - boxMin[2]) / (boxMax[2] - boxMin[2])), 0);
-    if (boxMax[0] > boxMin[0]) idxMax[0]= std::min((int)std::round(double(iNbX - 1) * (posMax[0] - boxMin[0]) / (boxMax[0] - boxMin[0])), iNbX - 1);
-    if (boxMax[1] > boxMin[1]) idxMax[1]= std::min((int)std::round(double(iNbY - 1) * (posMax[1] - boxMin[1]) / (boxMax[1] - boxMin[1])), iNbY - 1);
-    if (boxMax[2] > boxMin[2]) idxMax[2]= std::min((int)std::round(double(iNbZ - 1) * (posMax[2] - boxMin[2]) / (boxMax[2] - boxMin[2])), iNbZ - 1);
+    for (unsigned int dim= 0; dim < 3; dim++) {
+      if (nb[dim] > 1) {
+        idxMin[dim]= std::max((int)std::round(double(nb[dim] - 1) * (posMin[dim] - start[dim]) * gridBoxSizeInv[dim]), 0);
+        idxMax[dim]= std::min((int)std::round(double(nb[dim] - 1) * (posMax[dim] - start[dim]) * gridBoxSizeInv[dim]), nb[dim]-1);
+      }
+    }
 
-// Find neighboring voxels that intersect the current triangle
-#pragma omp parallel for
+    // Find neighboring voxels that intersect the current triangle
+    const Vec::Vec3<double> triFirstVert(iVertices[tri[0]]);
     for (int x= idxMin[0]; x <= idxMax[0]; x++) {
       for (int y= idxMin[1]; y <= idxMax[1]; y++) {
         for (int z= idxMin[2]; z <= idxMax[2]; z++) {
           // Get current point position
-          Vec::Vec3<double> cellPos(boxMin);
-          if (iNbX > 1) cellPos[0]+= double(x) * (boxMax[0] - boxMin[0]) / double(iNbX - 1);
-          if (iNbY > 1) cellPos[1]+= double(y) * (boxMax[1] - boxMin[1]) / double(iNbY - 1);
-          if (iNbZ > 1) cellPos[2]+= double(z) * (boxMax[2] - boxMin[2]) / double(iNbZ - 1);
+          const Vec::Vec3<double> cellPos(startX + double(x) * stepX, startY + double(y) * stepY, startZ + double(z) * stepZ);
+
+          // Quick rejection test based on plane distance
+          if (std::abs(faceNormals[k].dot(cellPos-triFirstVert)) > bandDist)
+            continue;
 
           // Get projection on triangle
           Vec::Vec3<double> projPoint;
           int elemType= -1;
-          MeshVoxelizer::ComputePointToTriangleProjection(iVertices[iTriangles[k][0]], iVertices[iTriangles[k][1]], iVertices[iTriangles[k][2]], cellPos, projPoint, elemType);
-          double unsignedDist= (cellPos - projPoint).norm();
+          MeshVoxelizer::ComputePointToTriangleProjection(iVertices[tri[0]], iVertices[tri[1]], iVertices[tri[2]], cellPos, projPoint, elemType);
+          const double unsignedDist= (cellPos - projPoint).norm();
 
           // Update distance field if needed
           if (unsignedDist <= bandDist) {
             Vec::Vec3<double> projNormal(0.0, 0.0, 0.0);
-            if (elemType == 0) projNormal= faceNormals[k];
-            if (elemType == 1) projNormal= vertNormals[iTriangles[k][0]];
-            if (elemType == 2) projNormal= vertNormals[iTriangles[k][1]];
-            if (elemType == 3) projNormal= vertNormals[iTriangles[k][2]];
-            if (elemType == 4) projNormal= edgeNormals[{iTriangles[k][0], iTriangles[k][1]}];
-            if (elemType == 5) projNormal= edgeNormals[{iTriangles[k][0], iTriangles[k][2]}];
-            if (elemType == 6) projNormal= edgeNormals[{iTriangles[k][1], iTriangles[k][2]}];
+            if      (elemType == 0) projNormal= faceNormals[k];
+            else if (elemType == 1) projNormal= vertNormals[tri[0]];
+            else if (elemType == 2) projNormal= vertNormals[tri[1]];
+            else if (elemType == 3) projNormal= vertNormals[tri[2]];
+            else if (elemType == 4) projNormal= edgeNormals[{tri[0], tri[1]}];
+            else if (elemType == 5) projNormal= edgeNormals[{tri[0], tri[2]}];
+            else                    projNormal= edgeNormals[{tri[1], tri[2]}];
 
-            if (oDist.at(x, y, z) > unsignedDist) {
-              oDist.at(x, y, z)= unsignedDist;
-              oIsSet.at(x, y, z)= 1;
-              distSign.at(x, y, z)= ((cellPos - projPoint).dot(projNormal) < 0.0) ? -1 : 1;
+            const int xyz= oDist.getFlatIndex(x, y, z);
+            if (oDist.at(xyz) > unsignedDist) {
+              oDist.at(xyz)= unsignedDist;
+              oIsSet.at(xyz)= 1;
+              distSign.at(xyz)= ((cellPos - projPoint).dot(projNormal) < 0.0) ? -1 : 1;
             }
           }
         }
@@ -162,88 +162,83 @@ void MeshVoxelizer::ComputePointToTriangleProjection(const Vec::Vec3<double>& iT
   // Implementation based on barycentric coordinates
   // http://web.mit.edu/ehliu/Public/Darmofal/DistancePoint3Triangle3.pdf
   // https://www.geometrictools.com/Documentation/DistancePoint3Triangle3.pdf
-
-  //      r2
-  //
+  // https://www.geometrictools.com/GTE/Mathematics/DistPointTriangle.h
   //         C
-  //             /|
-  //            / | r1
-  //   r3   t  /  |
-  //          / r0|
-  //         /____|
-  //        A   s  B
+  //        /|
+  //       / |   
+  //   t  /  |
+  //     /   |
+  //    /____|
+  //   A   s  B
   //
-  //   r4      r5     r6
-  //
-  // REGION 0 : Proj on face   ABC: oElemType= 0
-  // REGION 4 : Proj on vertex A:   oElemType= 1
-  // REGION 6 : Proj on vertex B:   oElemType= 2
-  // REGION 2 : Proj on vertex C:   oElemType= 3
-  // REGION 5 : Proj on edge   AB:  oElemType= 4
-  // REGION 3 : Proj on edge   AC:  oElemType= 5
-  // REGION 1 : Proj on edge   BC:  oElemType= 6
+  // Proj on face   ABC: oElemType= 0
+  // Proj on vertex A:   oElemType= 1
+  // Proj on vertex B:   oElemType= 2
+  // Proj on vertex C:   oElemType= 3
+  // Proj on edge   AB:  oElemType= 4
+  // Proj on edge   AC:  oElemType= 5
+  // Proj on edge   BC:  oElemType= 6
 
   // Precomputations
-  Vec::Vec3<double> edge0= iTriangleB - iTriangleA;
-  Vec::Vec3<double> edge1= iTriangleC - iTriangleA;
-  Vec::Vec3<double> v0= iPoint - iTriangleA;
+  const Vec::Vec3<double> edge0= iTriangleB - iTriangleA;
+  const Vec::Vec3<double> edge1= iTriangleC - iTriangleA;
+  const Vec::Vec3<double> diff= iTriangleA - iPoint;
+  const double a00= edge0.dot(edge0);
+  const double a01= edge0.dot(edge1);
+  const double a11= edge1.dot(edge1);
+  const double b0= diff.dot(edge0);
+  const double b1= diff.dot(edge1);
+  const double det= std::max(a00 * a11 - a01 * a01, 0.0);
 
-  double a= edge0.dot(edge0);
-  double b= edge0.dot(edge1);
-  double c= edge1.dot(edge1);
-  double d= -edge0.dot(v0);
-  double e= -edge1.dot(v0);
-
-  double s= b * e - c * d;
-  double t= b * d - a * e;
-  double det= a * c - b * b;
+  double s= a01 * b1 - a11 * b0;
+  double t= a01 * b0 - a00 * b1;
 
   // Barycentric coordinates to find closest point on triangle
   if (s + t <= det) {
     if (s < 0.0) {
-      if (t < 0.0) {  // REGION 4 : Proj on vertex A:   oElemType= 1
+      if (t < 0.0) {  // Proj on vertex A:   oElemType= 1
         oElemType= 1;
-        if (d < 0.0) {
+        if (b0 < 0.0) {
           t= 0.0;
-          if (-d >= a) s= 1.0;
-          else s= -d / a;
+          if (-b0 >= a00) s= 1.0;
+          else s= -b0 / a00;
         }
         else {
           s= 0.0;
-          if (e >= 0.0) t= 0.0;
-          else if (-e >= c) t= 1.0;
-          else t= -e / c;
+          if (b1 >= 0.0) t= 0.0;
+          else if (-b1 >= a11) t= 1.0;
+          else t= -b1 / a11;
         }
       }
-      else {  // REGION 3 : Proj on edge   AC:  oElemType= 5
+      else {  // Proj on edge   AC:  oElemType= 5
         oElemType= 5;
         s= 0.0;
-        if (e >= 0.0) t= 0.0;
-        else if (-e >= c) t= 1.0;
-        else t= -e / c;
+        if (b1 >= 0.0) t= 0.0;
+        else if (-b1 >= a11) t= 1.0;
+        else t= -b1 / a11;
       }
     }
-    else if (t < 0.0) {  // REGION 5 : Proj on edge   AB:  oElemType= 4
+    else if (t < 0.0) {  // Proj on edge   AB:  oElemType= 4
       oElemType= 4;
       t= 0.0;
-      if (d >= 0.0) s= 0.0;
-      else if (-d >= a) s= 1.0;
-      else s= -d / a;
+      if (b0 >= 0.0) s= 0.0;
+      else if (-b0 >= a00) s= 1.0;
+      else s= -b0 / a00;
     }
-    else {  // REGION 0 : Proj on face   ABC: oElemType= 0
+    else {  // Proj on face   ABC: oElemType= 0
       oElemType= 0;
       s/= det;
       t/= det;
     }
   }
   else {
-    if (s < 0.0) {  // REGION 2 : Proj on vertex C:   oElemType= 3
+    if (s < 0.0) {  // Proj on vertex C:   oElemType= 3
       oElemType= 3;
-      double tmp0= b + d;
-      double tmp1= c + e;
+      const double tmp0= a01 + b0;
+      const double tmp1= a11 + b1;
       if (tmp1 > tmp0) {
-        double numer= tmp1 - tmp0;
-        double denom= a - 2 * b + c;
+        const double numer= tmp1 - tmp0;
+        const double denom= a00 - 2.0 * a01 + a11;
         if (numer >= denom) {
           s= 1.0;
           t= 0.0;
@@ -256,17 +251,17 @@ void MeshVoxelizer::ComputePointToTriangleProjection(const Vec::Vec3<double>& iT
       else {
         s= 0.0;
         if (tmp1 <= 0.0) t= 1.0;
-        else if (e >= 0) t= 0.0;
-        else t= -e / c;
+        else if (b1 >= 0.0) t= 0.0;
+        else t= -b1 / a11;
       }
     }
-    else if (t < 0.0) {  // REGION 6 : Proj on vertex B:   oElemType= 2
+    else if (t < 0.0) {  // Proj on vertex B:   oElemType= 2
       oElemType= 2;
-      double tmp0= b + e;
-      double tmp1= a + d;
+      const double tmp0= a01 + b1;
+      const double tmp1= a00 + b0;
       if (tmp1 > tmp0) {
-        double numer= tmp1 - tmp0;
-        double denom= a - 2.0 * b + c;
+        const double numer= tmp1 - tmp0;
+        const double denom= a00 - 2.0 * a01 + a11;
         if (numer >= denom) {
           t= 1.0;
           s= 0.0;
@@ -278,20 +273,20 @@ void MeshVoxelizer::ComputePointToTriangleProjection(const Vec::Vec3<double>& iT
       }
       else {
         t= 0.0;
-        if (tmp1 <= 0) s= 1.0;
-        else if (d >= 0.0) s= 0.0;
-        else s= -d / a;
+        if (tmp1 <= 0.0) s= 1.0;
+        else if (b0 >= 0.0) s= 0.0;
+        else s= -b0 / a00;
       }
     }
-    else {  // REGION 1 : Proj on edge   BC:  oElemType= 6
+    else {  // Proj on edge   BC:  oElemType= 6
       oElemType= 6;
-      double numer= c + e - b - d;
+      const double numer= a11 + b1 - a01 - b0;
       if (numer <= 0.0) {
         s= 0.0;
         t= 1.0;
       }
       else {
-        double denom= a - 2.0 * b + c;
+        const double denom= a00 - 2.0 * a01 + a11;
         if (numer >= denom) {
           s= 1.0;
           t= 0.0;

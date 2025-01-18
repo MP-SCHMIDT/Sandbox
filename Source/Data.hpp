@@ -77,6 +77,8 @@ class Data
   bool playAnimation= false;
   bool stepAnimation= false;
 
+  bool showUI= true;
+
   std::array<bool, 10> displayMode= {true, true, true, true, true, true, true, true, true, true};
   std::array<std::string, 10> displayModeLabel;
 
