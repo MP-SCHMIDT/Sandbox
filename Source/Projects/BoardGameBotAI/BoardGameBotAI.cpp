@@ -34,7 +34,7 @@ BoardGameBotAI::BoardGameBotAI() {
 void BoardGameBotAI::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("GameMode________", 0));     // Selected game: Hex, Jumpin, Checkers
+    D.UI.push_back(ParamUI("GameMode________", 0));     // Selected game: Hex, Jumpin, Checkers, Mancala oware
     D.UI.push_back(ParamUI("BoardW__________", 6));     // Board width
     D.UI.push_back(ParamUI("BoardH__________", 6));     // Board height
     D.UI.push_back(ParamUI("MoveStreakRed___", 1));     // Number of consecutive move for each player, 0 to disable the player
@@ -42,24 +42,29 @@ void BoardGameBotAI::SetActiveProject() {
     D.UI.push_back(ParamUI("BotStrategyRed__", 3));     // Choose if Red is a bot and which strategy it adopts
     D.UI.push_back(ParamUI("BotStrategyBlu__", 3));     // Choose if Blu is a bot and which strategy it adopts
     D.UI.push_back(ParamUI("______________00", NAN));   //
-    D.UI.push_back(ParamUI("MaxSearchDepth__", 4));     // Max depth for the tree search
-    D.UI.push_back(ParamUI("MaxThinkTime____", 0.0));   // Max time for the game tree search in seconds
-    D.UI.push_back(ParamUI("MaxTreeBoards___", 0));     // Max number of boards explored in the game tree search
+    D.UI.push_back(ParamUI("MaxSearchDepth__", 10));    // Max depth for the tree search
+    D.UI.push_back(ParamUI("MaxThinkTime____", 0.1));   // Max time for the game tree search in seconds
+    D.UI.push_back(ParamUI("MaxTreeBoards___", 1.e5));  // Max number of boards explored in the game tree search
     D.UI.push_back(ParamUI("MoveSortNash____", 1));     // Flag to sort the moves according to their Nash scores
     D.UI.push_back(ParamUI("MoveSortScore___", 1));     // Flag to sort the moves according to their board score (if nash is equal)
     D.UI.push_back(ParamUI("MoveSortRand____", 1));     // Flag to sort the moves randomly (if nash and score are equal)
     D.UI.push_back(ParamUI("ABPruning_______", 1));     // Enable alpha-beta pruning (only useful for 2 player mode)
     D.UI.push_back(ParamUI("IterDeepening___", 1));     // Enable iterative deepening
     D.UI.push_back(ParamUI("______________01", NAN));   //
+    D.UI.push_back(ParamUI("MklStartCount___", 4));     //
+    D.UI.push_back(ParamUI("______________02", NAN));   //
     D.UI.push_back(ParamUI("HexEdgeConnect__", 10));    // Score value for each metric in the board evaluation
     D.UI.push_back(ParamUI("HexCornConnect__", 25));    // Score value for each metric in the board evaluation
     D.UI.push_back(ParamUI("JmpPushTotal____", 1));     // Score value for each metric in the board evaluation
     D.UI.push_back(ParamUI("JmpPushLast_____", 0));     // Score value for each metric in the board evaluation
     D.UI.push_back(ParamUI("JmpSoftStranded_", 0));     // Score value for each metric in the board evaluation
     D.UI.push_back(ParamUI("JmpHardStranded_", 0));     // Score value for each metric in the board evaluation
-    D.UI.push_back(ParamUI("ChkMaterial_____", 10));    // Score value for each metric in the board evaluation
-    D.UI.push_back(ParamUI("______________02", NAN));   //
-    D.UI.push_back(ParamUI("ColorMode_______", 0));     // Color mode for move preview and game tree display
+    D.UI.push_back(ParamUI("ChkMaterial_____", 2));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("ChkQueen________", 5));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("MklMaterial_____", 1));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("MklBank_________", 1));     // Score value for each metric in the board evaluation
+    D.UI.push_back(ParamUI("______________03", NAN));   //
+    D.UI.push_back(ParamUI("ColorMode_______", 1));     // Color mode for move preview and game tree display
     D.UI.push_back(ParamUI("ColorFactor_____", 1.e-2)); // Color multiplier
     D.UI.push_back(ParamUI("______________04", NAN));   //
     D.UI.push_back(ParamUI("TestParamGAI_0__", 0.0));   //
@@ -75,6 +80,7 @@ void BoardGameBotAI::SetActiveProject() {
     D.displayModeLabel[2]= "Pawns";
     D.displayModeLabel[3]= "Moves";
     D.displayModeLabel[4]= "Tree";
+    D.displayModeLabel[5]= "Nodes";
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
@@ -92,6 +98,7 @@ bool BoardGameBotAI::CheckAlloc() {
   if (D.UI[BoardH__________].hasChanged()) isAllocated= false;
   if (D.UI[MoveStreakRed___].hasChanged()) isAllocated= false;
   if (D.UI[MoveStreakBlu___].hasChanged()) isAllocated= false;
+  if (D.UI[MklStartCount___].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -114,6 +121,9 @@ bool BoardGameBotAI::CheckRefresh() {
   if (D.UI[JmpSoftStranded_].hasChanged()) isRefreshed= false;
   if (D.UI[JmpHardStranded_].hasChanged()) isRefreshed= false;
   if (D.UI[ChkMaterial_____].hasChanged()) isRefreshed= false;
+  if (D.UI[ChkQueen________].hasChanged()) isRefreshed= false;
+  if (D.UI[MklMaterial_____].hasChanged()) isRefreshed= false;
+  if (D.UI[MklBank_________].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
@@ -175,6 +185,15 @@ void BoardGameBotAI::Allocate() {
                            0.5f * cellSize + float(w) * cellSize,
                            0.5f * cellSize + float(h) * cellSize);
   }
+  else if (D.UI[GameMode________].I() == 3) {
+    cellSize= 1.0f / (float)std::max(nW, nH);
+    Cells= Field::Field2(nW, nH, Vec::Vec3<float>(0.0, 0.0, 0.0));
+    for (int w= 0; w < nW; w++)
+      for (int h= 0; h < nH; h++)
+        Cells.at(w, h).set(0.5f,
+                           0.5f * cellSize + float(w) * cellSize,
+                           0.5f * cellSize + float(h) * cellSize);
+  }
 
   // Initialize the pawns
   Field::Field2<char> Pawns(nW, nH, 0);
@@ -192,14 +211,21 @@ void BoardGameBotAI::Allocate() {
           if (h >= nH - 3) Pawns.at(w, h)= -1;
         }
       }
+      else if (D.UI[GameMode________].I() == 3) {
+        if (w > 0) {
+          if (h == 0) Pawns.at(w, h)= +D.UI[MklStartCount___].I();
+          if (h == 1) Pawns.at(w, h)= -D.UI[MklStartCount___].I();
+        }
+      }
     }
   }
 
   // Create the root board
   RootBoard= CreateBoard(Pawns, std::vector<std::array<int, 2>>(), 0);
   if (D.UI[GameMode________].I() == 0) ComputeBoardScoreHex(RootBoard);
-  if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
-  if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
+  else if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
+  else if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
+  else if (D.UI[GameMode________].I() == 3) ComputeBoardScoreMkl(RootBoard);
   RootBoard->NashScore= RootBoard->Score;
   RootBoard->NashNbSteps= 0;
 }
@@ -283,12 +309,18 @@ void BoardGameBotAI::KeyPress() {
         wSel= subBoard->Move[0][0];
         hSel= subBoard->Move[0][1];
       }
+      else if (D.UI[GameMode________].I() == 3) {
+        wSel= subBoard->Move[0][0];
+        hSel= subBoard->Move[0][1];
+      }
+
       if (subBoard->Move[0] == std::array<int, 2>{wSel, hSel} &&
           subBoard->Move[subBoard->Move.size() - 1] == std::array<int, 2>{wCursor, hCursor}) {
         RootBoard->Move= subBoard->Move;
         if (D.UI[GameMode________].I() == 0) ExecuteMoveHex(RootBoard, 0);
         else if (D.UI[GameMode________].I() == 1) ExecuteMoveJmp(RootBoard, 0);
         else if (D.UI[GameMode________].I() == 2) ExecuteMoveChk(RootBoard, 0);
+        else if (D.UI[GameMode________].I() == 3) ExecuteMoveMkl(RootBoard, 0);
         wSel= hSel= -1;
         idxTurn++;
         ComputeGameTreeSearch(D.UI[MaxSearchDepth__].I());
@@ -337,13 +369,17 @@ void BoardGameBotAI::Animate() {
         ExecuteMoveHex(RootBoard, 0);
         ComputeBoardScoreHex(RootBoard);
       }
-      if (D.UI[GameMode________].I() == 1) {
+      else if (D.UI[GameMode________].I() == 1) {
         ExecuteMoveJmp(RootBoard, 0);
         ComputeBoardScoreJmp(RootBoard);
       }
-      if (D.UI[GameMode________].I() == 2) {
+      else if (D.UI[GameMode________].I() == 2) {
         ExecuteMoveChk(RootBoard, 0);
         ComputeBoardScoreChk(RootBoard);
+      }
+      else if (D.UI[GameMode________].I() == 3) {
+        ExecuteMoveMkl(RootBoard, 0);
+        ComputeBoardScoreMkl(RootBoard);
       }
     }
     idxTurn++;
@@ -418,6 +454,20 @@ void BoardGameBotAI::Draw() {
         }
       }
     }
+    else if (D.UI[GameMode________].I() == 3) {
+      for (int w= 0; w < nW; w++) {
+        for (int h= 0; h < nH; h++) {
+          if (w == 0) continue;
+          const float col= ((w + h) % 2 == 0) ? 0.4f : 0.6f;
+          glColor3f(col, col, col);
+          glPushMatrix();
+          glTranslatef(Cells.at(w, h)[0], Cells.at(w, h)[1], Cells.at(w, h)[2]);
+          glScalef(0.01f, 1.0f, 1.0f);
+          glutSolidCube(cellSize);
+          glPopMatrix();
+        }
+      }
+    }
   }
 
   // Draw the pawns
@@ -428,11 +478,13 @@ void BoardGameBotAI::Draw() {
         if (RootBoard->Pawns.at(w, h) == 0) continue;
         if (RootBoard->Pawns.at(w, h) > 0) glColor3f(1.0f, 0.5f, 0.5f);
         if (RootBoard->Pawns.at(w, h) < 0) glColor3f(0.5f, 0.5f, 1.0f);
-        glPushMatrix();
-        glTranslatef(Cells.at(w, h)[0], Cells.at(w, h)[1], Cells.at(w, h)[2]);
-        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-        glutSolidSphere(0.4 * cellSize, 36, 10);
-        glPopMatrix();
+        for (char k= 0; k < std::abs(RootBoard->Pawns.at(w, h)); k++) {
+          glPushMatrix();
+          glTranslatef(Cells.at(w, h)[0] + float(k) * cellSize * 0.5f, Cells.at(w, h)[1], Cells.at(w, h)[2]);
+          glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+          glutSolidSphere(0.4 * cellSize, 36, 10);
+          glPopMatrix();
+        }
       }
     }
     glDisable(GL_LIGHTING);
@@ -450,26 +502,30 @@ void BoardGameBotAI::Draw() {
       const int h= subBoard->Move[subBoard->Move.size() - 1][1];
       glPushMatrix();
       glTranslatef(Cells.at(w, h)[0], Cells.at(w, h)[1], Cells.at(w, h)[2]);
-      glutWireCube(0.5 * cellSize);
+      glutWireCube(0.75 * cellSize);
       glPopMatrix();
     }
   }
 
   // Draw the board tree
-  if (D.displayMode[4]) {
+  if (D.displayMode[4] || D.displayMode[5]) {
     float px= 0.5f * (D.boxMin[0] + D.boxMax[0]);
     float py= D.boxMax[1] + 0.1f * (D.boxMax[1] - D.boxMin[1]);
     float pz= D.boxMin[2] + 0.5f * (D.boxMax[2] - D.boxMin[2]);
-    glLineWidth(2.0f);
-    glBegin(GL_LINES);
-    DrawBoardTree(RootBoard, 0, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -0.5f * std::numbers::pi, 0.5f * std::numbers::pi);
-    glEnd();
-    glLineWidth(1.0f);
-    glPointSize(6.0f);
-    glBegin(GL_POINTS);
-    DrawBoardTree(RootBoard, 0, 1, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -0.5f * std::numbers::pi, 0.5f * std::numbers::pi);
-    glEnd();
-    glPointSize(1.0f);
+    if (D.displayMode[4]) {
+      glLineWidth(2.0f);
+      glBegin(GL_LINES);
+      DrawBoardTree(RootBoard, 0, 0, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -0.5f * std::numbers::pi, 0.5f * std::numbers::pi);
+      glEnd();
+      glLineWidth(1.0f);
+    }
+    if (D.displayMode[5]) {
+      glPointSize(6.0f);
+      glBegin(GL_POINTS);
+      DrawBoardTree(RootBoard, 0, 1, px, py, pz, 0.5f * (D.boxMax[1] - D.boxMin[1]), -0.5f * std::numbers::pi, 0.5f * std::numbers::pi);
+      glEnd();
+      glPointSize(1.0f);
+    }
   }
 }
 
