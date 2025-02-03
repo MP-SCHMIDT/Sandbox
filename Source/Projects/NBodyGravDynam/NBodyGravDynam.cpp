@@ -374,9 +374,18 @@ void NBodyGravDynam::AddTreeNode(const float iCenterX,
 void NBodyGravDynam::BuildTree() {
   if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
+  // Compute the axis aligned bounding box around the bodies
+  Vec::Vec3<float> boxMin(Pos[0]), boxMax(Pos[0]);
+  for (unsigned int k0= 1; k0 < N; k0++) {
+    boxMin= boxMin.cwiseMin(Pos[k0]);
+    boxMax= boxMax.cwiseMax(Pos[k0]);
+  }
+  const Vec::Vec3<float> rootCenter= 0.5f*(boxMin+boxMax);
+  const float rootSize= (boxMax-boxMin).maxCoeff();
+
   // Initialize the tree with the root cell
   Tree.clear();
-  AddTreeNode(0.5f, 0.5f, 0.5f, 1.0f, 0);
+  AddTreeNode(rootCenter[0], rootCenter[1], rootCenter[2], rootSize, 0);
 
   // Sequentially add the particles in the tree, adding cells as required
   for (unsigned int k0= 0; k0 < N; k0++) {
