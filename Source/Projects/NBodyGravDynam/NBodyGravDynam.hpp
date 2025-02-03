@@ -71,8 +71,12 @@ class NBodyGravDynam
   std::vector<Vec::Vec3<float>> Acc;
   std::vector<Vec::Vec3<float>> For;
   std::vector<NBodyGravDynam::OctreeNode> Tree;
+  #define TESTING_DISPLAY_FORCES_VECTORS
+  #ifdef TESTING_DISPLAY_FORCES_VECTORS
   std::vector<Vec::Vec3<float>> ContribPos;
   std::vector<unsigned int> ContribCount;
+  std::vector<unsigned int> ContribCell;
+  #endif
 
   public:
   bool isActivProj;

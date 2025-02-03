@@ -76,11 +76,11 @@ void NBodyGravDynam::SetActiveProject() {
     D.displayModeLabel[2]= "BodiesSpheres";
     D.displayModeLabel[3]= "Octree";
     D.displayModeLabel[4]= "OctreeMass";
+    #ifdef TESTING_DISPLAY_FORCES_VECTORS
     D.displayModeLabel[5]= "ApproxForce";
+    D.displayModeLabel[6]= "ApproxSource";
+    #endif
     D.displayMode[2]= false;
-    // D.displayMode[3]= false;
-    // D.displayMode[4]= false;
-    // D.displayMode[5]= false;
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
@@ -313,6 +313,7 @@ void NBodyGravDynam::Draw() {
   }
 
   // Draw the approximation of forces for the chosen particle
+  #ifdef TESTING_DISPLAY_FORCES_VECTORS
   if (D.displayMode[5]) {
     if (D.UI[TestParamNBS_00_].I() >= 0 && D.UI[TestParamNBS_00_].I() < (int)N) {
       glLineWidth(2.0f);
@@ -329,6 +330,26 @@ void NBodyGravDynam::Draw() {
       glLineWidth(1.0f);
     }
   }
+  #endif
+
+  
+  // Draw the contributing cells
+  #ifdef TESTING_DISPLAY_FORCES_VECTORS
+  if (D.displayMode[6]) {
+    for (unsigned int idxCell : ContribCell) {
+      const NBodyGravDynam::OctreeNode Cell= Tree[idxCell];
+      if (Cell.Depth >= D.UI[TreeShowMin_____].I() && Cell.Depth <= D.UI[TreeShowMax_____].I()) {
+        float r, g, b;
+        Colormap::RatioToRainbow((float)Cell.Depth * 0.1f, r, g, b);
+        glColor3f(r, g, b);
+        glPushMatrix();
+        glTranslatef(Cell.Center[0], Cell.Center[1], Cell.Center[2]);
+        glutWireCube(Cell.Size);
+        glPopMatrix();
+      }
+    }
+  }
+  #endif
 
   D.Status.clear();
   D.Status.resize(1);
@@ -422,11 +443,11 @@ void NBodyGravDynam::ComputeForces() {
   const float gravity= D.UI[SimuTotGravity__].F() / float(D.UI[BodyCount_______].I());
   const float minRadSqr= (2.0f * D.UI[BodyRadius______].F()) * (2.0f * D.UI[BodyRadius______].F());
 
-  // #define TESTING_DISPLAY_FORCES_VECTORS
   #ifdef TESTING_DISPLAY_FORCES_VECTORS
   if (D.displayMode[5]) {
     ContribPos.clear();
     ContribCount.clear();
+    ContribCell.clear();
   }
   #endif
 
@@ -471,6 +492,9 @@ void NBodyGravDynam::ComputeForces() {
   
       std::vector<unsigned int> Q(1, 0);
       while (Q.size() > 0) {
+        #ifdef TESTING_DISPLAY_FORCES_VECTORS
+        const unsigned int idxCell= Q[Q.size()-1];
+        #endif
         const NBodyGravDynam::OctreeNode cell= Tree[Q[Q.size()-1]];
         Q.pop_back();
         
@@ -492,6 +516,7 @@ void NBodyGravDynam::ComputeForces() {
             if (D.displayMode[5] && (int)k0 == D.UI[TestParamNBS_00_].I()) {
               ContribPos.push_back(p1);
               ContribCount.push_back(cell.Count);
+              ContribCell.push_back(idxCell);
             }
             #endif
           }
