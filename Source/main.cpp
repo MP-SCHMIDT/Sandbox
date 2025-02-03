@@ -25,6 +25,7 @@
 #include "ImageExtruMesh/ImageExtruMesh.hpp"
 #include "MarkovProcGene/MarkovProcGene.hpp"
 #include "MassSpringSyst/MassSpringSyst.hpp"
+#include "NBodyGravDynam/NBodyGravDynam.hpp"
 #include "NonLinMMABench/NonLinMMABench.hpp"
 #include "ParticForceLaw/ParticForceLaw.hpp"
 #include "ParticLifeOrga/ParticLifeOrga.hpp"
@@ -85,6 +86,7 @@ FractalElevMap myFractalElevMap;
 ImageExtruMesh myImageExtruMesh;
 MarkovProcGene myMarkovProcGene;
 MassSpringSyst myMassSpringSyst;
+NBodyGravDynam myNBodyGravDynam;
 NonLinMMABench myNonLinMMABench;
 ParticForceLaw myParticForceLaw;
 ParticLifeOrga myParticLifeOrga;
@@ -112,6 +114,7 @@ enum ProjectID
   ImageExtruMeshID,
   MarkovProcGeneID,
   MassSpringSystID,
+  NBodyGravDynamID,
   NonLinMMABenchID,
   ParticForceLawID,
   ParticLifeOrgaID,
@@ -146,6 +149,7 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::ImageExtruMeshID && myImageExtruMesh.isActivProj && ++newProjInit) myImageExtruMesh.isActivProj= false;
   if (currentProjectID != ProjectID::MarkovProcGeneID && myMarkovProcGene.isActivProj && ++newProjInit) myMarkovProcGene.isActivProj= false;
   if (currentProjectID != ProjectID::MassSpringSystID && myMassSpringSyst.isActivProj && ++newProjInit) myMassSpringSyst.isActivProj= false;
+  if (currentProjectID != ProjectID::NBodyGravDynamID && myNBodyGravDynam.isActivProj && ++newProjInit) myNBodyGravDynam.isActivProj= false;
   if (currentProjectID != ProjectID::NonLinMMABenchID && myNonLinMMABench.isActivProj && ++newProjInit) myNonLinMMABench.isActivProj= false;
   if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj && ++newProjInit) myParticForceLaw.isActivProj= false;
   if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj && ++newProjInit) myParticLifeOrga.isActivProj= false;
@@ -176,6 +180,7 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.SetActiveProject();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.SetActiveProject();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.SetActiveProject();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.SetActiveProject();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.SetActiveProject();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.SetActiveProject();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.SetActiveProject();
@@ -211,6 +216,7 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Refresh();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Refresh();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Refresh();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.Refresh();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Refresh();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Refresh();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Refresh();
@@ -237,6 +243,7 @@ void project_ParamChange() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.ParamChange();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.ParamChange();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.ParamChange();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.ParamChange();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.ParamChange();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.ParamChange();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.ParamChange();
@@ -263,6 +270,7 @@ void project_KeyPress() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.KeyPress();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.KeyPress();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.KeyPress();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.KeyPress();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.KeyPress();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress();
@@ -289,6 +297,7 @@ void project_MousePress() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.MousePress();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.MousePress();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.MousePress();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.MousePress();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.MousePress();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.MousePress();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.MousePress();
@@ -314,6 +323,7 @@ void project_Animate() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Animate();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Animate();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Animate();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.Animate();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Animate();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Animate();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Animate();
@@ -340,6 +350,7 @@ void project_Draw() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.Draw();
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.Draw();
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.Draw();
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.Draw();
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.Draw();
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Draw();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Draw();
@@ -366,6 +377,7 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::ImageExtruMeshID) myImageExtruMesh.isRefreshed= false;
   if (currentProjectID == ProjectID::MarkovProcGeneID) myMarkovProcGene.isRefreshed= false;
   if (currentProjectID == ProjectID::MassSpringSystID) myMassSpringSyst.isRefreshed= false;
+  if (currentProjectID == ProjectID::NBodyGravDynamID) myNBodyGravDynam.isRefreshed= false;
   if (currentProjectID == ProjectID::NonLinMMABenchID) myNonLinMMABench.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.isRefreshed= false;
@@ -1231,6 +1243,7 @@ void init_menu() {
   glutAddMenuEntry("ImageExtruMesh", ProjectID::ImageExtruMeshID);
   glutAddMenuEntry("MarkovProcGene", ProjectID::MarkovProcGeneID);
   glutAddMenuEntry("MassSpringSyst", ProjectID::MassSpringSystID);
+  glutAddMenuEntry("NBodyGravDynam", ProjectID::NBodyGravDynamID);
   glutAddMenuEntry("NonLinMMABench", ProjectID::NonLinMMABenchID);
   glutAddMenuEntry("ParticForceLaw", ProjectID::ParticForceLawID);
   glutAddMenuEntry("ParticLifeOrga", ProjectID::ParticLifeOrgaID);
