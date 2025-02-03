@@ -11,7 +11,8 @@
 // - Barnes-Hut algorithm to account for gravitational interaction
 //
 // Reference
-// todo
+// https://en.wikipedia.org/wiki/Barnes%E2%80%93Hut_simulation
+// http://arborjs.org/docs/barnes-hut
 class NBodyGravDynam
 {
   private:
@@ -37,7 +38,6 @@ class NBodyGravDynam
     SimuForceMode___,
     SimuTimeStep____,
     SimuTotGravity__,
-    SimuVelDecay____,
     ______________03,
     ColorMode_______,
     ColorFactor_____,

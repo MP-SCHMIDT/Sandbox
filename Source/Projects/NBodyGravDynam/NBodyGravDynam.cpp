@@ -37,16 +37,16 @@ void NBodyGravDynam::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
     D.UI.push_back(ParamUI("BodyCount_______", 100));
-    D.UI.push_back(ParamUI("BodyStartLayout_", 1));
-    D.UI.push_back(ParamUI("BodyInitVel_____", 0.05));
-    D.UI.push_back(ParamUI("BodyRadius______", 0.005));
+    D.UI.push_back(ParamUI("BodyStartLayout_", 0));
+    D.UI.push_back(ParamUI("BodyInitVel_____", 0.1));
+    D.UI.push_back(ParamUI("BodyRadius______", 0.01));
     D.UI.push_back(ParamUI("______________00", NAN));
-    D.UI.push_back(ParamUI("Domain2D________", 1));
-    D.UI.push_back(ParamUI("DomainTaurusPos_", 1));
-    D.UI.push_back(ParamUI("DomainTaurusFor_", 1));
+    D.UI.push_back(ParamUI("Domain2D________", 0));
+    D.UI.push_back(ParamUI("DomainTaurusPos_", 0));
+    D.UI.push_back(ParamUI("DomainTaurusFor_", 0));
     D.UI.push_back(ParamUI("______________01", NAN));
-    D.UI.push_back(ParamUI("TreeMaxDepth____", 6));
-    D.UI.push_back(ParamUI("TreeTolRatio____", 2.0));
+    D.UI.push_back(ParamUI("TreeMaxDepth____", 8));
+    D.UI.push_back(ParamUI("TreeTolRatio____", 0.5));
     D.UI.push_back(ParamUI("TreeShowMin_____", 0));
     D.UI.push_back(ParamUI("TreeShowMax_____", 10));
     D.UI.push_back(ParamUI("TreeShowEmpty___", 0));
@@ -55,7 +55,6 @@ void NBodyGravDynam::SetActiveProject() {
     D.UI.push_back(ParamUI("SimuForceMode___", 1));
     D.UI.push_back(ParamUI("SimuTimeStep____", 0.005));
     D.UI.push_back(ParamUI("SimuTotGravity__", 1.0));
-    D.UI.push_back(ParamUI("SimuVelDecay____", 0.0));
     D.UI.push_back(ParamUI("______________03", NAN));
     D.UI.push_back(ParamUI("ColorMode_______", 2));
     D.UI.push_back(ParamUI("ColorFactor_____", 0.1));
@@ -227,6 +226,7 @@ void NBodyGravDynam::Animate() {
   }
 
   if (D.UI[VerboseLevel____].I() >= 1) printf("TimeAnim %f ", Timer::PopTimer());
+  if (D.UI[VerboseLevel____].I() >= 1) printf("\n");
 }
 
 
@@ -235,8 +235,6 @@ void NBodyGravDynam::Draw() {
   if (!isActivProj) return;
   if (!isAllocated) return;
   if (!isRefreshed) return;
-
-  if (D.UI[VerboseLevel____].I() >= 1) Timer::PushTimer();
 
   // Draw the particles
   if (D.displayMode[1] || D.displayMode[2]) {
@@ -354,9 +352,6 @@ void NBodyGravDynam::Draw() {
   D.Status.clear();
   D.Status.resize(1);
   D.Status[0]= std::format("Tree cells:{}", (int)Tree.size());
- 
-  if (D.UI[VerboseLevel____].I() >= 1) printf("TimeDraw %f ", Timer::PopTimer());
-  if (D.UI[VerboseLevel____].I() >= 1) printf("\n");
 }
 
 
