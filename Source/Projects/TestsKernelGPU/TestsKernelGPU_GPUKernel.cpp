@@ -72,12 +72,22 @@ std::string TestsKernelGPU_GPUKernel::opencl_c_container() {
       float4 a= (float4)(0.0f, 0.0f, 0.0f, 0.0f);  // Initialize acceleration of current body
 
       for (uint k1= 0; k1 < N; k1++) {                                                           // Loop through other bodies
-        const float4 rVec= pos_old[k1] - p0;                                                     // Get vector from current to other body
+        float4 p1= pos_old[k1];
+        if      ((p1[0] - p0[0]) >  0.5f) p1[0]= p1[0] - 1.0f;
+        else if ((p1[0] - p0[0]) < -0.5f) p1[0]= p1[0] + 1.0f;
+        if      ((p1[1] - p0[1]) >  0.5f) p1[1]= p1[1] - 1.0f;
+        else if ((p1[1] - p0[1]) < -0.5f) p1[1]= p1[1] + 1.0f;
+        if      ((p1[2] - p0[2]) >  0.5f) p1[2]= p1[2] - 1.0f;
+        else if ((p1[2] - p0[2]) < -0.5f) p1[2]= p1[2] + 1.0f;
+        const float4 rVec= p1 - p0;                                                     // Get vector from current to other body
         const float rNormInv= rsqrt(rVec.x * rVec.x + rVec.y * rVec.y + rVec.z * rVec.z + eps);  // Compute inverse of Euclidian distance
         a+= grav * rNormInv * rNormInv * rNormInv * rVec;                                        // Add acceleration toward other body
       }
       v+= dt * a;                        // Integrate velocity
       p0+= dt * v + 0.5f * dt * dt * a;  // Integrate position
+      if (p0[0] < 0.0f || p0[0] > 1.0f) p0[0]= p0[0] - floor(p0[0]);
+      if (p0[1] < 0.0f || p0[1] > 1.0f) p0[1]= p0[1] - floor(p0[1]);
+      if (p0[2] < 0.0f || p0[2] > 1.0f) p0[2]= p0[2] - floor(p0[2]);
       vel_new[k0]= v;                    // Save new velocity
       pos_new[k0]= p0;                   // Save new position
     }
