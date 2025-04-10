@@ -1,24 +1,29 @@
 #pragma once
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#pragma GCC diagnostic ignored "-Wsign-compare"
+// MPS: Slightly modified OpenCL Wrapper code from https://github.com/ProjectPhysX/OpenCL-Wrapper
+// MPS: Changes are flagged by comments starting with "MPS:"
 
 #define UTILITIES_REGEX
 //#define UTILITIES_FILE
 #define CONSOLE_WIDTH 79
 #define UTILITIES_NO_CPP17
 
+#pragma GCC diagnostic push                        // MPS: Push in some warning tweaks
+#pragma GCC diagnostic ignored "-Wunknown-pragmas" // MPS: Push in some warning tweaks
+#pragma GCC diagnostic ignored "-Wstrict-aliasing" // MPS: Push in some warning tweaks
+#pragma GCC diagnostic ignored "-Wsign-compare"    // MPS: Push in some warning tweaks
+
+#pragma warning(disable:26451)
+#pragma warning(disable:6386)
 #include <cmath>
 #include <vector>
+#include <string>
 #ifdef UTILITIES_REGEX
 #include <regex> // contains <string>, <vector>, <algorithm> and others
-#else // UTILITIES_REGEX
-#include <string>
 #endif // UTILITIES_REGEX
 #include <iostream>
-#include <thread> // contains <chrono>
+#include <chrono>
+#include <thread>
 #undef min
 #undef max
 using std::string;
@@ -590,7 +595,7 @@ inline string replace_regex(const string& s, const string& from, const string& t
 inline bool is_number(const string& s) {
 	return equals_regex(s, "\\d+(u|l|ul|ll|ull)?")||equals_regex(s, "0x(\\d|[a-fA-F])+(u|l|ul|ll|ull)?")||equals_regex(s, "0b[01]+(u|l|ul|ll|ull)?")||equals_regex(s, "(((\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d+[fF]?)?)|(\\d+\\.\\d*|\\.\\d+)[fF]?)");
 }
-inline void print_message(const string& message, const string& keyword="", const int colons=true) { // print formatted message
+inline void print_message(const string& message, const string& keyword="", const int keyword_color=-1, const int colons=true) { // print formatted message
 	const uint k=length(keyword)+2u, w=CONSOLE_WIDTH-4u-k;
 	string p=colons?": ":"  ", f="";
 	for(uint j=0u; j<k; j++) f += " ";
@@ -619,7 +624,7 @@ inline void print_message(const string& message, const string& keyword="", const
 inline void print_error(const string& s) { // print formatted error message
 	print_message(s, "Error");
 #ifdef _WIN32
-	print_message("Press Enter to exit.", "     ", false);
+	print_message("Press Enter to exit.", "     ", -1, false);
 #endif // _WIN32
 	string b = "";
 	for(int i=0; i<CONSOLE_WIDTH-2; i++) b += "-";
@@ -765,4 +770,4 @@ inline void write_file(const string& filename, const string& content="") {
 }
 #endif // UTILITIES_FILE
 
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop // MPS: pop out the warning tweaks

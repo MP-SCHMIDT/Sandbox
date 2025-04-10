@@ -17,10 +17,13 @@ extern Data D;
 
 void BoardGameBotAI::FindPossibleMovesHex(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
   (void)iDepth;
-  for (int w= 0; w < nW; w++)
-    for (int h= 0; h < nH; h++)
-      if (ioBoard->Pawns.at(w, h) == 0)
+  for (int w= 0; w < nW; w++) {
+    for (int h= 0; h < nH; h++) {
+      if (ioBoard->Pawns.at(w, h) == 0) {
         ioMoves.push_back(std::vector<std::array<int, 2>>{{w, h}});
+      }
+    }
+  }
 }
 
 
@@ -34,7 +37,7 @@ void BoardGameBotAI::FindPossibleMovesJmp(BoardState *ioBoard, const int iDepth,
         Visit.at(w, h)= 1;
         const int oldPawn= ioBoard->Pawns.at(w, h);
         ioBoard->Pawns.at(w, h)= 0;
-        RecursivePawnMovesJmp(ioBoard, w, h, Visit, Destinations);
+        JmpRecursivePawnMoves(ioBoard, w, h, Visit, Destinations);
         ioBoard->Pawns.at(w, h)= oldPawn;
         for (std::array<int, 2> destination : Destinations)
           ioMoves.push_back(std::vector<std::array<int, 2>>{{w, h}, destination});
@@ -89,17 +92,34 @@ void BoardGameBotAI::FindPossibleMovesChk(BoardState *ioBoard, const int iDepth,
 }
 
 
-void BoardGameBotAI::FindPossibleMovesMkl(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves) {
-  (void)iDepth;
-  if (IsRedTurn(iDepth)) {
-    for (int w= 1; w < nW; w++)
-      if (ioBoard->Pawns.at(w, 0) != 0)
-        ioMoves.push_back(std::vector<std::array<int, 2>>{{w, 0}});
-  }
-  else {
-    for (int w= 1; w < nW; w++)
-      if (ioBoard->Pawns.at(w, 1) != 0)
-        ioMoves.push_back(std::vector<std::array<int, 2>>{{w, 1}});
+void BoardGameBotAI::JmpRecursivePawnMoves(BoardState *ioBoard,
+                                           const int iJumpW, const int iJumpH,
+                                           Field::Field2<char> &ioVisit,
+                                           std::vector<std::array<int, 2>> &ioDestinations) {
+  assert(ioBoard != nullptr);
+
+  for (int idxDir= 0; idxDir < 4; idxDir++) {
+    const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
+    const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
+    if (iJumpW + 2 * wInc < 0 || iJumpW + 2 * wInc >= nW ||
+        iJumpH + 2 * hInc < 0 || iJumpH + 2 * hInc >= nH) continue;
+    if (ioBoard->Pawns.at(iJumpW + wInc, iJumpH + hInc) == 0) continue;
+    int wOff= iJumpW + 2 * wInc;
+    int hOff= iJumpH + 2 * hInc;
+    while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
+      if (ioBoard->Pawns.at(wOff, hOff) == 0) {
+        if (!ioVisit.at(wOff, hOff)) {
+          ioVisit.at(wOff, hOff)= 1;
+          ioDestinations.push_back({wOff, hOff});
+          JmpRecursivePawnMoves(ioBoard, wOff, hOff, ioVisit, ioDestinations);
+        }
+        break;
+      }
+      else {
+        wOff+= wInc;
+        hOff+= hInc;
+      }
+    }
   }
 }
 
@@ -126,71 +146,5 @@ void BoardGameBotAI::ExecuteMoveChk(BoardState *ioBoard, const int iDepth) {
   else {
     ioBoard->Pawns.at(ioBoard->Move[1][0], ioBoard->Move[1][1])= ioBoard->Pawns.at(ioBoard->Move[0][0], ioBoard->Move[0][1]);
     ioBoard->Pawns.at(ioBoard->Move[0][0], ioBoard->Move[0][1])= 0;
-  }
-}
-
-
-void BoardGameBotAI::ExecuteMoveMkl(BoardState *ioBoard, const int iDepth) {
-  int w= ioBoard->Move[0][0];
-  int h= ioBoard->Move[0][1];
-  char count= std::abs(ioBoard->Pawns.at(w, h));
-  ioBoard->Pawns.at(w, h)= 0;
-  for (;count > 0; count--) {
-    if (h == 0) {
-      if (w < nW - 1) w++;
-      else h++;
-    }
-    else {
-      if (w > 1) w--;
-      else h--;
-    }
-
-    if (h == 0) ioBoard->Pawns.at(w, 0)++;
-    else ioBoard->Pawns.at(w, 1)--;
-  }
-
-  if (IsRedTurn(iDepth)) {
-    if (h == 1 && ioBoard->Pawns.at(w, h) < -1 && ioBoard->Pawns.at(w, h) >= -3) {
-      ioBoard->Pawns.at(0, 0)-= ioBoard->Pawns.at(w, h);
-      ioBoard->Pawns.at(w, h)= 0;
-    }
-  }
-  else {
-    if (h == 0 && ioBoard->Pawns.at(w, h) >= 2 && ioBoard->Pawns.at(w, h) <= 3) {
-      ioBoard->Pawns.at(0, 1)-= ioBoard->Pawns.at(w, h);
-      ioBoard->Pawns.at(w, h)= 0;
-    }
-  }
-}
-
-
-void BoardGameBotAI::RecursivePawnMovesJmp(BoardState *ioBoard,
-                                           const int iJumpW, const int iJumpH,
-                                           Field::Field2<char> &ioVisit,
-                                           std::vector<std::array<int, 2>> &ioDestinations) {
-  assert(ioBoard != nullptr);
-
-  for (int idxDir= 0; idxDir < 4; idxDir++) {
-    const int wInc= (idxDir == 0) ? (-1) : ((idxDir == 1) ? (+1) : (0));
-    const int hInc= (idxDir == 2) ? (-1) : ((idxDir == 3) ? (+1) : (0));
-    if (iJumpW + 2 * wInc < 0 || iJumpW + 2 * wInc >= nW ||
-        iJumpH + 2 * hInc < 0 || iJumpH + 2 * hInc >= nH) continue;
-    if (ioBoard->Pawns.at(iJumpW + wInc, iJumpH + hInc) == 0) continue;
-    int wOff= iJumpW + 2 * wInc;
-    int hOff= iJumpH + 2 * hInc;
-    while (wOff >= 0 && wOff < nW && hOff >= 0 && hOff < nH) {
-      if (ioBoard->Pawns.at(wOff, hOff) == 0) {
-        if (!ioVisit.at(wOff, hOff)) {
-          ioVisit.at(wOff, hOff)= 1;
-          ioDestinations.push_back({wOff, hOff});
-          RecursivePawnMovesJmp(ioBoard, wOff, hOff, ioVisit, ioDestinations);
-        }
-        break;
-      }
-      else {
-        wOff+= wInc;
-        hOff+= hInc;
-      }
-    }
   }
 }

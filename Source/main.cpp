@@ -30,7 +30,6 @@
 #include "ParticForceLaw/ParticForceLaw.hpp"
 #include "ParticLifeOrga/ParticLifeOrga.hpp"
 #include "PosiBasedDynam/PosiBasedDynam.hpp"
-#include "SkeletonFolder/SkeletonFolder.hpp"
 #include "SpaceTimeWorld/SpaceTimeWorld.hpp"
 #include "StringArtOptim/StringArtOptim.hpp"
 #include "TerrainErosion/TerrainErosion.hpp"
@@ -91,7 +90,6 @@ NonLinMMABench myNonLinMMABench;
 ParticForceLaw myParticForceLaw;
 ParticLifeOrga myParticLifeOrga;
 PosiBasedDynam myPosiBasedDynam;
-SkeletonFolder mySkeletonFolder;
 SpaceTimeWorld mySpaceTimeWorld;
 StringArtOptim myStringArtOptim;
 TerrainErosion myTerrainErosion;
@@ -119,7 +117,6 @@ enum ProjectID
   ParticForceLawID,
   ParticLifeOrgaID,
   PosiBasedDynamID,
-  SkeletonFolderID,
   SpaceTimeWorldID,
   StringArtOptimID,
   TerrainErosionID,
@@ -154,7 +151,6 @@ void project_ForceHardInit() {
   if (currentProjectID != ProjectID::ParticForceLawID && myParticForceLaw.isActivProj && ++newProjInit) myParticForceLaw.isActivProj= false;
   if (currentProjectID != ProjectID::ParticLifeOrgaID && myParticLifeOrga.isActivProj && ++newProjInit) myParticLifeOrga.isActivProj= false;
   if (currentProjectID != ProjectID::PosiBasedDynamID && myPosiBasedDynam.isActivProj && ++newProjInit) myPosiBasedDynam.isActivProj= false;
-  if (currentProjectID != ProjectID::SkeletonFolderID && mySkeletonFolder.isActivProj && ++newProjInit) mySkeletonFolder.isActivProj= false;
   if (currentProjectID != ProjectID::SpaceTimeWorldID && mySpaceTimeWorld.isActivProj && ++newProjInit) mySpaceTimeWorld.isActivProj= false;
   if (currentProjectID != ProjectID::StringArtOptimID && myStringArtOptim.isActivProj && ++newProjInit) myStringArtOptim.isActivProj= false;
   if (currentProjectID != ProjectID::TerrainErosionID && myTerrainErosion.isActivProj && ++newProjInit) myTerrainErosion.isActivProj= false;
@@ -185,7 +181,6 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.SetActiveProject();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.SetActiveProject();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.SetActiveProject();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.SetActiveProject();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.SetActiveProject();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.SetActiveProject();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.SetActiveProject();
@@ -195,12 +190,6 @@ void project_ForceHardInit() {
   if (currentProjectID == ProjectID::CompuFluidDynaID) myCompuFluidDyna.SetActiveProject();
   if (currentProjectID == ProjectID::StructGenOptimID) myStructGenOptim.SetActiveProject();
 #endif
-
-  if (newProjInit) {
-    for (int k= 1; k < 10; k++)
-      if (D.displayModeLabel[k].length() == 0)
-        D.displayMode[k]= false;
-  }
 
   D.idxFirstParamPageUI= (D.idxFirstParamPageUI < (int)D.UI.size()) ? D.idxFirstParamPageUI : 0;
   D.idxParamUI= (D.idxParamUI < (int)D.UI.size()) ? D.idxParamUI : 0;
@@ -221,7 +210,6 @@ void project_Refresh() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Refresh();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Refresh();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Refresh();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.Refresh();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Refresh();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Refresh();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Refresh();
@@ -248,7 +236,6 @@ void project_ParamChange() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.ParamChange();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.ParamChange();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.ParamChange();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.ParamChange();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.ParamChange();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.ParamChange();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.ParamChange();
@@ -275,7 +262,6 @@ void project_KeyPress() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.KeyPress();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.KeyPress();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.KeyPress();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.KeyPress();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.KeyPress();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.KeyPress();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.KeyPress();
@@ -302,7 +288,6 @@ void project_MousePress() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.MousePress();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.MousePress();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.MousePress();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.MousePress();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.MousePress();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.MousePress();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.MousePress();
@@ -328,7 +313,6 @@ void project_Animate() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Animate();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Animate();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Animate();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.Animate();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Animate();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Animate();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Animate();
@@ -355,7 +339,6 @@ void project_Draw() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.Draw();
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.Draw();
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.Draw();
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.Draw();
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.Draw();
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.Draw();
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.Draw();
@@ -382,7 +365,6 @@ void project_QueueSoftRefresh() {
   if (currentProjectID == ProjectID::ParticForceLawID) myParticForceLaw.isRefreshed= false;
   if (currentProjectID == ProjectID::ParticLifeOrgaID) myParticLifeOrga.isRefreshed= false;
   if (currentProjectID == ProjectID::PosiBasedDynamID) myPosiBasedDynam.isRefreshed= false;
-  if (currentProjectID == ProjectID::SkeletonFolderID) mySkeletonFolder.isRefreshed= false;
   if (currentProjectID == ProjectID::SpaceTimeWorldID) mySpaceTimeWorld.isRefreshed= false;
   if (currentProjectID == ProjectID::StringArtOptimID) myStringArtOptim.isRefreshed= false;
   if (currentProjectID == ProjectID::TerrainErosionID) myTerrainErosion.isRefreshed= false;
@@ -420,11 +402,20 @@ void loadConfigWindow() {
 
 
 // Utility function to save persistent project configuration on disk
-void saveConfigProject() {
+void saveConfigProject(const int iFileIdx= 0) {
+  // Creat or open the file to write
   FILE *file= nullptr;
-  file= fopen("ConfigProject.txt", "w");
+  file= fopen(("ConfigProject_" + std::to_string(iFileIdx) + ".txt").c_str(), "w");
   if (file != nullptr) {
+    D.currentConfigFile= iFileIdx;
+    // Set the project ID and init if needed
     fprintf(file, "currentProjectID %d\n", currentProjectID);
+    // Set the display options
+    fprintf(file, "displayMode");
+    for (int idxDisplay= 1; idxDisplay < 10; idxDisplay++)
+      fprintf(file, " %d", (int)D.displayMode[idxDisplay]);
+    fprintf(file, "\nshowAxisMode %d\n", D.showAxisMode);
+    // Set the parameter values
     fprintf(file, "nbParam %d\n", (int)D.UI.size());
     for (int idxParam= 0; idxParam < (int)D.UI.size(); idxParam++) {
       fprintf(file, "%s %e\n", D.UI[idxParam].name.c_str(), D.UI[idxParam].D());
@@ -435,12 +426,24 @@ void saveConfigProject() {
 
 
 // Utility function to load persistent project configuration from disk
-void loadConfigProject() {
+void loadConfigProject(const int iFileIdx= 0) {
+  // Open the file to read
   FILE *file= nullptr;
-  file= fopen("ConfigProject.txt", "r");
+  file= fopen(("ConfigProject_" + std::to_string(iFileIdx) + ".txt").c_str(), "r");
   if (file != nullptr) {
+    D.currentConfigFile= iFileIdx;
+    // Get the project ID and init if needed
     fscanf(file, "currentProjectID %d\n", &currentProjectID);
     project_ForceHardInit();
+    // Get the display options
+    fscanf(file, "displayMode");
+    for (int idxDisplay= 1; idxDisplay < 10; idxDisplay++) {
+      int displayModeVal= 0;
+      fscanf(file, " %d", &displayModeVal);
+      D.displayMode[idxDisplay]= (displayModeVal == 1);
+    }
+    fscanf(file, "\nshowAxisMode %d\n", &D.showAxisMode);
+    // Get the parameter values
     int nbParam= 0;
     fscanf(file, "nbParam %d\n", &nbParam);
     if (nbParam == (int)D.UI.size()) {
@@ -543,7 +546,7 @@ void callback_display() {
   // Set the camera transformation matrix for the scene
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(45.0, double(winW) / double(winH), 0.1, 1000.0);
+  gluPerspective(45.0, double(winW) / double(winH), 0.01, 1000.0);
 
   // Set the world transformation matrix for the scene
   glMatrixMode(GL_MODELVIEW);
@@ -862,18 +865,18 @@ void callback_display() {
     }
   }
 
-  // Draw the frame time
+  // Draw the frame time and current config file
   {
+    char str[50];
     glLineWidth(2.0f);
+    if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
+    else            glColor3f(0.2f, 0.2f, 0.2f);
+    sprintf(str, "Config %d", D.currentConfigFile);
+    draw_text(winMarginL, winMarginB + textBoxH, str);
     if (D.playAnimation) {
       if (isDarkMode) glColor3f(0.8f, 0.4f, 0.4f);
-      else glColor3f(0.8f, 0.2f, 0.2f);
+      else            glColor3f(0.8f, 0.2f, 0.2f);
     }
-    else {
-      if (isDarkMode) glColor3f(0.8f, 0.8f, 0.8f);
-      else glColor3f(0.2f, 0.2f, 0.2f);
-    }
-    char str[50];
     sprintf(str, "%.3fs", elapsed_time());
     draw_text(winMarginL, winMarginB, str);
     glLineWidth(1.0f);
@@ -1201,15 +1204,19 @@ void callback_menu(int num) {
   if (num == -15) {
     D.showUI= !D.showUI;
   }
-  // Save sandbox settings
-  if (num == -20) {
+  // Save sandbox window
+  if (num == -16) {
     winPosW= glutGet((GLenum)GLUT_WINDOW_X);
     winPosH= glutGet((GLenum)GLUT_WINDOW_Y);
     saveConfigWindow();
   }
   // Save project parameters
-  if (num == -21) {
-    saveConfigProject();
+  if (num >= -25 && num <= -20) {
+    saveConfigProject(-20-num);
+  }
+  // Load project parameters
+  if (num >= -35 && num <= -30) {
+    loadConfigProject(-30-num);
   }
   // Compute refresh
   project_Refresh();
@@ -1234,6 +1241,7 @@ void init_menu() {
   glutAddMenuEntry("Auto scale scatter", -13);
   glutAddMenuEntry("Toggle material two side", -14);
   glutAddMenuEntry("Toggle UI", -15);
+  glutAddMenuEntry("Save window", -16);
   const int menuProject= glutCreateMenu(callback_menu);
   glutAddMenuEntry("AgentSwarmBoid", ProjectID::AgentSwarmBoidID);
   glutAddMenuEntry("AlgoTestEnviro", ProjectID::AlgoTestEnviroID);
@@ -1248,7 +1256,6 @@ void init_menu() {
   glutAddMenuEntry("ParticForceLaw", ProjectID::ParticForceLawID);
   glutAddMenuEntry("ParticLifeOrga", ProjectID::ParticLifeOrgaID);
   glutAddMenuEntry("PosiBasedDynam", ProjectID::PosiBasedDynamID);
-  glutAddMenuEntry("SkeletonFolder", ProjectID::SkeletonFolderID);
   glutAddMenuEntry("SpaceTimeWorld", ProjectID::SpaceTimeWorldID);
   glutAddMenuEntry("StringArtOptim", ProjectID::StringArtOptimID);
   glutAddMenuEntry("TerrainErosion", ProjectID::TerrainErosionID);
@@ -1259,12 +1266,24 @@ void init_menu() {
   glutAddMenuEntry("StructGenOptim", ProjectID::StructGenOptimID);
 #endif
   const int menuSave= glutCreateMenu(callback_menu);
-  glutAddMenuEntry("Save settings", -20);
-  glutAddMenuEntry("Save parameters", -21);
+  glutAddMenuEntry("Save 0", -20);
+  glutAddMenuEntry("Save 1", -21);
+  glutAddMenuEntry("Save 2", -22);
+  glutAddMenuEntry("Save 3", -23);
+  glutAddMenuEntry("Save 4", -24);
+  glutAddMenuEntry("Save 5", -25);
+  const int menuLoad= glutCreateMenu(callback_menu);
+  glutAddMenuEntry("Load 0", -30);
+  glutAddMenuEntry("Load 1", -31);
+  glutAddMenuEntry("Load 2", -32);
+  glutAddMenuEntry("Load 3", -33);
+  glutAddMenuEntry("Load 4", -34);
+  glutAddMenuEntry("Load 5", -35);
   glutCreateMenu(callback_menu);
   glutAddSubMenu("Display", menuDisplay);
   glutAddSubMenu("Project", menuProject);
-  glutAddSubMenu("Save", menuSave);
+  glutAddSubMenu("Save param", menuSave);
+  glutAddSubMenu("Load param", menuLoad);
 
   // Attach menu to click
   glutAttachMenu(GLUT_RIGHT_BUTTON);

@@ -47,4 +47,15 @@ namespace Functions {
     }
     return valMinMax / normali;
   }
+
+  // Trigonometric approximation of the gyroid TPMS
+  // Input scaled to have one full period in the unit box (0,0,0) to (1,1,1)
+  // Output scaled to be in the range [-1;1] with the gyroid surface isolevel 0
+  template <std::floating_point element_type>
+  inline element_type Gyroid(element_type const iX, element_type const iY, element_type const iZ) {
+    const element_type x= 2.0 * std::numbers::pi * iX;
+    const element_type y= 2.0 * std::numbers::pi * iY;
+    const element_type z= 2.0 * std::numbers::pi * iZ;
+    return (std::sin(x)*std::cos(y) + std::sin(y)*std::cos(z) + std::sin(z)*std::cos(x)) / 1.5;
+  }
 }  // namespace Functions

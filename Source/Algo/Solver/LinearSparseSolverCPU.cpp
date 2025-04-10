@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
-// TODO include cassert and swap all throws throughout the code
 
 // Algo headers
 #include "Util/Timer.hpp"
@@ -22,8 +21,8 @@ void LinearSparseSolverCPU::SetupMatrix(const std::vector<int>& iTripletRow,
                                         const std::vector<float>& iTripletVal,
                                         const std::vector<bool>& iSkipDOF,
                                         const bool iUsePrecond,
-                                        const int iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+                                        const bool iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   nbDof= (int)iSkipDOF.size();
   const int nbTriplets= (int)iTripletVal.size();
@@ -70,7 +69,6 @@ void LinearSparseSolverCPU::SetupMatrix(const std::vector<int>& iTripletRow,
   if (iUsePrecond) {
     usePrecond= true;
     precond= std::vector<float>(nbDofCompact, 1.0f);
-    #pragma omp parallel for
     for (int k= 0; k < nbDofCompact; k++)
       for (int idxNNZ= crsRow[k]; idxNNZ < crsRow[k + 1]; idxNNZ++)
         if (k == crsCol[idxNNZ] && crsVal[idxNNZ] != 0.0f)
@@ -83,19 +81,20 @@ void LinearSparseSolverCPU::SetupMatrix(const std::vector<int>& iTripletRow,
 
   isSetup= true;
 
-  if (iVerboseLevel >= 3) {
+  if (iVerbose) {
     printf("%5.2f setupT ", Timer::PopTimer());
     fflush(stdout);
   }
 }
 
 
-std::vector<float> LinearSparseSolverCPU::SolveProblem(const std::vector<float>& iRHS,
-                                                       std::vector<float>& ioSolution,
-                                                       const int iMaxIter,
-                                                       const float iTolResidual,
-                                                       const int iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+void LinearSparseSolverCPU::SolveProblem(const std::vector<float>& iRHS,
+                                         std::vector<float>& ioSolution,
+                                         const int iMaxIter,
+                                         const float iTolResidual,
+                                         const bool iUseMultithread,
+                                         const bool iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   // Check inputs
   assert(isSetup);
@@ -111,31 +110,29 @@ std::vector<float> LinearSparseSolverCPU::SolveProblem(const std::vector<float>&
   }
 
   // Run the solver
-  std::vector<float> errorHistory;
-  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, rhsCompact, solCompact, errorHistory);
-  else            RunIterativeCG(iMaxIter, iTolResidual, rhsCompact, solCompact, errorHistory);
+  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, iUseMultithread, rhsCompact, solCompact);
+  else            RunIterativeCG(iMaxIter, iTolResidual, iUseMultithread, rhsCompact, solCompact);
 
   // Read compacted solution array
   for (int k= 0; k < nbDofCompact; k++)
     ioSolution[expandor[k]]= solCompact[k];
 
   // Print solve info
-  if (iVerboseLevel >= 3) {
+  if (iVerbose) {
     printf("%d dofs %5d itSolv %3.2e resid %5.2f solvCPUT ", nbDofCompact, int(errorHistory.size())-1, errorHistory[errorHistory.size()-1], Timer::PopTimer());
-    if (int(errorHistory.size())-1 >= iMaxIter) printf("[Diverged] ");
+    if (int(errorHistory.size())-1 >= iMaxIter) printf("[Max iter before convergence] ");
     fflush(stdout);
   }
-
-  return errorHistory;
 }
 
 
-std::vector<float> LinearSparseSolverCPU::SolveProblem(const std::vector<double>& iRHS,
-                                                       std::vector<double>& ioSolution,
-                                                       const int iMaxIter,
-                                                       const float iTolResidual,
-                                                       const int iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+void LinearSparseSolverCPU::SolveProblem(const std::vector<double>& iRHS,
+                                         std::vector<double>& ioSolution,
+                                         const int iMaxIter,
+                                         const float iTolResidual,
+                                         const bool iUseMultithread,
+                                         const bool iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   // Check inputs
   assert(isSetup);
@@ -151,31 +148,28 @@ std::vector<float> LinearSparseSolverCPU::SolveProblem(const std::vector<double>
   }
 
   // Run the solver
-  std::vector<float> errorHistory;
-  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, rhsCompact, solCompact, errorHistory);
-  else            RunIterativeCG(iMaxIter, iTolResidual, rhsCompact, solCompact, errorHistory);
+  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, iUseMultithread, rhsCompact, solCompact);
+  else            RunIterativeCG(iMaxIter, iTolResidual, iUseMultithread, rhsCompact, solCompact);
 
   // Read compacted solution array
   for (int k= 0; k < nbDofCompact; k++)
     ioSolution[expandor[k]]= (double)solCompact[k];
 
   // Print solve info
-  if (iVerboseLevel >= 3) {
+  if (iVerbose) {
     printf("%d dofs %5d itSolv %3.2e resid %5.2f solvCPUT ", nbDofCompact, int(errorHistory.size())-1, errorHistory[errorHistory.size()-1], Timer::PopTimer());
-    if (int(errorHistory.size())-1 >= iMaxIter) printf("[Diverged] ");
+    if (int(errorHistory.size())-1 >= iMaxIter) printf("[Max iter before convergence] ");
     fflush(stdout);
   }
-
-  return errorHistory;
 }
 
 
 void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
                                             const float iTolResidual,
+                                            const bool iUseMultithread,
                                             const std::vector<float>& iRHSCompact,
-                                            std::vector<float>& ioSolCompact,
-                                            std::vector<float>& oErrorHistory) {
-  oErrorHistory.clear();
+                                            std::vector<float>& ioSolCompact) {
+  errorHistory.clear();
 
   constexpr int sizePartial= 64;
   const int nbPartial= nbDofCompact / sizePartial + ((nbDofCompact % sizePartial == 0) ? 0 : 1);
@@ -183,7 +177,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
   // Compute RHS squared norm used by stopping criterion
   std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
     for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
       sumPartial[idxPartial]+= iRHSCompact[k] * iRHSCompact[k];
@@ -194,13 +188,13 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
   // Check exit condition
   if (rhsNorm2 == 0.0f) {
     ioSolCompact= std::vector<float>(nbDofCompact, 0.0f);
-    oErrorHistory.push_back(0.0f);
+    errorHistory.push_back(0.0f);
     return;
   }
 
   // Compute the residual vector    r= b - A x
   std::vector<float> rField(nbDofCompact, 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int k= 0; k < nbDofCompact; k++) {
     for (int idxNNZ= crsRow[k]; idxNNZ < crsRow[k + 1]; idxNNZ++)
       rField[k]+= crsVal[idxNNZ] * ioSolCompact[crsCol[idxNNZ]];
@@ -209,7 +203,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
   // Compute residual squared norm
   std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
     for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
         sumPartial[idxPartial]+= rField[k] * rField[k];
@@ -218,7 +212,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
     residNorm2+= sumPartial[idxPartial];
 
   // Check exit condition
-  oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
+  errorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
   const float residNorm2Tol= iTolResidual * iTolResidual * rhsNorm2;
   if (residNorm2 <= residNorm2Tol) return;
 
@@ -231,7 +225,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
   // Compute the error    errNew= r^T d
   std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
     for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
       sumPartial[idxPartial]+= rField[k] * dField[k];
@@ -244,7 +238,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
   for (idxIter= 0; idxIter < iMaxIter; idxIter++) {
 
     // Multiply modified residual with matrix   q= A d
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int k= 0; k < nbDofCompact; k++) {
       qField[k]= 0.0f;
       for (int idxNNZ= crsRow[k]; idxNNZ < crsRow[k + 1]; idxNNZ++)
@@ -253,7 +247,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
     // Line search distance    alpha= errNew / (d^T q)
     std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
       for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
         sumPartial[idxPartial]+= dField[k] * qField[k];
@@ -278,7 +272,7 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
     // Compute residual squared norm
     std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
       for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
         sumPartial[idxPartial]+= rField[k] * rField[k];
@@ -287,13 +281,13 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
       residNorm2+= sumPartial[idxPartial];
 
     // Check exit condition
-    oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
+    errorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
     if (residNorm2 <= residNorm2Tol) return;
 
     // Compute error    errNew= r^T s
     const float errOld= errNew;
     std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
       for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
         sumPartial[idxPartial]+= rField[k] * sField[k];
@@ -313,10 +307,10 @@ void LinearSparseSolverCPU::RunIterativePCG(const int iMaxIter,
 
 void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
                                            const float iTolResidual,
+                                           const bool iUseMultithread,
                                            const std::vector<float>& iRHSCompact,
-                                           std::vector<float>& ioSolCompact,
-                                           std::vector<float>& oErrorHistory) {
-  oErrorHistory.clear();
+                                           std::vector<float>& ioSolCompact) {
+  errorHistory.clear();
 
   constexpr int sizePartial= 64;
   const int nbPartial= nbDofCompact / sizePartial + ((nbDofCompact % sizePartial == 0) ? 0 : 1);
@@ -324,7 +318,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
 
   // Compute RHS squared norm used by stopping criterion
   std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
     for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
       sumPartial[idxPartial]+= iRHSCompact[k] * iRHSCompact[k];
@@ -335,13 +329,13 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
   // Check exit condition
   if (rhsNorm2 == 0.0f) {
     ioSolCompact= std::vector<float>(nbDofCompact, 0.0f);
-    oErrorHistory.push_back(0.0f);
+    errorHistory.push_back(0.0f);
     return;
   }
 
   // Compute the residual vector    r= b - A x
   std::vector<float> rField(nbDofCompact, 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int k= 0; k < nbDofCompact; k++) {
     for (int idxNNZ= crsRow[k]; idxNNZ < crsRow[k + 1]; idxNNZ++)
       rField[k]+= crsVal[idxNNZ] * ioSolCompact[crsCol[idxNNZ]];
@@ -350,7 +344,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
 
   // Compute residual squared norm
   std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-  #pragma omp parallel for
+  #pragma omp parallel for if (iUseMultithread)
   for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
     for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
       sumPartial[idxPartial]+= rField[k] * rField[k];
@@ -359,7 +353,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
     residNorm2+= sumPartial[idxPartial];
 
   // Check exit condition
-  oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
+  errorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
   const float residNorm2Tol= iTolResidual * iTolResidual * rhsNorm2;
   if (residNorm2 <= residNorm2Tol) return;
 
@@ -376,7 +370,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
   for (idxIter= 0; idxIter < iMaxIter; idxIter++) {
 
     // Multiply modified residual with matrix   q= A d
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int k= 0; k < nbDofCompact; k++) {
       qField[k]= 0.0f;
       for (int idxNNZ= crsRow[k]; idxNNZ < crsRow[k + 1]; idxNNZ++)
@@ -385,7 +379,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
 
     // Line search distance    alpha= errNew / (d^T q)
     std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
       for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
         sumPartial[idxPartial]+= dField[k] * qField[k];
@@ -405,7 +399,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
 
     // Compute residual squared norm
     std::fill(sumPartial.begin(), sumPartial.end(), 0.0f);
-    #pragma omp parallel for
+    #pragma omp parallel for if (iUseMultithread)
     for (int idxPartial= 0; idxPartial < nbPartial; idxPartial++)
       for (int k= idxPartial*sizePartial; k < std::min((idxPartial+1)*sizePartial, nbDofCompact); k++)
         sumPartial[idxPartial]+= rField[k] * rField[k];
@@ -414,7 +408,7 @@ void LinearSparseSolverCPU::RunIterativeCG(const int iMaxIter,
       residNorm2+= sumPartial[idxPartial];
 
     // Check exit condition
-    oErrorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
+    errorHistory.push_back(std::sqrt(residNorm2 / rhsNorm2));
     if (residNorm2 <= residNorm2Tol) return;
 
     // Compute error    errNew= r^T r

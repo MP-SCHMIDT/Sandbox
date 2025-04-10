@@ -1,17 +1,26 @@
 #pragma once
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+// MPS: Slightly modified OpenCL Wrapper code from https://github.com/ProjectPhysX/OpenCL-Wrapper
+// MPS: Changes are flagged by comments starting with "MPS:"
+
+#pragma GCC diagnostic push                               // MPS: Push in some warning tweaks
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"     // MPS: Push in some warning tweaks
+#pragma GCC diagnostic ignored "-Wmisleading-indentation" // MPS: Push in some warning tweaks
+#pragma GCC diagnostic ignored "-Wunused-parameter"       // MPS: Push in some warning tweaks
 
 #define WORKGROUP_SIZE 64 // needs to be 64 to fully use AMD GPUs
 //#define PTX
 //#define LOG
 
-#ifndef _WIN32
-#pragma GCC diagnostic ignored "-Wignored-attributes" // ignore compiler warnings for CL/cl.hpp with g++
-#endif // _WIN32
-#include <CL/cl.hpp> // OpenCL 1.0, 1.1, 1.2
+// https://github.com/KhronosGroup/OpenCL-Headers
+// https://github.com/KhronosGroup/OpenCL-CLHPP
+#define CL_HPP_MINIMUM_OPENCL_VERSION 100
+#if !defined(__APPLE__) // Windows/Linux/Android
+#define CL_HPP_TARGET_OPENCL_VERSION 300 // Windows/Linux/Android can use OpenCL 3.0
+#else // macOS
+#define CL_HPP_TARGET_OPENCL_VERSION 120 // macOS only supports OpenCL 1.2
+#endif // macOS
+#include <CL/opencl.hpp>
 #include "utilities.hpp"
 using cl::Event;
 
@@ -33,7 +42,7 @@ string("'-----------------------------------------------------------------------
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 mkdir -p ~/amdgpu
-wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.1.3/ubuntu/jammy/amdgpu-install_6.1.60103-1_all.deb
+wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.3.2/ubuntu/noble/amdgpu-install_6.3.60302-1_all.deb
 sudo apt install -y ~/amdgpu/amdgpu-install*.deb
 sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
 sudo usermod -a -G render,video $(whoami)
@@ -52,27 +61,27 @@ sudo shutdown -r now
 | Nvidia GPU Drivers, which contain the OpenCL Runtime                        |
 '-----------------------------------------------------------------------------'
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-550
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-560
 sudo shutdown -r now
 
 )"+string("\033[96m")+R"(.-----------------------------------------------------------------------------.
 | CPU Option 1: Intel CPU Runtime for OpenCL (works for both AMD/Intel CPUs)  |
 '-----------------------------------------------------------------------------'
-export OCLV="2024.18.6.0.02_rel"
-export TBBV="2021.13.0"
+export OCLV="oclcpuexp-2024.18.10.0.08_rel"
+export TBBV="oneapi-tbb-2022.0.0"
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
-sudo mkdir -p ~/cpurt /opt/intel/oclcpuexp_${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
-sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-${OCLV}.tar.gz
-sudo wget -P ~/cpurt https://github.com/oneapi-src/oneTBB/releases/download/v${TBBV}/oneapi-tbb-${TBBV}-lin.tgz
-sudo tar -zxvf ~/cpurt/oclcpuexp-${OCLV}.tar.gz -C /opt/intel/oclcpuexp_${OCLV}
-sudo tar -zxvf ~/cpurt/oneapi-tbb-${TBBV}-lin.tgz -C /opt/intel
-echo /opt/intel/oclcpuexp_${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
-echo /opt/intel/oclcpuexp_${OCLV}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
-sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_${OCLV}/x64
-sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_${OCLV}/x64
-sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_${OCLV}/x64
-sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_${OCLV}/x64
+sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
+sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW43/${OCLV}.tar.gz
+sudo wget -P ~/cpurt https://github.com/oneapi-src/oneTBB/releases/download/v2022.0.0/${TBBV}-lin.tgz
+sudo tar -zxvf ~/cpurt/${OCLV}.tar.gz -C /opt/intel/${OCLV}
+sudo tar -zxvf ~/cpurt/${TBBV}-lin.tgz -C /opt/intel
+echo /opt/intel/${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
+echo /opt/intel/${OCLV}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
+sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbb.so /opt/intel/${OCLV}/x64
+sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/${OCLV}/x64
+sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/${OCLV}/x64
+sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/${OCLV}/x64
 sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
 sudo rm -r ~/cpurt
 
@@ -90,20 +99,21 @@ struct Device_Info {
 	cl::Context cl_context; // multiple devices in the same context can communicate buffers
 	uint id = 0u; // unique device ID assigned by get_devices()
 	string name="", vendor=""; // device name, vendor
-	string driver_version="", opencl_c_version=""; // device driver version, OpenCL C version
+	string driver_version="", opencl_c_version=""; // device driver version, device OpenCL C version ("1.0", "1.1", "1.2", "2.0", "2.1", "2.2", "3.0")
 	uint memory = 0u; // global memory in MB
 	uint memory_used = 0u; // track global memory usage in MB
 	uint global_cache=0u, local_cache=0u; // global cache in KB, local cache in KB
 	uint max_global_buffer=0u, max_constant_buffer=0u; // maximum global buffer size in MB, maximum constant buffer size in KB
 	uint compute_units = 0u; // compute units (CUs) can contain multiple cores depending on the microarchitecture
 	uint clock_frequency = 0u; // in MHz
-	bool is_cpu=false, is_gpu=false;
-	bool patch_nvidia_fp16 = false; // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
-	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
-	bool patch_legacy_gpu_fma = false; // some old GPUs have terrible fma performance, so replace with a*b+c
-	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u;
+	bool is_cpu=false, is_gpu=false, uses_ram=false;
+	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u, is_dp4a_capable=0u;
 	uint cores = 0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 	float tflops = 0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
+	uint nvidia_compute_capability = 0u; // compute capability for Nvidia GPUs, for example nvidia_compute_capability=61 means compute capability 6.1
+	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
+	bool patch_nvidia_fp16 = false; // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
+	bool patch_legacy_gpu_fma = false; // some old GPUs have terrible fma performance, so replace with a*b+c
 	inline Device_Info(const cl::Device& cl_device, const cl::Context& cl_context, const uint id) {
 		this->cl_device = cl_device; // see https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/clGetDeviceInfo.html
 		this->cl_context = cl_context;
@@ -111,7 +121,7 @@ struct Device_Info {
 		name = trim(cl_device.getInfo<CL_DEVICE_NAME>()); // device name
 		vendor = trim(cl_device.getInfo<CL_DEVICE_VENDOR>()); // device vendor
 		driver_version = trim(cl_device.getInfo<CL_DRIVER_VERSION>()); // device driver version
-		opencl_c_version = trim(cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>()); // device OpenCL C version
+		opencl_c_version = cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>().substr(9, 3);
 		memory = (uint)(cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()/1048576ull); // global memory in MB
 		global_cache = (uint)(cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>()/1024ull); // global cache in KB
 		local_cache = (uint)(cl_device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()/1024ull); // local cache in KB
@@ -128,38 +138,59 @@ struct Device_Info {
 		is_int8_capable = (uint)cl_device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR>();
 		is_cpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_CPU;
 		is_gpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_GPU;
-		const uint ipc = is_gpu?2u:32u; // IPC (instructions per cycle) is 2 for GPUs and 32 for most modern CPUs
-		const bool nvidia_192_cores_per_cu = contains_any(to_lower(name), {"gt 6", "gt 7", "gtx 6", "gtx 7", "quadro k", "tesla k"}) || (clock_frequency<1000u&&contains(to_lower(name), "titan")); // identify Kepler GPUs
-		const bool nvidia_64_cores_per_cu = contains_any(to_lower(name), {"p100", "v100", "a100", "a30", " 16", " 20", "titan v", "titan rtx", "quadro t", "tesla t", "quadro rtx"}) && !contains(to_lower(name), "rtx a"); // identify P100, Volta, Turing, A100, A30
-		const bool amd_128_cores_per_dualcu = contains(to_lower(name), "gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
-		const bool amd_256_cores_per_dualcu = contains(to_lower(name), "gfx11"); // identify RDNA3 GPUs where dual CUs are reported
-		const bool intel_16_cores_per_cu = contains(to_lower(name), "gpu max"); // identify PVC GPUs
-		const float nvidia = (float)(contains(to_lower(vendor), "nvidia"))*(nvidia_64_cores_per_cu?64.0f:nvidia_192_cores_per_cu?192.0f:128.0f); // Nvidia GPUs have 192 cores/CU (Kepler), 128 cores/CU (Maxwell, Pascal, Ampere, Hopper, Ada) or 64 cores/CU (P100, Volta, Turing, A100, A30)
-		const float amd = (float)(contains_any(to_lower(vendor), {"amd", "advanced"}))*(is_gpu?(amd_256_cores_per_dualcu?256.0f:amd_128_cores_per_dualcu?128.0f:64.0f):0.5f); // AMD GPUs have 64 cores/CU (GCN, CDNA), 128 cores/dualCU (RDNA, RDNA2) or 256 cores/dualCU (RDNA3), AMD CPUs (with SMT) have 1/2 core/CU
-		const float intel = (float)(contains(to_lower(vendor), "intel"))*(is_gpu?(intel_16_cores_per_cu?16.0f:8.0f):0.5f); // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc), Intel CPUs (with HT) have 1/2 core/CU
-		const float apple = (float)(contains(to_lower(vendor), "apple"))*(128.0f); // Apple ARM GPUs usually have 128 cores/CU
-		const float arm = (float)(contains(to_lower(vendor), "arm"))*(is_gpu?8.0f:1.0f); // ARM GPUs usually have 8 cores/CU, ARM CPUs have 1 core/CU
-		cores = to_uint((float)compute_units*(nvidia+amd+intel+apple+arm)); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
-		tflops = 1E-6f*(float)cores*(float)ipc*(float)clock_frequency; // estimated device floating point performance in TeraFLOPs/s
-		if(intel==8.0f) { // fix wrong global memory reporting for Intel Arc GPUs
-			if((contains_any(name, {"A770", "0x56a0"})&&memory>=11739u&&memory<14168u)||(contains_any(name, {"A770", "A750", "A580", "0x56a0", "0x56a1", "0x56a2"})&&memory>=5869u&&memory<7084u)||(contains_any(name, {"A380", "0x56a5"})&&memory>=4402u&&memory<5313u)) { // 72.5%-87.5% reporting -> /0.8
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*5ull/4ull)/1048576ull); // fix wrong (80% on Windows) memory reporting on Intel Arc
+		uses_ram = is_cpu||cl_device.getInfo<CL_DEVICE_HOST_UNIFIED_MEMORY>(); // CPUs or iGPUs
+		const int vendor_id = (int)cl_device.getInfo<CL_DEVICE_VENDOR_ID>(); // AMD=0x1002, Intel=0x8086, Nvidia=0x10DE, Apple=0x1027F00
+		float cores_per_cu = 1.0f;
+#if !defined(__APPLE__) // macOS only supports OpenCL 1.2, OpenCL extensions are missing before OpenCL 3.0
+		uint max_opencl_c_version = 0u; // device OpenCL C version; cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>().substr(9, 3) is unreliable as it will report 1.2 if 3.0 is available but not 2.X
+		for(auto& v : cl_device.getInfo<CL_DEVICE_OPENCL_C_ALL_VERSIONS>()) max_opencl_c_version = max(max_opencl_c_version, 10u*(uint)CL_VERSION_MAJOR(v.version)+CL_VERSION_MINOR(v.version));
+		if(max_opencl_c_version>=10u) opencl_c_version = to_string(max_opencl_c_version/10u)+"."+to_string(max_opencl_c_version%10u);
+		const auto idpap = cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR>();
+		const cl_bool* idpap_bits = (cl_bool*)&idpap; // on some unsupported devices, values are random, so only claim is_dp4a_capable if all bits are set correctly
+		is_dp4a_capable = (uint)(cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR>()==3&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1);
+		if(vendor_id==0x1002) { // AMD GPU/CPU
+			const bool amd_128_cores_per_dualcu = contains(to_lower(name), "gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
+			const bool amd_256_cores_per_dualcu = contains(to_lower(name), "gfx11"); // identify RDNA3 GPUs where dual CUs are reported
+			cores_per_cu = is_gpu ? (amd_256_cores_per_dualcu ? 256.0f : amd_128_cores_per_dualcu ? 128.0f : 64.0f) : 0.5f; // 64 cores/CU (GCN, CDNA), 128 cores/dualCU (RDNA, RDNA2), 256 cores/dualCU (RDNA3), 1/2 core/CU (CPUs)
+			if(is_gpu) name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>()); // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
+		} else if(vendor_id==0x8086) { // Intel GPU/CPU
+			const bool intel_16_cores_per_cu = contains_any(to_lower(name), {"gpu max", "140v", "130v", "b580", "b570"}); // identify PVC/Xe2 GPUs
+			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc), Intel CPUs (with HT) have 1/2 core/CU
+			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
+#if defined(_WIN32)
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L964
+#elif defined(__linux__)
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1424
+#endif // Linux
 			}
-			if((contains_any(name, {"A770", "0x56a0"})&&memory>=14168u&&memory<15625u)||(contains_any(name, {"A770", "A750", "A580", "0x56a0", "0x56a1", "0x56a2"})&&memory>=7084u&&memory<7812u)||(contains_any(name, {"A380", "0x56a5"})&&memory>=5313u&&memory<5859u)) { // 87.5%-96.5% reporting -> /0.95
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // fix wrong (95% on Linux) memory reporting on Intel Arc
-			}
-			if((contains_any(name, {"A770", "0x56a0"})&&memory>=15625u&&memory<16030u)||(contains_any(name, {"A770", "A750", "A580", "0x56a0", "0x56a1", "0x56a2"})&&memory>=7812u&&memory<8015u)||(contains_any(name, {"A380", "0x56a5"})&&memory>=5859u&&memory<6011u)) { // 96.5%-99.0% reporting -> /0.98
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // fix wrong (98% on Windows) memory reporting on Intel Arc
-			}
+			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&memory>4096u); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
+		} else if(vendor_id==0x10DE||vendor_id==0x13B5) { // Nvidia GPU/CPU
+			nvidia_compute_capability = 10u*(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV>()+(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV>();
+			const bool nvidia__32_cores_per_cu = (nvidia_compute_capability <30); // identify Fermi GPUs
+			const bool nvidia_192_cores_per_cu = (nvidia_compute_capability>=30&&nvidia_compute_capability< 50); // identify Kepler GPUs
+			const bool nvidia__64_cores_per_cu = (nvidia_compute_capability>=70&&nvidia_compute_capability<=80)||nvidia_compute_capability==60; // identify Volta, Turing, P100, A100, A30
+			cores_per_cu = is_gpu ? (nvidia__32_cores_per_cu ? 32.0f : nvidia_192_cores_per_cu ? 192.0f : nvidia__64_cores_per_cu ? 64.0f : 128.0f) : 1.0f; // 32 (Fermi), 192 (Kepler), 64 (Volta, Turing, P100, A100, A30), 128 (Maxwell, Pascal, Ampere, Hopper, Ada, Blackwell) or 1 (CPUs)
+			patch_nvidia_fp16 = patch_nvidia_fp16||(nvidia_compute_capability>=60&&atof(driver_version.substr(0, 6).c_str())>=520.00); // enable for all Nvidia Pascal or newer GPUs with driver>=520.00
+			if(patch_nvidia_fp16) is_fp16_capable = 2u;
+			is_dp4a_capable = (uint)(nvidia_compute_capability>=61u); // Nvidia GPUs with nvidia_compute_capability>=61 don't report dp4a support through cl_khr_integer_dot_product extension, but support it via inline PTX assembly
+		} else
+#endif // Windows / Linux / Android
+		if(vendor_id==0x1027F00) { // Apple iGPU
+			cores_per_cu = 128.0f; // Apple ARM GPUs usually have 128 cores/CU
+		} else if(vendor_id==0x1022||vendor_id==0x10006||vendor_id==0x6C636F70) { // x86 CPUs with PoCL runtime
+			cores_per_cu = 0.5f; // CPUs typically have 1/2 cores/CU due to SMT/hyperthreading
+		} else if(contains(to_lower(vendor), "arm")) { // ARM
+			cores_per_cu = is_gpu ? 8.0f : 1.0f; // ARM GPUs usually have 8 cores/CU, ARM CPUs have 1 core/CU
+			patch_legacy_gpu_fma = true; // enable for all ARM GPUs
 		}
-		patch_nvidia_fp16 = patch_nvidia_fp16||(nvidia>0.0f&&atof(driver_version.substr(0, 6).c_str())>=520.00&&!nvidia_192_cores_per_cu&&!contains_any(to_lower(name), {"gtx 8", "gtx 9", "quadro m", "tesla m", "gtx titan"})); // enable for all Nvidia GPUs with driver>=520.00 except Kepler and Maxwell
-		patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||((intel==8.0f)&&(memory>4096)); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
-		patch_legacy_gpu_fma = patch_legacy_gpu_fma||arm>0.0f; // enable for all ARM GPUs
-		if(patch_nvidia_fp16) is_fp16_capable = 2u;
+		const uint ipc = is_gpu ? 2u : 32u; // IPC (instructions per cycle) is 2 for GPUs and 32 for most modern CPUs
+		cores = to_uint((float)compute_units*cores_per_cu); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
+		tflops = 1E-6f*(float)cores*(float)ipc*(float)clock_frequency; // estimated device floating point performance in TeraFLOPs/s
 	}
 	inline Device_Info() {}; // default constructor
 };
 
+string get_opencl_c_code(); // implemented in kernel.hpp
 inline void print_device_info(const Device_Info& d) { // print OpenCL device info
 #if defined(_WIN32)
 	const string os = "Windows";
@@ -171,13 +202,13 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 	const string os = "unknown operating system";
 #endif // operating system
 	println("\r|----------------.------------------------------------------------------------|");
-	println("| Device ID      | "+alignl(58, to_string(d.id)             )+" |");
-	println("| Device Name    | "+alignl(58, d.name                      )+" |");
-	println("| Device Vendor  | "+alignl(58, d.vendor                    )+" |");
-	println("| Device Driver  | "+alignl(58, d.driver_version+" ("+os+")")+" |");
-	println("| OpenCL Version | "+alignl(58, d.opencl_c_version          )+" |");
+	println("| Device ID      | "+alignl(58, to_string(d.id)                             )+" |");
+	println("| Device Name    | "+alignl(58, d.name                                      )+" |");
+	println("| Device Vendor  | "+alignl(58, d.vendor                                    )+" |");
+	println("| Device Driver  | "+alignl(58, d.driver_version+" ("+os+")"                )+" |");
+	println("| OpenCL Version | "+alignl(58, "OpenCL C "+d.opencl_c_version              )+" |");
 	println("| Compute Units  | "+alignl(58, to_string(d.compute_units)+" at "+to_string(d.clock_frequency)+" MHz ("+to_string(d.cores)+" cores, "+to_string(d.tflops, 3)+" TFLOPs/s)")+" |");
-	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
+	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB "+(d.uses_ram ? "" : "V")+"RAM, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
 	println("| Buffer Limits  | "+alignl(58, to_string(d.max_global_buffer)+" MB global, "+to_string(d.max_constant_buffer)+" KB constant")+" |");
 	println("|----------------'------------------------------------------------------------|");
 }
@@ -249,9 +280,11 @@ private:
 	cl::CommandQueue cl_queue;
 	bool exists = false;
 	inline string enable_device_capabilities() const { return // enable FP64/FP16 capabilities if available
-		string(info.patch_nvidia_fp16    ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
-		string(info.patch_legacy_gpu_fma ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
-		"\n #define def_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
+		string(info.patch_nvidia_fp16         ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
+		string(info.patch_legacy_gpu_fma      ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
+		string(info.nvidia_compute_capability ? "\n #define cl_nv_compute_capability "+to_string(info.nvidia_compute_capability) : "")+ // allows querying Nvidia compute capability for inline PTX
+		string(info.is_dp4a_capable==0u       ? "\n #undef __opencl_c_integer_dot_product_input_4x8bit\n #undef __opencl_c_integer_dot_product_input_4x8bit_packed" : "")+ // patch false dp4a reporting on Intel
+		"\n #define cl_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
 		"\n #ifdef cl_khr_fp64"
 		"\n #pragma OPENCL EXTENSION cl_khr_fp64 : enable" // make sure cl_khr_fp64 extension is enabled
 		"\n #endif"
@@ -264,15 +297,15 @@ private:
 	;}
 public:
 	Device_Info info;
-	inline Device(const Device_Info& info, const string& opencl_c_code, const bool verbose=true) {
-    if (verbose) print_device_info(info);
+	inline Device(const Device_Info& info, const string& opencl_c_code=get_opencl_c_code(), const bool iVerbose=true) { // MPS added iVerbose parameter
+		if (iVerbose) print_device_info(info); // MPS added iVerbose parameter
 		this->info = info;
 		this->cl_queue = cl::CommandQueue(info.cl_context, info.cl_device); // queue to push commands for the device
 		cl::Program::Sources cl_source;
 		const string kernel_code = enable_device_capabilities()+"\n"+opencl_c_code;
 		cl_source.push_back({ kernel_code.c_str(), kernel_code.length() });
 		this->cl_program = cl::Program(info.cl_context, cl_source);
-		const string build_options = string("-cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable")+(info.patch_intel_gpu_above_4gb ? " -cl-intel-greater-than-4GB-buffer-required" : "");
+		const string build_options = "-cl-std=CL"+info.opencl_c_version+" -cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable"+(info.patch_intel_gpu_above_4gb ? " -cl-intel-greater-than-4GB-buffer-required" : "");
 #ifndef LOG
 		int error = cl_program.build({ info.cl_device }, (build_options+" -w").c_str()); // compile OpenCL C code, disable warnings
 		if(error) print_warning(cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device)); // print build log
@@ -283,9 +316,9 @@ public:
 		if((uint)log.length()>2u) print_warning(log); // print build log
 #endif // LOG
 		if(error) print_error("OpenCL C code compilation failed with error code "+to_string(error)+". Make sure there are no errors in kernel.cpp.");
-		else if (verbose) print_info("OpenCL C code successfully compiled.");
+		else if (iVerbose) print_info("OpenCL C code successfully compiled."); // MPS added iVerbose parameter
 #ifdef PTX // generate assembly (ptx) file for OpenCL code
-		write_file("bin/kernel.ptx", cl_program.getInfo<CL_PROGRAM_BINARIES>()[0]); // save binary (ptx file)
+		write_file("bin/kernel.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // save binary (ptx file)
 #endif // PTX
 		this->exists = true;
 	}
@@ -304,8 +337,10 @@ private:
 	uint d = 1u; // buffer dimensions
 	bool host_buffer_exists = false;
 	bool device_buffer_exists = false;
-	bool external_host_buffer = false;
+	bool external_host_buffer = false; // Memory object has been created with an externally supplied host buffer/pointer
+	bool is_zero_copy = false; // if possible (device is CPU or iGPU), and if allowed by user, use zero-copy buffer: host+device buffers are fused into one
 	T* host_buffer = nullptr; // host buffer
+	T* host_buffer_unaligned = nullptr; // unaligned host buffer (only required for zero-copy to align host_buffer)
 	cl::Buffer device_buffer; // device buffer
 	Device* device = nullptr; // pointer to linked Device
 	cl::CommandQueue cl_queue; // command queue
@@ -315,14 +350,31 @@ private:
 		if(d>0x2u) z = s2 = host_buffer+N*0x2ull; if(d>0x6u) s6 = host_buffer+N*0x6ull; if(d>0xAu) sA = host_buffer+N*0xAull; if(d>0xEu) sE = host_buffer+N*0xEull;
 		if(d>0x3u) w = s3 = host_buffer+N*0x3ull; if(d>0x7u) s7 = host_buffer+N*0x7ull; if(d>0xBu) sB = host_buffer+N*0xBull; if(d>0xFu) sF = host_buffer+N*0xFull;
 	}
-	inline void allocate_device_buffer(Device& device, const bool allocate_device) {
+	inline void allocate_host_buffer(Device& device, const bool allocate_host, const bool allow_zero_copy) {
+		if(allocate_host) {
+			const ulong alignment = allow_zero_copy&&device.info.uses_ram ? 4096ull : 64ull; // host_buffer must be aligned to 4096 Bytes for CL_MEM_USE_HOST_PTR, and to 64 Bytes for optimal enqueueReadBuffer performance on modern CPUs
+			const ulong padding   = allow_zero_copy&&device.info.uses_ram ?   64ull :  0ull; // for CL_MEM_USE_HOST_PTR, 64 Bytes padding is required because device_buffer capacity in this case must be a multiple of 64 Bytes
+			host_buffer_unaligned = new T[N*(ulong)d+(alignment+padding)/sizeof(T)]; // over-allocate host_buffer_unaligned by (alignment+padding) Bytes
+			host_buffer = (T*)((((ulong)host_buffer_unaligned+alignment-1ull)/alignment)*alignment); // align host_buffer by fine-tuning pointer to be a multiple of alignment
+			initialize_auxiliary_pointers();
+			host_buffer_exists = true;
+		}
+	}
+	inline void allocate_device_buffer(Device& device, const bool allocate_device, const bool allow_zero_copy) {
 		this->device = &device;
 		this->cl_queue = device.get_cl_queue();
 		if(allocate_device) {
 			device.info.memory_used += (uint)(capacity()/1048576ull); // track device memory usage
 			if(device.info.memory_used>device.info.memory) print_error("Device \""+device.info.name+"\" does not have enough memory. Allocating another "+to_string((uint)(capacity()/1048576ull))+" MB would use a total of "+to_string(device.info.memory_used)+" MB / "+to_string(device.info.memory)+" MB.");
 			int error = 0;
-			device_buffer = cl::Buffer(device.get_cl_context(), CL_MEM_READ_WRITE|((int)device.info.patch_intel_gpu_above_4gb<<23), capacity(), nullptr, &error); // for Intel GPUs, set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
+			is_zero_copy = allow_zero_copy&&host_buffer_exists&&device.info.uses_ram&&(!external_host_buffer||((ulong)host_buffer%4096ull==0ull&&capacity()%64ull==0ull));
+			device_buffer = cl::Buffer( // if(is_zero_copy) { don't allocate extra memory on CPUs/iGPUs } else { allocate VRAM on GPUs }
+				device.get_cl_context(),
+				CL_MEM_READ_WRITE|((int)is_zero_copy*CL_MEM_USE_HOST_PTR)|((int)device.info.patch_intel_gpu_above_4gb<<23), // for Intel GPUs set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
+				is_zero_copy ? ((capacity()+63ull)/64ull)*64ull : capacity(), // device_buffer capacity must be a multiple of 64 Bytes for CL_MEM_USE_HOST_PTR
+				is_zero_copy ? (void*)host_buffer : nullptr,
+				&error
+			);
 			if(error==-61) print_error("Memory size is too large at "+to_string((uint)(capacity()/1048576ull))+" MB. Device \""+device.info.name+"\" accepts a maximum buffer size of "+to_string(device.info.max_global_buffer)+" MB.");
 			else if(error) print_error("Device buffer allocation failed with error code "+to_string(error)+".");
 			device_buffer_exists = true;
@@ -331,29 +383,25 @@ private:
 public:
 	T *x=nullptr, *y=nullptr, *z=nullptr, *w=nullptr; // host buffer auxiliary pointers for multi-dimensional array access (array of structures)
 	T *s0=nullptr, *s1=nullptr, *s2=nullptr, *s3=nullptr, *s4=nullptr, *s5=nullptr, *s6=nullptr, *s7=nullptr, *s8=nullptr, *s9=nullptr, *sA=nullptr, *sB=nullptr, *sC=nullptr, *sD=nullptr, *sE=nullptr, *sF=nullptr;
-	inline Memory(Device& device, const ulong N, const uint dimensions=1u, const bool allocate_host=true, const bool allocate_device=true, const T value=(T)0) {
+	inline Memory(Device& device, const ulong N, const uint dimensions=1u, const bool allocate_host=true, const bool allocate_device=true, const T value=(T)0, const bool allow_zero_copy=true) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
 		if(N*(ulong)dimensions==0ull) print_error("Memory size must be larger than 0.");
 		this->N = N;
 		this->d = dimensions;
-		allocate_device_buffer(device, allocate_device);
-		if(allocate_host) {
-			host_buffer = new T[N*(ulong)d];
-			initialize_auxiliary_pointers();
-			host_buffer_exists = true;
-		}
+		allocate_host_buffer(device, allocate_host, allow_zero_copy); // allocate host_buffer first
+		allocate_device_buffer(device, allocate_device, allow_zero_copy); // allocate device_buffer second
 		reset(value);
 	}
-	inline Memory(Device& device, const ulong N, const uint dimensions, T* const host_buffer, const bool allocate_device=true) {
+	inline Memory(Device& device, const ulong N, const uint dimensions, T* const host_buffer, const bool allocate_device=true, const bool allow_zero_copy=true) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
 		if(N*(ulong)dimensions==0ull) print_error("Memory size must be larger than 0.");
 		this->N = N;
 		this->d = dimensions;
-		allocate_device_buffer(device, allocate_device);
 		this->host_buffer = host_buffer;
 		initialize_auxiliary_pointers();
 		host_buffer_exists = true;
 		external_host_buffer = true;
+		allocate_device_buffer(device, allocate_device, allow_zero_copy);
 		write_to_device();
 	}
 	inline Memory() {} // default constructor
@@ -366,21 +414,29 @@ public:
 		d = memory.dimensions();
 		device = memory.device;
 		cl_queue = memory.device->get_cl_queue();
+		if(memory.host_buffer_exists) {
+			host_buffer = memory.exchange_host_buffer(nullptr); // transfer host_buffer pointer
+			host_buffer_unaligned = memory.exchange_host_buffer_unaligned(nullptr); // transfer host_buffer_unaligned pointer
+			initialize_auxiliary_pointers();
+			external_host_buffer = memory.external_host_buffer;
+			host_buffer_exists = true;
+		}
 		if(memory.device_buffer_exists) {
 			device_buffer = memory.get_cl_buffer(); // transfer device_buffer pointer
 			device->info.memory_used += (uint)(capacity()/1048576ull); // track device memory usage
+			is_zero_copy = memory.is_zero_copy;
 			device_buffer_exists = true;
-		}
-		if(memory.host_buffer_exists) {
-			host_buffer = memory.exchange_host_buffer(nullptr); // transfer host_buffer pointer
-			initialize_auxiliary_pointers();
-			host_buffer_exists = true;
 		}
 		return *this; // destructor of memory will be called automatically
 	}
 	inline T* const exchange_host_buffer(T* const host_buffer) { // sets host_buffer to new pointer and returns old pointer
 		T* const swap = this->host_buffer;
 		this->host_buffer = host_buffer;
+		return swap;
+	}
+	inline T* const exchange_host_buffer_unaligned(T* const host_buffer_unaligned) { // sets host_buffer_unaligned to new pointer and returns old pointer
+		T* const swap = this->host_buffer_unaligned;
+		this->host_buffer_unaligned = host_buffer_unaligned;
 		return swap;
 	}
 	inline void add_host_buffer() { // makes only sense if there is no host buffer yet but an existing device buffer
@@ -393,9 +449,9 @@ public:
 			print_error("There is no existing device buffer, so can't add host buffer.");
 		}
 	}
-	inline void add_device_buffer() { // makes only sense if there is no device buffer yet but an existing host buffer
+	inline void add_device_buffer(const bool allow_zero_copy=true) { // makes only sense if there is no device buffer yet but an existing host buffer
 		if(!device_buffer_exists&&host_buffer_exists) {
-			allocate_device_buffer(*device, true);
+			allocate_device_buffer(*device, true, allow_zero_copy);
 			write_to_device();
 		} else if(!host_buffer_exists) {
 			print_error("There is no existing host buffer, so can't add device buffer.");
@@ -403,7 +459,10 @@ public:
 	}
 	inline void delete_host_buffer() {
 		host_buffer_exists = false;
-		if(!external_host_buffer) delete[] host_buffer;
+		if(!external_host_buffer) {
+			host_buffer = nullptr;
+			delete[] host_buffer_unaligned;
+		}
 		if(!device_buffer_exists) {
 			N = 0ull;
 			d = 1u;
@@ -431,7 +490,7 @@ public:
 	inline const ulong length() const { return N; }
 	inline const uint dimensions() const { return d; }
 	inline const ulong range() const { return N*(ulong)d; }
-	inline const ulong capacity() const { return N*(ulong)d*sizeof(T); } // returns capacity of the buffer in Byte
+	inline const ulong capacity() const { return N*(ulong)d*sizeof(T); } // returns capacity of the buffer in Bytes
 	inline T* const data() { return host_buffer; }
 	inline const T* const data() const { return host_buffer; }
 	inline T* const operator()() { return host_buffer; }
@@ -441,25 +500,29 @@ public:
 	inline const T operator()(const ulong i) const { return host_buffer[i]; }
 	inline const T operator()(const ulong i, const uint dimension) const { return host_buffer[i+(ulong)dimension*N]; } // array of structures
 	inline void read_from_device(const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueReadBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
+			cl_queue.enqueueReadBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		}
 	}
 	inline void write_to_device(const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueWriteBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
+			cl_queue.enqueueWriteBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		}
 	}
 	inline void read_from_device(const ulong offset, const ulong length, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const ulong safe_offset=min(offset, range()), safe_length=min(length, range()-safe_offset);
 			if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 		}
 	}
 	inline void write_to_device(const ulong offset, const ulong length, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const ulong safe_offset=min(offset, range()), safe_length=min(length, range()-safe_offset);
 			if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 		}
 	}
 	inline void read_from_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 1D domain from device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 			for(uint i=i0; i<i1; i++) {
 				const ulong safe_offset=min((ulong)i*N+x0, range()), safe_length=min(x1-x0, range()-safe_offset);
@@ -469,7 +532,7 @@ public:
 		}
 	}
 	inline void write_to_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 1D domain to device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 			for(uint i=i0; i<i1; i++) {
 				const ulong safe_offset=min((ulong)i*N+x0, range()), safe_length=min(x1-x0, range()-safe_offset);
@@ -479,7 +542,7 @@ public:
 		}
 	}
 	inline void read_from_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 2D domain from device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint y=y0; y<y1; y++) {
 				const ulong n = x0+y*Nx;
 				const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
@@ -492,7 +555,7 @@ public:
 		}
 	}
 	inline void write_to_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 2D domain to device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint y=y0; y<y1; y++) {
 				const ulong n = x0+y*Nx;
 				const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
@@ -505,7 +568,7 @@ public:
 		}
 	}
 	inline void read_from_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 3D domain from device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint z=z0; z<z1; z++) {
 				for(uint y=y0; y<y1; y++) {
 					const ulong n = x0+(y+z*Ny)*Nx;
@@ -520,7 +583,7 @@ public:
 		}
 	}
 	inline void write_to_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 3D domain to device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint z=z0; z<z1; z++) {
 				for(uint y=y0; y<y1; y++) {
 					const ulong n = x0+(y+z*Ny)*Nx;
@@ -622,4 +685,4 @@ public:
 	}
 };
 
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop // MPS: pop out the warning tweaks

@@ -5,6 +5,15 @@
 #include <numbers>
 
 
+// Turn the input value into a wavy pattern to help visualize sign and isocontours
+// https://www.desmos.com/calculator/yglkaxdtpw
+float Colormap::ApplyWave(const float iVal, const float iMultip) {
+    if (iMultip <= 0.0f) return 0.5f;
+    else if (iVal < 0.0f) return      std::abs(std::fmodf(std::abs(iVal), 2.0f/iMultip) - 1.0f/iMultip) * iMultip * 0.5f;
+    else                  return 1.0f-std::abs(std::fmodf(std::abs(iVal), 2.0f/iMultip) - 1.0f/iMultip) * iMultip * 0.5f;
+}
+
+
 void Colormap::RatioToGrayscale(const float &iRatio, float &oR, float &oG, float &oB) {
   if (std::isnan(iRatio)) {
     oR= oG= oB= 0.0f;
@@ -14,42 +23,6 @@ void Colormap::RatioToGrayscale(const float &iRatio, float &oR, float &oG, float
   oR= ratio;
   oG= ratio;
   oB= ratio;
-}
-
-
-void Colormap::RatioBands5(const float &iRatio, float &oR, float &oG, float &oB) {
-  if (std::isnan(iRatio)) {
-    oR= oG= oB= 0.0f;
-    return;
-  }
-  const float ratio= std::min(std::max(iRatio, 0.0f), 1.0f);
-  oR= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 4.0f);
-  oG= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 4.0f);
-  oB= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 4.0f);
-}
-
-
-void Colormap::RatioBands10(const float &iRatio, float &oR, float &oG, float &oB) {
-  if (std::isnan(iRatio)) {
-    oR= oG= oB= 0.0f;
-    return;
-  }
-  const float ratio= std::min(std::max(iRatio, 0.0f), 1.0f);
-  oR= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 10.0f);
-  oG= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 10.0f);
-  oB= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 10.0f);
-}
-
-
-void Colormap::RatioBands20(const float &iRatio, float &oR, float &oG, float &oB) {
-  if (std::isnan(iRatio)) {
-    oR= oG= oB= 0.0f;
-    return;
-  }
-  const float ratio= std::min(std::max(iRatio, 0.0f), 1.0f);
-  oR= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 20.0f);
-  oG= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 20.0f);
-  oB= 0.5f + 0.5f * std::cos(ratio * std::numbers::pi * 20.0f);
 }
 
 

@@ -171,7 +171,7 @@ void ParticLifeOrga::Animate() {
   if (D.UI[NumIntegMode____].I() == 0) {
     // Evaluate net forces acting on particles
     ComputeForces();
-    // Euler integration
+    // Semi-Implicit Euler integration
     for (int k= 0; k < nbParticles; k++) {
       Acc[k]= For[k] / TypeMass[Type[k]];  // at+1 = ft / m
       Vel[k]+= Acc[k] * dt;                // vt+1 = at + at+1 * dt

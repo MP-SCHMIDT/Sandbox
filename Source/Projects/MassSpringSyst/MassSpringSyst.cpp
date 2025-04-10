@@ -260,7 +260,7 @@ void MassSpringSyst::ComputeForces() {
 void MassSpringSyst::StepForwardInTime() {
   const float dt= D.UI[TimeStep________].F();
 
-  // Explicit Euler integration
+  // Semi-implicit Euler integration
   if (D.UI[IntegMode_______].I() == 0) {
     ComputeForces();  // f(x₀) = Fe + Fd + Fs + Fg + ...
     ApplyBCFor();
@@ -273,7 +273,7 @@ void MassSpringSyst::StepForwardInTime() {
     ApplyBCPos();
   }
 
-  // Explicit Velocity Verlet integration
+  // Velocity Verlet integration
   if (D.UI[IntegMode_______].I() == 1) {
     for (int k0= 0; k0 < N; k0++) {
       Pos[k0]= Pos[k0] + Vel[k0] * dt + 0.5 * Acc[k0] * dt * dt;  // x₁ = x₀ + Δt v₀ + 0.5 * a₀ * Δt²

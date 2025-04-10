@@ -42,8 +42,8 @@ void TestsKernelGPU::SetActiveProject() {
     D.UI.push_back(ParamUI("ReducSumSize____", 1024));
     D.UI.push_back(ParamUI("______________01", NAN));
     D.UI.push_back(ParamUI("NbParticles_____", 64000));
-    D.UI.push_back(ParamUI("InitVel_________", 5.0));
-    D.UI.push_back(ParamUI("Timestep________", 0.0004));
+    D.UI.push_back(ParamUI("InitVel_________", 0.2));
+    D.UI.push_back(ParamUI("Timestep________", 0.001));
     D.UI.push_back(ParamUI("Epsilon_________", 0.001));
     D.UI.push_back(ParamUI("GravCoeff_______", 0.001));
     D.UI.push_back(ParamUI("ColorMode_______", 1));

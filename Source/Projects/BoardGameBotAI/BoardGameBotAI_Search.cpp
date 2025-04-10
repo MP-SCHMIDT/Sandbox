@@ -26,17 +26,16 @@ void BoardGameBotAI::ComputeGameTreeSearch(const int iMaxDepth) {
   DeleteBoard(RootBoard);
   RootBoard= CreateBoard(Pawns, std::vector<std::array<int, 2>>(), 0);
   if (D.UI[GameMode________].I() == 0) ComputeBoardScoreHex(RootBoard);
-  else if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
-  else if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
-  else if (D.UI[GameMode________].I() == 3) ComputeBoardScoreMkl(RootBoard);
+  if (D.UI[GameMode________].I() == 1) ComputeBoardScoreJmp(RootBoard);
+  if (D.UI[GameMode________].I() == 2) ComputeBoardScoreChk(RootBoard);
 
   // Run the recursive search
   int pruningAlpha= -INT_MAX;
   int pruningBeta= INT_MAX;
   if (D.UI[IterDeepening___].I() > 0) {
     for (int iterMaxSearchDepth= 1; iterMaxSearchDepth <= iMaxDepth; iterMaxSearchDepth++) {
-      if ((D.UI[MaxThinkTime____].D() == 0.0 || Timer::CheckTimer() < D.UI[MaxThinkTime____].D()*0.5) &&
-          (D.UI[MaxTreeBoards___].I() == 0 || nbTreeBoards < D.UI[MaxTreeBoards___].I()*0.5)) {
+      if ((D.UI[MaxThinkTime____].D() == 0.0 || Timer::CheckTimer() < D.UI[MaxThinkTime____].D()) &&
+          (D.UI[MaxTreeBoards___].I() == 0 || nbTreeBoards < D.UI[MaxTreeBoards___].I())) {
         RecursiveTreeSearch(RootBoard, 0, iterMaxSearchDepth, pruningAlpha, pruningBeta);
       }
     }
@@ -67,7 +66,6 @@ int BoardGameBotAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
     if (D.UI[GameMode________].I() == 0) FindPossibleMovesHex(ioBoard, iDepth, Moves);
     else if (D.UI[GameMode________].I() == 1) FindPossibleMovesJmp(ioBoard, iDepth, Moves);
     else if (D.UI[GameMode________].I() == 2) FindPossibleMovesChk(ioBoard, iDepth, Moves);
-    else if (D.UI[GameMode________].I() == 3) FindPossibleMovesMkl(ioBoard, iDepth, Moves);
 
     // Create and score the sub board for each move
     for (std::vector<std::array<int, 2>> move : Moves) {
@@ -76,17 +74,13 @@ int BoardGameBotAI::RecursiveTreeSearch(BoardState *ioBoard, const int iDepth, c
         ExecuteMoveHex(newBoard, iDepth);
         ComputeBoardScoreHex(newBoard);
       }
-      else if (D.UI[GameMode________].I() == 1) {
+      if (D.UI[GameMode________].I() == 1) {
         ExecuteMoveJmp(newBoard, iDepth);
         ComputeBoardScoreJmp(newBoard);
       }
-      else if (D.UI[GameMode________].I() == 2) {
+      if (D.UI[GameMode________].I() == 2) {
         ExecuteMoveChk(newBoard, iDepth);
         ComputeBoardScoreChk(newBoard);
-      }
-      else if (D.UI[GameMode________].I() == 3) {
-        ExecuteMoveMkl(newBoard, iDepth);
-        ComputeBoardScoreMkl(newBoard);
       }
       ioBoard->SubBoards.push_back(newBoard);
       nbTreeBoards++;

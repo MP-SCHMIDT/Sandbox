@@ -53,19 +53,21 @@ class LinearSparseSolverGPU::Impl { // Definition of the implementation class
                                           const std::vector<float>& iTripletVal,
                                           const std::vector<bool>& iSkipDOF,
                                           const bool iUsePrecond,
-                                          const int iVerboseLevel);
+                                          const bool iVerbose);
 
 
-  std::vector<float> SolveProblem(const std::vector<float>& iRHS,
-                                  std::vector<float>& ioSolution,
-                                  const int iMaxIter,
-                                  const float iTolResidual,
-                                  const int iVerboseLevel);
-  std::vector<float> SolveProblem(const std::vector<double>& iRHS,
-                                  std::vector<double>& ioSolution,
-                                  const int iMaxIter,
-                                  const float iTolResidual,
-                                  const int iVerboseLevel);
+  void SolveProblem(const std::vector<float>& iRHS,
+                    std::vector<float>& ioSolution,
+                    std::vector<float>& oErrorHistory,
+                    const int iMaxIter,
+                    const float iTolResidual,
+                    const bool iVerbose);
+  void SolveProblem(const std::vector<double>& iRHS,
+                    std::vector<double>& ioSolution,
+                    std::vector<float>& oErrorHistory,
+                    const int iMaxIter,
+                    const float iTolResidual,
+                    const bool iVerbose);
 
   private:
   void RunIterativePCG(const int iMaxIter, const float iTolResidual, std::vector<float>& oErrorHistory);
@@ -86,24 +88,24 @@ void LinearSparseSolverGPU::SetupMatrix(const std::vector<int>& iTripletRow,
                                         const std::vector<float>& iTripletVal,
                                         const std::vector<bool>& iSkipDOF,
                                         const bool iUsePrecond,
-                                        const int iVerboseLevel) {
-  pImpl->SetupMatrix(iTripletRow, iTripletCol, iTripletVal, iSkipDOF, iUsePrecond, iVerboseLevel); // Delegate the run function to the implementation
+                                        const bool iVerbose) {
+  pImpl->SetupMatrix(iTripletRow, iTripletCol, iTripletVal, iSkipDOF, iUsePrecond, iVerbose); // Delegate the run function to the implementation
 }
 
 // Forward call of impl function
-std::vector<float> LinearSparseSolverGPU::SolveProblem(const std::vector<float>& iRHS,
-                                                       std::vector<float>& ioSolution,
-                                                       const int iMaxIter,
-                                                       const float iTolResidual,
-                                                       const int iVerboseLevel) {
-  return pImpl->SolveProblem(iRHS, ioSolution, iMaxIter, iTolResidual, iVerboseLevel); // Delegate the run function to the implementation
+void LinearSparseSolverGPU::SolveProblem(const std::vector<float>& iRHS,
+                                         std::vector<float>& ioSolution,
+                                         const int iMaxIter,
+                                         const float iTolResidual,
+                                         const bool iVerbose) {
+  pImpl->SolveProblem(iRHS, ioSolution, errorHistory, iMaxIter, iTolResidual, iVerbose); // Delegate the run function to the implementation
 }
-std::vector<float> LinearSparseSolverGPU::SolveProblem(const std::vector<double>& iRHS,
-                                                       std::vector<double>& ioSolution,
-                                                       const int iMaxIter,
-                                                       const float iTolResidual,
-                                                       const int iVerboseLevel) {
-  return pImpl->SolveProblem(iRHS, ioSolution, iMaxIter, iTolResidual, iVerboseLevel); // Delegate the run function to the implementation
+void LinearSparseSolverGPU::SolveProblem(const std::vector<double>& iRHS,
+                                         std::vector<double>& ioSolution,
+                                         const int iMaxIter,
+                                         const float iTolResidual,
+                                         const bool iVerbose) {
+  pImpl->SolveProblem(iRHS, ioSolution, errorHistory, iMaxIter, iTolResidual, iVerbose); // Delegate the run function to the implementation
 }
 
 
@@ -112,8 +114,8 @@ void LinearSparseSolverGPU::Impl::SetupMatrix(const std::vector<int>& iTripletRo
                                               const std::vector<float>& iTripletVal,
                                               const std::vector<bool>& iSkipDOF,
                                               const bool iUsePrecond,
-                                              const int iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+                                              const bool iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   nbDof= (int)iSkipDOF.size();
   const int nbTriplets= (int)iTripletVal.size();
@@ -180,7 +182,6 @@ void LinearSparseSolverGPU::Impl::SetupMatrix(const std::vector<int>& iTripletRo
   // Save the inverse of diagonal coefficients to be used as preconditionner
   if (iUsePrecond) {
     usePrecond= true;
-    #pragma omp parallel for
     for (int k= 0; k < nbDofCompact; k++)
       for (int idxNNZ= OCL.arrMatRowStart[k]; idxNNZ < OCL.arrMatRowStart[k + 1]; idxNNZ++)
         if (k == OCL.arrMatCol[idxNNZ] && OCL.arrMatVal[idxNNZ] != 0.0f)
@@ -198,19 +199,20 @@ void LinearSparseSolverGPU::Impl::SetupMatrix(const std::vector<int>& iTripletRo
 
   isSetup= true;
 
-  if (iVerboseLevel >= 3) {
+  if (iVerbose) {
     printf("%5.2f setupT ", Timer::PopTimer());
     fflush(stdout);
   }
 }
 
 
-std::vector<float> LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<float>& iRHS,
-                                                             std::vector<float>& ioSolution,
-                                                             const int iMaxIter,
-                                                             const float iTolResidual,
-                                                             const int iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+void LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<float>& iRHS,
+                                               std::vector<float>& ioSolution,
+                                               std::vector<float>& oErrorHistory,
+                                               const int iMaxIter,
+                                               const float iTolResidual,
+                                               const bool iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   // Check inputs
   assert(isSetup);
@@ -226,9 +228,8 @@ std::vector<float> LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<f
   OCL.arrSol.write_to_device();
 
   // Run the solver
-  std::vector<float> errorHistory;
-  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, errorHistory);
-  else            RunIterativeCG(iMaxIter, iTolResidual, errorHistory);
+  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, oErrorHistory);
+  else            RunIterativeCG(iMaxIter, iTolResidual, oErrorHistory);
 
   // Read compacted solution array
   OCL.arrSol.read_from_device();
@@ -236,22 +237,21 @@ std::vector<float> LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<f
     ioSolution[expandor[k]]= OCL.arrSol[k];
 
   // Print solve info
-  if (iVerboseLevel >= 3) {
-    printf("%d dofs %5d itSolv %3.2e resid %5.2f solvGPUT ", nbDofCompact, int(errorHistory.size())-1, errorHistory[errorHistory.size()-1], Timer::PopTimer());
-    if (int(errorHistory.size())-1 >= iMaxIter) printf("[Diverged] ");
+  if (iVerbose) {
+    printf("%d dofs %5d itSolv %3.2e resid %5.2f solvGPUT ", nbDofCompact, int(oErrorHistory.size())-1, oErrorHistory[oErrorHistory.size()-1], Timer::PopTimer());
+    if (int(oErrorHistory.size())-1 >= iMaxIter) printf("[Max iter before convergence] ");
     fflush(stdout);
   }
-
-  return errorHistory;
 }
 
 
-std::vector<float> LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<double>& iRHS,
-                                                             std::vector<double>& ioSolution,
-                                                             const int iMaxIter,
-                                                             const float iTolResidual,
-                                                             const int iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+void LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<double>& iRHS,
+                                               std::vector<double>& ioSolution,
+                                               std::vector<float>& oErrorHistory,
+                                               const int iMaxIter,
+                                               const float iTolResidual,
+                                               const bool iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   // Check inputs
   assert(isSetup);
@@ -267,9 +267,8 @@ std::vector<float> LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<d
   OCL.arrSol.write_to_device();
 
   // Run the solver
-  std::vector<float> errorHistory;
-  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, errorHistory);
-  else            RunIterativeCG(iMaxIter, iTolResidual, errorHistory);
+  if (usePrecond) RunIterativePCG(iMaxIter, iTolResidual, oErrorHistory);
+  else            RunIterativeCG(iMaxIter, iTolResidual, oErrorHistory);
 
   // Read compacted solution array
   OCL.arrSol.read_from_device();
@@ -277,13 +276,11 @@ std::vector<float> LinearSparseSolverGPU::Impl::SolveProblem(const std::vector<d
     ioSolution[expandor[k]]= (double)OCL.arrSol[k];
 
   // Print solve info
-  if (iVerboseLevel >= 3) {
-    printf("%d dofs %5d itSolv %3.2e resid %5.2f solvGPUT ", nbDofCompact, int(errorHistory.size())-1, errorHistory[errorHistory.size()-1], Timer::PopTimer());
-    if (int(errorHistory.size())-1 >= iMaxIter) printf("[Diverged] ");
+  if (iVerbose) {
+    printf("%d dofs %5d itSolv %3.2e resid %5.2f solvGPUT ", nbDofCompact, int(oErrorHistory.size())-1, oErrorHistory[oErrorHistory.size()-1], Timer::PopTimer());
+    if (int(oErrorHistory.size())-1 >= iMaxIter) printf("[Max iter before convergence] ");
     fflush(stdout);
   }
-
-  return errorHistory;
 }
 
 

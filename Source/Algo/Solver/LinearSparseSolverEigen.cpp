@@ -27,8 +27,8 @@ void LinearSparseSolverEigen::IterativeSolver(
     std::vector<double>& ioX,
     double const iSolveResidual,
     int const iSolveMaxCgIter,
-    int const iVerboseLevel) {
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+    bool const iVerbose) {
+  if (iVerbose) Timer::PushTimer();
 
   // Build the compactor expandor vectors
   int const nbDof= (int)iB.size();
@@ -66,13 +66,13 @@ void LinearSparseSolverEigen::IterativeSolver(
   cg.setMaxIterations(Eigen::Index(iSolveMaxCgIter));
   cg.compute(A);
 
-  if (iVerboseLevel >= 3) {
+  if (iVerbose) {
     printf("%5.2f setupT ", Timer::PopTimer());
     fflush(stdout);
   }
 
   // Solve the system
-  if (iVerboseLevel >= 3) Timer::PushTimer();
+  if (iVerbose) Timer::PushTimer();
   Eigen::VectorXf X= cg.solveWithGuess(B, XGuess);
 
   // Copy the result in the output vector
@@ -80,7 +80,7 @@ void LinearSparseSolverEigen::IterativeSolver(
   for (int k= 0; k < nbDofCompact; k++) {
     ioX[expandor[k]]= double(X[k]);
   }
-  if (iVerboseLevel >= 3) {
+  if (iVerbose) {
     printf("%d dofs %5d itSolv %3.2e resid %5.2f solvEigT ", nbDofCompact, (int)cg.iterations(), (double)cg.error(), Timer::PopTimer());
     fflush(stdout);
   }

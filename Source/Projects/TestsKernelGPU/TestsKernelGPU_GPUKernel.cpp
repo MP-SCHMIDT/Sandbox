@@ -22,6 +22,7 @@ std::string TestsKernelGPU_GPUKernel::get_opencl_c_code() {
   r= replace(r, "#ifdef\n", "#ifdef ");    // except for the arguments after some preprocessor options that need to be in the same line
   r= replace(r, "#ifndef\n", "#ifndef ");  //
   r= replace(r, "#define\n", "#define ");  // #define with two arguments will not work
+	r= replace(r, "#undef\n", "#undef ");    //
   r= replace(r, "#if\n", "#if ");          // don't leave any spaces in arguments
   r= replace(r, "#elif\n", "#elif ");      // don't leave any spaces in arguments
   r= replace(r, "#pragma\n", "#pragma ");
@@ -32,6 +33,10 @@ std::string TestsKernelGPU_GPUKernel::get_opencl_c_code() {
 // Evil stringification macro, similar syntax to raw string R"(...)"
 // Note: unbalanced round brackets () are not allowed and string literals can't be arbitrarily long, so periodically interrupt with )+R(
 #define R(...) std::string(" " #__VA_ARGS__ " ")
+
+
+// OpenCL lib and wrapper
+#include "OpenCL_Wrapper/highlight.hpp"
 
 
 // Begin of stringified OpenCL C code
@@ -65,31 +70,31 @@ std::string TestsKernelGPU_GPUKernel::opencl_c_container() {
     kernel void kernel_NBodySim(float dt, float eps, float grav,
                                 global float4* pos_old, global float4* pos_new,
                                 global float4* vel_old, global float4* vel_new) {
-      const uint N= get_global_size(0);            // Get number of bodies
-      const uint k0= get_global_id(0);             // Get index of curent body
-      float4 p0= pos_old[k0];                      // Get position of current body
-      float4 v= vel_old[k0];                       // Get velocity of current body
-      float4 a= (float4)(0.0f, 0.0f, 0.0f, 0.0f);  // Initialize acceleration of current body
+      const uint N= get_global_size(0);           // Get number of bodies
+      const uint k0= get_global_id(0);            // Get index of curent body
+      float4 p0= pos_old[k0];                     // Get position of current body
+      float4 v= vel_old[k0];                      // Get velocity of current body
+      float4 a= (float4)(0.0f, 0.0f, 0.0f, 0.0f); // Initialize acceleration of current body
 
-      for (uint k1= 0; k1 < N; k1++) {                                                           // Loop through other bodies
-        float4 p1= pos_old[k1];
-        if      ((p1[0] - p0[0]) >  0.5f) p1[0]= p1[0] - 1.0f;
-        else if ((p1[0] - p0[0]) < -0.5f) p1[0]= p1[0] + 1.0f;
-        if      ((p1[1] - p0[1]) >  0.5f) p1[1]= p1[1] - 1.0f;
-        else if ((p1[1] - p0[1]) < -0.5f) p1[1]= p1[1] + 1.0f;
-        if      ((p1[2] - p0[2]) >  0.5f) p1[2]= p1[2] - 1.0f;
-        else if ((p1[2] - p0[2]) < -0.5f) p1[2]= p1[2] + 1.0f;
-        const float4 rVec= p1 - p0;                                                     // Get vector from current to other body
-        const float rNormInv= rsqrt(rVec.x * rVec.x + rVec.y * rVec.y + rVec.z * rVec.z + eps);  // Compute inverse of Euclidian distance
-        a+= grav * rNormInv * rNormInv * rNormInv * rVec;                                        // Add acceleration toward other body
+      for (uint k1= 0; k1 < N; k1++) { // Loop through other bodies
+        float4 p1= pos_old[k1];        // Get body position assuming periodic world
+        if      ((p1.x - p0.x) >  0.5f) p1.x= p1.x - 1.0f;
+        else if ((p1.x - p0.x) < -0.5f) p1.x= p1.x + 1.0f;
+        if      ((p1.y - p0.y) >  0.5f) p1.y= p1.y - 1.0f;
+        else if ((p1.y - p0.y) < -0.5f) p1.y= p1.y + 1.0f;
+        if      ((p1.z - p0.z) >  0.5f) p1.z= p1.z - 1.0f;
+        else if ((p1.z - p0.z) < -0.5f) p1.z= p1.z + 1.0f;
+        const float4 rVec= p1 - p0; // Get vector from current to other body
+        const float rNormInv= rsqrt(rVec.x * rVec.x + rVec.y * rVec.y + rVec.z * rVec.z + eps); // Compute inverse of Euclidian distance
+        a+= grav * rNormInv * rNormInv * rNormInv * rVec; // Add acceleration toward other body
       }
-      v+= dt * a;                        // Integrate velocity
-      p0+= dt * v + 0.5f * dt * dt * a;  // Integrate position
-      if (p0[0] < 0.0f || p0[0] > 1.0f) p0[0]= p0[0] - floor(p0[0]);
-      if (p0[1] < 0.0f || p0[1] > 1.0f) p0[1]= p0[1] - floor(p0[1]);
-      if (p0[2] < 0.0f || p0[2] > 1.0f) p0[2]= p0[2] - floor(p0[2]);
-      vel_new[k0]= v;                    // Save new velocity
-      pos_new[k0]= p0;                   // Save new position
+      v+= dt * a;                       // Integrate velocity
+      p0+= dt * v + 0.5f * dt * dt * a; // Integrate position
+      if (p0.x < 0.0f || p0.x > 1.0f) p0.x= p0.x - floor(p0.x); // Enforce position periodicity in unit box
+      if (p0.y < 0.0f || p0.y > 1.0f) p0.y= p0.y - floor(p0.y);
+      if (p0.z < 0.0f || p0.z > 1.0f) p0.z= p0.z - floor(p0.z);
+      vel_new[k0]= v;  // Save new velocity
+      pos_new[k0]= p0; // Save new position
     }
 
   );

@@ -33,8 +33,6 @@ class BoardGameBotAI
     ABPruning_______,
     IterDeepening___,
     ______________01,
-    MklStartCount___,
-    ______________02,
     HexEdgeConnect__,
     HexCornConnect__,
     JmpPushTotal____,
@@ -42,10 +40,7 @@ class BoardGameBotAI
     JmpSoftStranded_,
     JmpHardStranded_,
     ChkMaterial_____,
-    ChkQueen________,
-    MklMaterial_____,
-    MklBank_________,
-    ______________03,
+    ______________02,
     ColorMode_______,
     ColorFactor_____,
     ______________04,
@@ -102,7 +97,6 @@ class BoardGameBotAI
   void ComputeBoardScoreHex(BoardState *ioBoard);
   void ComputeBoardScoreJmp(BoardState *ioBoard);
   void ComputeBoardScoreChk(BoardState *ioBoard);
-  void ComputeBoardScoreMkl(BoardState *ioBoard);
 
   // Search
   void ComputeGameTreeSearch(const int iMaxDepth);
@@ -115,17 +109,13 @@ class BoardGameBotAI
   void FindPossibleMovesHex(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves);
   void FindPossibleMovesJmp(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves);
   void FindPossibleMovesChk(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves);
-  void FindPossibleMovesMkl(BoardState *ioBoard, const int iDepth, std::vector<std::vector<std::array<int, 2>>> &ioMoves);
-
-  void ExecuteMoveHex(BoardState *ioBoard, const int iDepth);
-  void ExecuteMoveJmp(BoardState *ioBoard, const int iDepth);
-  void ExecuteMoveChk(BoardState *ioBoard, const int iDepth);
-  void ExecuteMoveMkl(BoardState *ioBoard, const int iDepth);
-
-  void RecursivePawnMovesJmp(BoardState *ioBoard,
+  void JmpRecursivePawnMoves(BoardState *ioBoard,
                              const int iJumpW, const int iJumpH,
                              Field::Field2<char> &ioVisit,
                              std::vector<std::array<int, 2>> &ioDestinations);
+  void ExecuteMoveHex(BoardState *ioBoard, const int iDepth);
+  void ExecuteMoveJmp(BoardState *ioBoard, const int iDepth);
+  void ExecuteMoveChk(BoardState *ioBoard, const int iDepth);
 
   public:
   bool isActivProj;

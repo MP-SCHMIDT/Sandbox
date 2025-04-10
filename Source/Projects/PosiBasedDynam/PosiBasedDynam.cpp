@@ -3,16 +3,13 @@
 
 // Standard lib
 #include <cmath>
-#include <cstring>
 #include <vector>
-
-// GLUT lib
-#include "GL/freeglut.h"
+#include <random>
+#include <map>
 
 // Algo headers
-#include "Draw/Colormap.hpp"
 #include "Type/Vec.hpp"
-#include "Util/Random.hpp"
+#include "FileIO/FileInput.hpp"
 
 // Global headers
 #include "Data.hpp"
@@ -34,22 +31,47 @@ PosiBasedDynam::PosiBasedDynam() {
 void PosiBasedDynam::SetActiveProject() {
   if (!isActivProj || D.UI.empty()) {
     D.UI.clear();
-    D.UI.push_back(ParamUI("NumParticl______", 1000));
-    D.UI.push_back(ParamUI("RadParticl______", 0.02));
     D.UI.push_back(ParamUI("DomainX_________", 0.5));
-    D.UI.push_back(ParamUI("DomainY_________", 0.5));
-    D.UI.push_back(ParamUI("DomainZ_________", 0.3));
-    D.UI.push_back(ParamUI("TimeStep________", 0.02));
-    D.UI.push_back(ParamUI("VelDecay________", 0.1));
-    D.UI.push_back(ParamUI("FactorCondu_____", 2.0));
-    D.UI.push_back(ParamUI("ForceGrav_______", -1.0));
-    D.UI.push_back(ParamUI("ForceBuoy_______", 2.0));
-    D.UI.push_back(ParamUI("HeatInput_______", 0.2));
-    D.UI.push_back(ParamUI("HeatOutput______", 0.1));
-    D.UI.push_back(ParamUI("ColorMode_______", 0));
+    D.UI.push_back(ParamUI("DomainY_________", 1.4));
+    D.UI.push_back(ParamUI("DomainZ_________", 1.5));
+    D.UI.push_back(ParamUI("NumParticl______", 1024));
+    D.UI.push_back(ParamUI("RadParticl______", 0.03));
+    D.UI.push_back(ParamUI("RadMouse________", 0.25));
+    D.UI.push_back(ParamUI("AddTetMeshID____", 2));
+    D.UI.push_back(ParamUI("______________00", NAN));
+    D.UI.push_back(ParamUI("TimeStep________", 0.01));
+    D.UI.push_back(ParamUI("NbSubSteps______", 4));
+    D.UI.push_back(ParamUI("MaterialDensity_", 1.0));
+    D.UI.push_back(ParamUI("ForceDrag_______", 0.1));
+    D.UI.push_back(ParamUI("ForceGrav_______", -9.81));
+    D.UI.push_back(ParamUI("StiffBox________", 1.e3));
+    D.UI.push_back(ParamUI("StiffCollision__", 1.e1));
+    D.UI.push_back(ParamUI("StiffEdgeLength_", 1.e1));
+    D.UI.push_back(ParamUI("StiffTriArea____", 1.e3));
+    D.UI.push_back(ParamUI("StiffTetVolume__", 1.e6));
+    D.UI.push_back(ParamUI("StiffMouseBall__", 1.e2));
+    D.UI.push_back(ParamUI("RandPerturb_____", 1.e-6));
+    D.UI.push_back(ParamUI("______________01", NAN));
+    D.UI.push_back(ParamUI("ColorMode_______", 2));
+    D.UI.push_back(ParamUI("ColorFactor_____", 1.0));
+    D.UI.push_back(ParamUI("VisuSimple______", -1));
+    D.UI.push_back(ParamUI("______________02", NAN));
+    D.UI.push_back(ParamUI("TestParamPBD_0__", 0.0));
+    D.UI.push_back(ParamUI("TestParamPBD_1__", 0.0));
+    D.UI.push_back(ParamUI("TestParamPBD_2__", 0.0));
+    D.UI.push_back(ParamUI("TestParamPBD_3__", 0.0));
+    D.UI.push_back(ParamUI("TestParamPBD_4__", 0.0));
     D.UI.push_back(ParamUI("VerboseLevel____", 0));
 
-    D.displayModeLabel[1]= "Partic";
+    D.displayModeLabel[1]= "Nodes";
+    D.displayModeLabel[2]= "Edges";
+    D.displayModeLabel[3]= "Tris";
+    D.displayModeLabel[4]= "Tets";
+    D.displayModeLabel[5]= "Normals";
+    D.displayModeLabel[6]= "Mouse";
+    D.displayMode[2]= false;
+    D.displayMode[4]= false;
+    D.displayMode[5]= false;
   }
 
   if (D.UI.size() != VerboseLevel____ + 1) printf("[ERROR] Invalid parameter count in UI\n");
@@ -63,6 +85,7 @@ void PosiBasedDynam::SetActiveProject() {
 // Check if parameter changes should trigger an allocation
 bool PosiBasedDynam::CheckAlloc() {
   if (D.UI[NumParticl______].hasChanged()) isAllocated= false;
+  if (D.UI[AddTetMeshID____].hasChanged()) isAllocated= false;
   return isAllocated;
 }
 
@@ -70,9 +93,7 @@ bool PosiBasedDynam::CheckAlloc() {
 // Check if parameter changes should trigger a refresh
 bool PosiBasedDynam::CheckRefresh() {
   if (D.UI[RadParticl______].hasChanged()) isRefreshed= false;
-  if (D.UI[DomainX_________].hasChanged()) isRefreshed= false;
-  if (D.UI[DomainY_________].hasChanged()) isRefreshed= false;
-  if (D.UI[DomainZ_________].hasChanged()) isRefreshed= false;
+  if (D.UI[MaterialDensity_].hasChanged()) isRefreshed= false;
   return isRefreshed;
 }
 
@@ -84,19 +105,95 @@ void PosiBasedDynam::Allocate() {
   isRefreshed= false;
   isAllocated= true;
 
-  // Get UI parameters
-  N= std::max(D.UI[NumParticl______].I(), 1);
+  // Get domain dimensions
+  D.boxMin= {0.5f - 0.5f * D.UI[DomainX_________].F(), 0.5f - 0.5f * D.UI[DomainY_________].F(), 0.5f - 0.5f * D.UI[DomainZ_________].F()};
+  D.boxMax= {0.5f + 0.5f * D.UI[DomainX_________].F(), 0.5f + 0.5f * D.UI[DomainY_________].F(), 0.5f + 0.5f * D.UI[DomainZ_________].F()};
 
-  // Allocate data
-  PosOld= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  PosCur= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  VelCur= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  AccCur= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  ForCur= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  ColCur= std::vector<Vec::Vec3<float>>(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
-  RadCur= std::vector<float>(N, 0.0f);
-  MasCur= std::vector<float>(N, 0.0f);
-  HotCur= std::vector<float>(N, 0.0f);
+  // Clear data
+  Pos.clear();
+  Edge.clear();
+  Tri.clear();
+  Tet.clear();
+
+  // Add random individual nodes
+  std::default_random_engine rng(0);
+  std::uniform_real_distribution<float> distribX(D.boxMin[0], D.boxMax[0]), distribY(D.boxMin[1], D.boxMax[1]), distribZ(D.boxMin[2], D.boxMax[2]);
+  for (int k= 0; k < D.UI[NumParticl______].I(); k++) {
+    Pos.push_back({distribX(rng), distribY(rng), distribZ(rng)});
+  }
+
+  // Add preset tet meshes
+  if (D.UI[AddTetMeshID____].I() == 0) {
+    const int offset= (int)Pos.size();
+    Pos.push_back({0.3f, 0.3f, 0.3f});
+    Pos.push_back({0.7f, 0.3f, 0.3f});
+    Pos.push_back({0.3f, 0.7f, 0.3f});
+    Pos.push_back({0.3f, 0.3f, 0.7f});
+    Edge.push_back({offset+0, offset+1});
+    Edge.push_back({offset+0, offset+2});
+    Edge.push_back({offset+0, offset+3});
+    Edge.push_back({offset+1, offset+2});
+    Edge.push_back({offset+1, offset+3});
+    Edge.push_back({offset+2, offset+3});
+    Tri.push_back({offset+0, offset+2, offset+1});
+    Tri.push_back({offset+0, offset+1, offset+3});
+    Tri.push_back({offset+0, offset+3, offset+2});
+    Tri.push_back({offset+1, offset+2, offset+3});
+    Tet.push_back({offset+0, offset+1, offset+2, offset+3});
+  }
+  else if (D.UI[AddTetMeshID____].I() > 0) {
+    const int offset= (int)Pos.size();
+    std::vector<std::array<float, 3>> loadedPos;
+    std::vector<std::array<int, 4>> loadedTet;
+    if (D.UI[AddTetMeshID____].I() == 1) FileInput::LoadTetMeshMSHFile("./FileInput/TetMesh/Bunny.msh", loadedPos, loadedTet, true);
+    if (D.UI[AddTetMeshID____].I() == 2) FileInput::LoadTetMeshMSHFile("./FileInput/TetMesh/Kitten.msh", loadedPos, loadedTet, true);
+    if (D.UI[AddTetMeshID____].I() == 3) FileInput::LoadTetMeshMSHFile("./FileInput/TetMesh/AssEars.msh", loadedPos, loadedTet, true);
+    if (!loadedPos.empty() && !loadedTet.empty()) {
+      // Add the loaded nodes
+      for (unsigned int k= 0; k < loadedPos.size(); k++) {
+        Pos.push_back(loadedPos[k]);
+      }
+      // Add the loaded tetrahedra
+      for (unsigned int k= 0; k < loadedTet.size(); k++) {
+        Tet.push_back({offset + loadedTet[k][0], offset + loadedTet[k][1], offset + loadedTet[k][2], offset + loadedTet[k][3]});
+      }
+      // Create and add the bars
+      for (unsigned int k= 0; k < loadedTet.size(); k++) {
+        if (loadedTet[k][0] < loadedTet[k][1]) Edge.push_back({offset + loadedTet[k][0], offset + loadedTet[k][1]});
+        if (loadedTet[k][0] < loadedTet[k][2]) Edge.push_back({offset + loadedTet[k][0], offset + loadedTet[k][2]});
+        if (loadedTet[k][0] < loadedTet[k][3]) Edge.push_back({offset + loadedTet[k][0], offset + loadedTet[k][3]});
+        if (loadedTet[k][1] < loadedTet[k][2]) Edge.push_back({offset + loadedTet[k][1], offset + loadedTet[k][2]});
+        if (loadedTet[k][1] < loadedTet[k][3]) Edge.push_back({offset + loadedTet[k][1], offset + loadedTet[k][3]});
+        if (loadedTet[k][2] < loadedTet[k][3]) Edge.push_back({offset + loadedTet[k][2], offset + loadedTet[k][3]});
+      }
+      // Build the list of all faces in the tetrahedral mesh
+      std::vector<std::array<int, 3>> TmpTri;
+      for (unsigned int k= 0; k < loadedTet.size(); k++) {
+        TmpTri.push_back({offset + loadedTet[k][0], offset + loadedTet[k][2], offset + loadedTet[k][1]});
+        TmpTri.push_back({offset + loadedTet[k][0], offset + loadedTet[k][1], offset + loadedTet[k][3]});
+        TmpTri.push_back({offset + loadedTet[k][0], offset + loadedTet[k][3], offset + loadedTet[k][2]});
+        TmpTri.push_back({offset + loadedTet[k][1], offset + loadedTet[k][2], offset + loadedTet[k][3]});
+      }
+      // Filter the list to only insert the external faces of the tetrahedral mesh
+      std::map<std::array<int, 3>, char> encounters;
+      for (unsigned int k= 0; k < TmpTri.size(); k++) {
+        std::array<int, 3> curTri= TmpTri[k];
+        std::sort(curTri.begin(), curTri.end());
+        encounters[curTri]++;
+      }
+      for (unsigned int k= 0; k < TmpTri.size(); k++) {
+        std::array<int, 3> curTri= TmpTri[k];
+        std::sort(curTri.begin(), curTri.end());
+        if (encounters[curTri] == 1) Tri.push_back(TmpTri[k]);
+      }
+    }
+  }
+
+  // Set the previous position
+  PosOld= Pos;
+
+  // Set the initial velocity
+  Vel= std::vector<Vec::Vec3<float>>(Pos.size(), {0.0f, 0.0f, 0.0f});
 }
 
 
@@ -107,26 +204,41 @@ void PosiBasedDynam::Refresh() {
   if (CheckRefresh()) return;
   isRefreshed= true;
 
-  // Get domain dimensions
-  D.boxMin= {0.5f - D.UI[DomainX_________].F(), 0.5f - D.UI[DomainY_________].F(), 0.5f - D.UI[DomainZ_________].F()};
-  D.boxMax= {0.5f + D.UI[DomainX_________].F(), 0.5f + D.UI[DomainY_________].F(), 0.5f + D.UI[DomainZ_________].F()};
+  // Compute the rest length for bars
+  EdgeLen.clear();
+  for (int k= 0; k < (int)Edge.size(); k++)
+    EdgeLen.push_back(GetEdgeLength(Pos[Edge[k][0]], Pos[Edge[k][1]]));
 
-  // Initialize with random particle properties
-  for (int k= 0; k < N; k++) {
-    for (int dim= 0; dim < 3; dim++) {
-      PosCur[k][dim]= Random::Val((float)D.boxMin[dim], (float)D.boxMax[dim]);
-      ColCur[k][dim]= Random::Val(0.0f, 1.0f);
-    }
-    RadCur[k]= D.UI[RadParticl______].F();
-    MasCur[k]= 1.0f;
-    HotCur[k]= Random::Val(0.0f, 1.0f);
-  }
-  PosOld= PosCur;
+  // Compute the rest area for triangles
+  TriArea.clear();
+  for (int k= 0; k < (int)Tri.size(); k++)
+    TriArea.push_back(GetTriArea(Pos[Tri[k][0]], Pos[Tri[k][1]], Pos[Tri[k][2]]));
+
+  // Compute the rest volumes for tetrahedra
+  TetVol.clear();
+  for (int k= 0; k < (int)Tet.size(); k++)
+    TetVol.push_back(GetTetVolume(Pos[Tet[k][0]], Pos[Tet[k][1]], Pos[Tet[k][2]], Pos[Tet[k][3]]));
+  
+  // Compute masses and inverses
+  Mass= std::vector<float>(Pos.size(), 0.0f);
+  for (int k= 0; k < D.UI[NumParticl______].I(); k++)
+    Mass[k]= D.UI[MaterialDensity_].F() * (4.0f/3.0f) * std::numbers::pi * std::pow(D.UI[RadParticl______].F(), 3.0f);
+  for (int k= 0; k < (int)Tet.size(); k++)
+    for (int idx : Tet[k])
+      Mass[idx]+= 0.25f * D.UI[MaterialDensity_].F() * TetVol[k];
+
+  MassInv.clear();
+  for (int k= 0; k < (int)Pos.size(); k++)
+    MassInv.push_back(1.0f / Mass[k]);
 }
 
 
 // Handle UI parameter change
 void PosiBasedDynam::ParamChange() {
+  if (D.UI[DomainX_________].hasChanged() || D.UI[DomainY_________].hasChanged() || D.UI[DomainZ_________].hasChanged()) {
+    D.boxMin= {0.5f - 0.5f * D.UI[DomainX_________].F(), 0.5f - 0.5f * D.UI[DomainY_________].F(), 0.5f - 0.5f * D.UI[DomainZ_________].F()};
+    D.boxMax= {0.5f + 0.5f * D.UI[DomainX_________].F(), 0.5f + 0.5f * D.UI[DomainY_________].F(), 0.5f + 0.5f * D.UI[DomainZ_________].F()};
+  }
 }
 
 
@@ -134,6 +246,13 @@ void PosiBasedDynam::ParamChange() {
 void PosiBasedDynam::KeyPress() {
   if (!isActivProj) return;
   if (!CheckAlloc()) Allocate();
+
+  // Stability check by entirely collapsing the entire geometry to a single immobile point
+  if (D.keyLetterUpperCase == 'C') {
+    Pos= std::vector<Vec::Vec3<float>>(Pos.size(), {0.5f, 0.5f, 0.5f});
+    PosOld= std::vector<Vec::Vec3<float>>(Pos.size(), {0.5f, 0.5f, 0.5f});
+    Vel= std::vector<Vec::Vec3<float>>(Pos.size(), {0.0f, 0.0f, 0.0f});
+  }
 }
 
 
@@ -150,80 +269,7 @@ void PosiBasedDynam::Animate() {
   if (!CheckAlloc()) Allocate();
   if (!CheckRefresh()) Refresh();
 
-  // Get UI parameters
-  const float dt= D.UI[TimeStep________].F();
-  const float velocityDecay= 1.0f - D.UI[VelDecay________].F() * dt;
-  const Vec::Vec3<float> vecGrav(0.0f, 0.0f, D.UI[ForceGrav_______].F());
-  const Vec::Vec3<float> vecBuoy(0.0f, 0.0f, D.UI[ForceBuoy_______].F());
-  const float conductionFactor= D.UI[FactorCondu_____].F();
-  const float heatAdd= D.UI[HeatInput_______].F();
-  const float heatRem= D.UI[HeatOutput______].F();
-
-  // Add or remove heat to particles based on position in the domain
-  for (int k0= 0; k0 < N; k0++) {
-    const Vec::Vec3<float> posSource(0.5f * (D.boxMin[0] + D.boxMax[0]), 0.5f * (D.boxMin[1] + D.boxMax[1]), D.boxMin[2]);
-    const float radSource= 0.1f * ((D.boxMax[0] - D.boxMin[0]) + (D.boxMax[1] - D.boxMin[1]) + (D.boxMax[2] - D.boxMin[2]));
-    if ((posSource - PosCur[k0]).normSquared() < radSource)
-      HotCur[k0]+= heatAdd * dt;
-    HotCur[k0]-= heatRem * dt;
-    HotCur[k0]= std::min(std::max(HotCur[k0], 0.0f), 1.0f);
-  }
-
-  // Transfer heat between particles (Gauss Seidel)
-  std::vector<float> HotOld= HotCur;
-  for (int k0= 0; k0 < N; k0++) {
-    for (int k1= k0 + 1; k1 < N; k1++) {
-      if ((PosCur[k1] - PosCur[k0]).normSquared() <= 1.1f * (RadCur[k0] + RadCur[k1]) * (RadCur[k0] + RadCur[k1])) {
-        float val= conductionFactor * (HotOld[k1] - HotOld[k0]) * dt;
-        HotCur[k0]+= val;
-        HotCur[k1]-= val;
-      }
-    }
-    HotCur[k0]= std::min(std::max(HotCur[k0], 0.0f), 1.0f);
-  }
-
-  // Reset forces
-  for (int k0= 0; k0 < N; k0++)
-    ForCur[k0].set(0.0f, 0.0f, 0.0f);
-
-  // Add gravity forces
-  for (int k0= 0; k0 < N; k0++)
-    ForCur[k0]+= vecGrav * MasCur[k0];
-
-  // Add boyancy forces
-  for (int k0= 0; k0 < N; k0++)
-    ForCur[k0]+= vecBuoy * HotCur[k0];
-
-  // Apply boundary constraint
-  for (int k0= 0; k0 < N; k0++)
-    for (int dim= 0; dim < 3; dim++)
-      PosCur[k0][dim]= std::min(std::max(PosCur[k0][dim], (float)D.boxMin[dim]), (float)D.boxMax[dim]);
-
-  // Apply collision constraint (Gauss Seidel)
-  for (int k0= 0; k0 < N; k0++) {
-    for (int k1= k0 + 1; k1 < N; k1++) {
-      if ((PosCur[k1] - PosCur[k0]).normSquared() <= (RadCur[k0] + RadCur[k1]) * (RadCur[k0] + RadCur[k1])) {
-        Vec::Vec3<float> val= (PosCur[k1] - PosCur[k0]).normalized() * 0.5f * ((RadCur[k0] + RadCur[k1]) - (PosCur[k1] - PosCur[k0]).norm());
-        PosCur[k0]-= val;
-        PosCur[k1]+= val;
-      }
-    }
-  }
-
-  // Deduce velocities
-  for (int k0= 0; k0 < N; k0++)
-    VelCur[k0]= (PosCur[k0] - PosOld[k0]) / dt;
-
-  // Apply explicit velocity damping
-  for (int k0= 0; k0 < N; k0++)
-    VelCur[k0]= VelCur[k0] * velocityDecay;
-
-  // Update positions
-  PosOld= PosCur;
-  for (int k0= 0; k0 < N; k0++) {
-    AccCur[k0]= ForCur[k0] / MasCur[k0];
-    PosCur[k0]= PosCur[k0] + VelCur[k0] * dt + AccCur[k0] * dt * dt;
-  }
+  TimeIntegrate();
 }
 
 
@@ -232,27 +278,6 @@ void PosiBasedDynam::Draw() {
   if (!isActivProj) return;
   if (!isAllocated) return;
   if (!isRefreshed) return;
-
-  if (D.displayMode[1]) {
-    glEnable(GL_LIGHTING);
-    for (int k= 0; k < N; k++) {
-      glPushMatrix();
-      glTranslatef(PosCur[k][0], PosCur[k][1], PosCur[k][2]);
-      glScalef(RadCur[k], RadCur[k], RadCur[k]);
-      float r, g, b;
-      if (D.UI[ColorMode_______].I() == 0)
-        Colormap::RatioToJetSmooth(VelCur[k].norm(), r, g, b);
-      else if (D.UI[ColorMode_______].I() == 1)
-        Colormap::RatioToBlackBody(HotCur[k], r, g, b);
-      else {
-        r= VelCur[k][0];
-        g= VelCur[k][1];
-        b= VelCur[k][2];
-      }
-      glColor3f(r, g, b);
-      glutSolidSphere(1.0, 32, 16);
-      glPopMatrix();
-    }
-    glDisable(GL_LIGHTING);
-  }
+  
+  DrawScene();
 }

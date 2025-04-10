@@ -14,11 +14,13 @@ class LinearSparseSolverCPU
   std::vector<int> crsRow;    // Sparse matrix in CRS format
   std::vector<int> crsCol;    // Sparse matrix in CRS format
   std::vector<float> crsVal;  // Sparse matrix in CRS format
-  std::vector<float> precond; // Diagonal preconditionner coefficients
+  std::vector<float> precond; // Diagonal preconditionner coefficients if enabled
   bool usePrecond;
 
 
   public:
+  std::vector<float> errorHistory; // Residual error values of the last iterative solve
+
   LinearSparseSolverCPU();
 
   // Sets the compacted number of free dofs and the CRS and expandor arrays
@@ -28,31 +30,33 @@ class LinearSparseSolverCPU
                    const std::vector<float>& iTripletVal,
                    const std::vector<bool>& iSkipDOF,
                    const bool iUsePrecond,
-                   const int iVerboseLevel);
+                   const bool iVerbose);
 
   // Solves for the unknown vector given the current CRS matrix, the RHS and an initial guess
   // The residual history is returned
-  std::vector<float> SolveProblem(const std::vector<float>& iRHS,
-                                  std::vector<float>& ioSolution,
-                                  const int iMaxIter,
-                                  const float iTolResidual,
-                                  const int iVerboseLevel);
-  std::vector<float> SolveProblem(const std::vector<double>& iRHS,
-                                  std::vector<double>& ioSolution,
-                                  const int iMaxIter,
-                                  const float iTolResidual,
-                                  const int iVerboseLevel);
+  void SolveProblem(const std::vector<float>& iRHS,
+                    std::vector<float>& ioSolution,
+                    const int iMaxIter,
+                    const float iTolResidual,
+                    const bool iUseMultithread,
+                    const bool iVerbose);
+  void SolveProblem(const std::vector<double>& iRHS,
+                    std::vector<double>& ioSolution,
+                    const int iMaxIter,
+                    const float iTolResidual,
+                    const bool iUseMultithread,
+                    const bool iVerbose);
 
   private:
   // Run the iterative conjugate gradient solver
   void RunIterativePCG(const int iMaxIter,
                        const float iTolResidual,
+                      const bool iUseMultithread,
                        const std::vector<float>& iRHSCompact,
-                       std::vector<float>& ioSolCompact,
-                       std::vector<float>& oErrorHistory);
+                       std::vector<float>& ioSolCompact);
   void RunIterativeCG(const int iMaxIter,
                       const float iTolResidual,
+                      const bool iUseMultithread,
                       const std::vector<float>& iRHSCompact,
-                      std::vector<float>& ioSolCompact,
-                      std::vector<float>& oErrorHistory);
+                      std::vector<float>& ioSolCompact);
 };

@@ -16,5 +16,5 @@ class LinearSparseSolverEigen
       std::vector<double>& ioX,
       double const iSolveResidual,
       int const iSolveMaxCgIter,
-      int const iVerboseLevel);
+      bool const iVerbose);
 };

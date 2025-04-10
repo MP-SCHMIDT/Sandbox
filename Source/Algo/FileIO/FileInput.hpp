@@ -75,4 +75,10 @@ class FileInput
       std::vector<std::array<double, 3>>& oColors,
       std::vector<std::array<int, 3>>& oTriangles,
       bool const iVerbose);
+
+  static bool LoadTetMeshMSHFile(
+    std::string const iFullpath,
+    std::vector<std::array<float, 3>>& oNodes,
+    std::vector<std::array<int, 4>>& oTets,
+    bool const iVerbose);
 };

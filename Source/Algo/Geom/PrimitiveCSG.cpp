@@ -21,7 +21,7 @@ void PrimitiveCSG::Sphere(
     const int nZ,
     std::array<double, 3> const& iCenter,
     double const& iRadius,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -43,14 +43,12 @@ void PrimitiveCSG::Sphere(
         // Compute the distance
         double distVal= (P - center).norm() - iRadius;
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  distVal);
       }
     }
   }
@@ -66,7 +64,7 @@ void PrimitiveCSG::Cylinder(
     double const& iRadiusA,
     double const& iRadiusB,
     bool const& iUseRoundedEnds,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -104,14 +102,12 @@ void PrimitiveCSG::Cylinder(
           distVal= std::max(distVal, (relativePos > 1.0) ? (pointB - projOnAxis).norm() : -(pointB - projOnAxis).norm());
         }
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  distVal);
       }
     }
   }
@@ -126,7 +122,7 @@ void PrimitiveCSG::ConeRound(
     std::array<double, 3> const& iPointB,
     double const& iRadiusA,
     double const& iRadiusB,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -170,14 +166,12 @@ void PrimitiveCSG::ConeRound(
         else
           distVal= (sqrt(x2 * a2 * il2) + y1 * rr) * il2 - iRadiusA;
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  distVal);
       }
     }
   }
@@ -192,7 +186,7 @@ void PrimitiveCSG::AxisAlignedTorus(
     std::array<double, 3> const& iCenter,
     double const& iRadiusA,
     double const& iRadiusB,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -217,14 +211,12 @@ void PrimitiveCSG::AxisAlignedTorus(
         if (iDir == 2) Q= Eigen::Vector2d(Eigen::Vector2d((P - center)[0], (P - center)[1]).norm() - iRadiusA, (P - center)[2]);
         double distVal= Q.norm() - iRadiusB;
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  distVal);
       }
     }
   }
@@ -237,7 +229,7 @@ void PrimitiveCSG::AxisAlignedBox(
     const int nZ,
     std::array<double, 3> const& iCornerMin,
     std::array<double, 3> const& iCornerMax,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -261,14 +253,12 @@ void PrimitiveCSG::AxisAlignedBox(
         Eigen::Vector3d d= (cornerMin - P).cwiseMax(P - cornerMax);
         double distVal= (Eigen::Vector3d(0.0, 0.0, 0.0).cwiseMax(d)).norm() + std::min(0.0, d.maxCoeff());
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  distVal);
       }
     }
   }
@@ -283,7 +273,7 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
     double const iExtruLimitMin,
     double const iExtruLimitMax,
     std::vector<std::array<double, 3>> const& iVertices,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -343,14 +333,12 @@ void PrimitiveCSG::AxisAlignedExtrudedSketch(
               // Compute the distance
               double distVal= std::max(sketchDistVal, extruDistVal);
               // Update the distance
-              if (iMode == PrimitiveCSG::BooleanMode::Union)
-                ioDistanceField[xyzExt]= std::min(ioDistanceField[xyzExt], distVal);
-              else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-                ioDistanceField[xyzExt]= std::max(ioDistanceField[xyzExt], distVal);
-              else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-                ioDistanceField[xyzExt]= std::max(ioDistanceField[xyzExt], -distVal);
-              else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-                ioDistanceField[xyzExt]= std::max(-ioDistanceField[xyzExt], distVal);
+              if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyzExt]= std::min( ioDistanceField[xyzExt],  distVal);
+              else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyzExt]= std::min( ioDistanceField[xyzExt], -distVal);
+              else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyzExt]= std::min(-ioDistanceField[xyzExt],  distVal);
+              else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyzExt]= std::max( ioDistanceField[xyzExt],  distVal);
+              else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyzExt]= std::max( ioDistanceField[xyzExt], -distVal);
+              else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyzExt]= std::max(-ioDistanceField[xyzExt],  distVal);
             }
           }
         }
@@ -369,7 +357,7 @@ void PrimitiveCSG::GeneralExtrudedSketch(
     double const iExtruLimitNega,
     double const iExtruLimitPosi,
     std::vector<std::array<double, 3>> const& iVertices,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::array<double, 3> const& iBBoxMin,
     std::array<double, 3> const& iBBoxMax,
     std::vector<double>& ioDistanceField) {
@@ -387,6 +375,7 @@ void PrimitiveCSG::GeneralExtrudedSketch(
   Eigen::Matrix3d RotMat;
   {
     Eigen::Vector3d vertical(0.0, 0.0, 1.0);
+    if (sketchVector[0] == 0.0 && sketchVector[1] == 0.0) vertical= {0.0, 1.e-6, 1.0};
     Eigen::Vector3d v= sketchVector.normalized().cross(vertical);
     double s= v.norm();
     double c= sketchVector.normalized().dot(vertical);
@@ -437,14 +426,12 @@ void PrimitiveCSG::GeneralExtrudedSketch(
         // Limit the extrusion between the min and max limits
         double distVal= std::max(sketchDistVal, extruDistVal);
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -distVal);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], distVal);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -distVal);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  distVal);
       }
     }
   }
@@ -455,7 +442,7 @@ void PrimitiveCSG::BooleanOperation(
     const int nX,
     const int nY,
     const int nZ,
-    PrimitiveCSG::BooleanMode const& iMode,
+    PrimitiveCSG::Mode const& iMode,
     std::vector<double> const& iDistanceField,
     std::vector<double>& ioDistanceField) {
   // Get field dimensions
@@ -466,14 +453,12 @@ void PrimitiveCSG::BooleanOperation(
       for (int z= 0; z < nZ; z++) {
         int const xyz= x * (nY * nZ) + y * nZ + z;
         // Update the distance
-        if (iMode == PrimitiveCSG::BooleanMode::Union)
-          ioDistanceField[xyz]= std::min(ioDistanceField[xyz], iDistanceField[xyz]);
-        else if (iMode == PrimitiveCSG::BooleanMode::Intersection)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], iDistanceField[xyz]);
-        else if (iMode == PrimitiveCSG::BooleanMode::Difference)
-          ioDistanceField[xyz]= std::max(ioDistanceField[xyz], -iDistanceField[xyz]);
-        else if (iMode == PrimitiveCSG::BooleanMode::DifferenceFlipOrder)
-          ioDistanceField[xyz]= std::max(-ioDistanceField[xyz], iDistanceField[xyz]);
+        if      (iMode == PrimitiveCSG::Mode::Union_MinAB)    ioDistanceField[xyz]= std::min( ioDistanceField[xyz],  iDistanceField[xyz]);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinANegB) ioDistanceField[xyz]= std::min( ioDistanceField[xyz], -iDistanceField[xyz]);
+        else if (iMode == PrimitiveCSG::Mode::Union_MinNegAB) ioDistanceField[xyz]= std::min(-ioDistanceField[xyz],  iDistanceField[xyz]);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxAB)    ioDistanceField[xyz]= std::max( ioDistanceField[xyz],  iDistanceField[xyz]);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxANegB) ioDistanceField[xyz]= std::max( ioDistanceField[xyz], -iDistanceField[xyz]);
+        else if (iMode == PrimitiveCSG::Mode::Inter_MaxNegAB) ioDistanceField[xyz]= std::max(-ioDistanceField[xyz],  iDistanceField[xyz]);
       }
     }
   }

@@ -1,17 +1,12 @@
 # Sandbox
-Sandbox environment with various personal experimentation and a subset of research projects implemented from scratch (physics simulations, fractals, swarm intelligence, precedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization, game tree search...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D scene display. The repo is standalone and should not require installing any external library.
+
+Sandbox environment with various personal experimentation and a subset of research projects implemented from scratch (physics simulations, fractals, swarm intelligence, procedural generation, computational geometry, curved space-time rendering, mathematical art, topology optimization, game tree search...). All projects use the same generic UI with interactive plots, automated parameter handling and 3D scene display. The repo is standalone and should not require installing any external library.
 
 ![Screenshot](Docs/Anim_TopOptMultiLC.gif)
-![Screenshot](Docs/Anim_CFD.gif)
-![Screenshot](Docs/Anim_FractCurvDev.gif)
-![Screenshot](Docs/Anim_MassSpringSystem.gif)
-![Screenshot](Docs/Anim_TopOptBracket.gif)
-![Screenshot](Docs/Anim_FraclElevMapZoom.gif)
-![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)
-![Screenshot](Docs/Anim_WaveEquationDoubleSlit.gif)
-![Screenshot](Docs/Anim_WaveEquation3DLens.gif)
-![Screenshot](Docs/Anim_SandiaCrash.gif)
+![Screenshot](Docs/Anim_NBody.gif)
 ![Screenshot](Docs/Anim_StringArtOptim.gif)
+![Screenshot](Docs/Anim_WaveEquationDoubleSlit.gif)
+![Screenshot](Docs/Anim_SandiaCrash.gif)
 ![Screenshot](Docs/Anim_HexBoardGameAI.gif)
 ![Screenshot](Docs/Anim_ParticMultimat.gif)
 ![Screenshot](Docs/Anim_FieldOrientedLattice.gif)
@@ -19,6 +14,12 @@ Sandbox environment with various personal experimentation and a subset of resear
 ![Screenshot](Docs/Anim_TerrainErosion.gif)
 ![Screenshot](Docs/Anim_ParticleCollisionConvectionSystem.gif)
 ![Screenshot](Docs/Anim_AlbertSpaceTimeCurvature.gif)
+![Screenshot](Docs/Anim_FraclElevMapZoom.gif)
+![Screenshot](Docs/Anim_MarkovVoxProcGen.gif)
+![Screenshot](Docs/Anim_CFD.gif)
+![Screenshot](Docs/Anim_FractCurvDev.gif)
+![Screenshot](Docs/Anim_MassSpringSystem.gif)
+![Screenshot](Docs/Anim_TopOptBracket.gif)
 
 ## Code structure
 
@@ -41,24 +42,28 @@ Sandbox environment with various personal experimentation and a subset of resear
 **Source/Algo/** contains algorithms for various tasks organized in sub folders
 
 ## Libraries used
-**Eigen** for some linear algebra (https://eigen.tuxfamily.org)
 
-**Freeglut** for GUI handling (https://freeglut.sourceforge.net/)
+**Eigen** for some linear algebra (<https://eigen.tuxfamily.org>)
 
-**OpenCL-Wrapper** for running GPU kernels (https://github.com/ProjectPhysX/OpenCL-Wrapper)
+**Freeglut** for GUI handling (<https://freeglut.sourceforge.net/>)
+
+**OpenCL-Wrapper** for running GPU kernels (<https://github.com/ProjectPhysX/OpenCL-Wrapper>)
 
 ## Minimal build env on windows
-If C++20 compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: https://github.com/brechtsanders/winlibs_mingw/releases/download/14.1.0posix-18.1.5-11.0.1-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.1.0-mingw-w64ucrt-11.0.1-r1.zip) and extract at root of C: drive or another appropriate location. Doc available at  https://winlibs.com/.
 
-If bash commands are not already present, install MinGW (https://sourceforge.net/projects/mingw/) at root of C: drive or another appropriate location. Only check "msys-base" package in MinGW Installation Manager to just get bash commands in bin folder.
+If C++20 compiler is not already present, get g++ compiler (e.g. latest Win64 version at the time of writing: <https://github.com/brechtsanders/winlibs_mingw/releases/download/14.1.0posix-18.1.5-11.0.1-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.1.0-mingw-w64ucrt-11.0.1-r1.zip>) and extract at root of C: drive or another appropriate location. Doc available at <https://winlibs.com/>.
+
+If bash commands are not already present, install MinGW (<https://sourceforge.net/projects/mingw/>) at root of C: drive or another appropriate location. Only check "msys-base" package in MinGW Installation Manager to just get bash commands in bin folder.
 
 Add both paths to env var (here shown in the case of C: drive root)
+
 - C:\mingw64\bin
 - C:\MinGW\msys\1.0\bin
 
 ## Build, run and use
+
 - `make clean` to delete built objects (optional, if rebuild needed)
-- `make -j N` to build with `N` threads. The `FLAGS_GL` var may need to be changed to build on some OSs (only tested on a few Windows and MacOS machines) 
+- `make -j N` to build with `N` threads. The `FLAGS_GL` var may need to be changed to build on some OSs (only tested on a few Windows and MacOS machines)
 - `./main.exe` to run the executable
 - use `right click` to open contextual menu, select project, change generic options or save configurations
 - use menu>save>... to save UI window and current project parameters as config txt files loaded on next startup

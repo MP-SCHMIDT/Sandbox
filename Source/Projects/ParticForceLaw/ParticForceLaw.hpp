@@ -5,8 +5,8 @@
 #include <vector>
 
 // Algo headers
-#include "Type/Field.hpp"
 #include "Type/Vec.hpp"
+#include "Geom/SpatialBucket3D.hpp"
 
 
 // Particle-based physics simulation
@@ -14,7 +14,7 @@
 // - Different from most DEM because no internal variables, history, rotations, etc.
 // - Base particle cloud as FCC lattice, Poisson sphere sampling, etc.
 // - Isotropic force law defining force vs distance (hard-coded presets or UI params)
-// - Explicit time integration with forward Euler
+// - Time integration with Semi-implicit Euler
 // - Boundary conditions as simple overwrite or as additional force term
 // - O(n) neighborhood search with spatial partition into buckets of fixed size
 // - Multimaterial interaction by average of forces laws at material interfaces
@@ -43,7 +43,8 @@ class ParticForceLaw
     StepsPerDraw____,
     TimeStep________,
     BucketCapacity__,
-    BucketFillCoeff_,
+    BucketMaxCount__,
+    BucketFitDomain_,
     DampingRadRel___,
     DampingVelRel___,
     MaterialDensity_,
@@ -54,7 +55,7 @@ class ParticForceLaw
     BCForX__________,
     BCForY__________,
     BCForZ__________,
-    UseForceControl_,
+    ForceControl____,
     BCPosCoeff______,
     BCVelCoeff______,
     ______________02,
@@ -126,7 +127,7 @@ class ParticForceLaw
   std::vector<int> BCFor;
 
   // Buckets for spatial partition
-  Field::Field3<std::vector<int>> Buckets;
+  SpatialBucket3D Bucket3D;
   bool BucketOverflown;
 
   // Metaball visualization
@@ -154,16 +155,11 @@ class ParticForceLaw
                              const double v1_30, const double v1_40, const double v1_50, const double v2_00,
                              const double v2_50, const double v3_00, const int iIdxMat);
 
-  // Spatial partition functions
-  void ComputeBuckets();
-  void GetBucketIdx(const Vec::Vec3<float>& iPos, int& oIdxX, int& oIdxY, int& oIdxZ);
-
   // Simulator functions
-  void ComputeForces();
-  void ApplyBCForces();
+  void AddForceInteractions(const std::vector<Vec::Vec3<float>>& iPos,
+                                const std::vector<Vec::Vec3<float>>& iVel,
+                                std::vector<Vec::Vec3<float>>& oFor);
   void StepSimulation();
-
-  // Visualization functions
   void ComputeMetaballs();
 
   public:

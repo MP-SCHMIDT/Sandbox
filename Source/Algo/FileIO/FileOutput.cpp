@@ -801,7 +801,7 @@ bool FileOutput::SaveHexaMeshINPFile(
   // ofs << "1., 1., 1e-05, 1e36, 1e35, "            << std::endl;
 
 
-  // Write the concetrated loads in Newtons
+  // Write the concentrated loads in Newtons
   ofs << "*Cload" << std::endl;
   for (int x= 0; x < nbX + 1; x++) {
     for (int y= 0; y < nbY + 1; y++) {

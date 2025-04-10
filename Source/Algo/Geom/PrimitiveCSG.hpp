@@ -9,12 +9,14 @@
 class PrimitiveCSG
 {
   public:
-  enum class BooleanMode
+  enum class Mode
   {
-    Union,
-    Intersection,
-    Difference,
-    DifferenceFlipOrder
+    Union_MinAB,    // Output min( A,  B): Solid union of  A and  B
+    Union_MinANegB, // Output min( A, -B): Solid union of  A and -B
+    Union_MinNegAB, // Output min(-A,  B): Solid union of -A and  B
+    Inter_MaxAB,    // Output max( A,  B): Solid intersection of  A and  B
+    Inter_MaxANegB, // Output max( A, -B): Solid intersection of  A and -B
+    Inter_MaxNegAB, // Output max(-A,  B): Solid intersection of -A and  B
   };
 
 
@@ -24,7 +26,7 @@ class PrimitiveCSG
       const int nZ,
       std::array<double, 3> const& iCenter,
       double const& iRadius,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -39,7 +41,7 @@ class PrimitiveCSG
       double const& iRadiusA,
       double const& iRadiusB,
       bool const& iUseRoundedEnds,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -53,7 +55,7 @@ class PrimitiveCSG
       std::array<double, 3> const& iPointB,
       double const& iRadiusA,
       double const& iRadiusB,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -67,7 +69,7 @@ class PrimitiveCSG
       std::array<double, 3> const& iCenter,
       double const& iRadiusA,
       double const& iRadiusB,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -79,7 +81,7 @@ class PrimitiveCSG
       const int nZ,
       std::array<double, 3> const& iCornerMin,
       std::array<double, 3> const& iCornerMax,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -95,7 +97,7 @@ class PrimitiveCSG
       double const iExtruLimitMin,
       double const iExtruLimitMax,
       std::vector<std::array<double, 3>> const& iVertices,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -112,7 +114,7 @@ class PrimitiveCSG
       double const iExtruLimitNega,
       double const iExtruLimitPosi,
       std::vector<std::array<double, 3>> const& iVertices,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::array<double, 3> const& iBBoxMin,
       std::array<double, 3> const& iBBoxMax,
       std::vector<double>& ioDistanceField);
@@ -123,7 +125,7 @@ class PrimitiveCSG
       const int nX,
       const int nY,
       const int nZ,
-      PrimitiveCSG::BooleanMode const& iMode,
+      PrimitiveCSG::Mode const& iMode,
       std::vector<double> const& iDistanceField,
       std::vector<double>& ioDistanceField);
 };

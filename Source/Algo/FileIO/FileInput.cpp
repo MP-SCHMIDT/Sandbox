@@ -617,3 +617,79 @@ bool FileInput::LoadMeshOBJFile(
   if (iVerbose) printf("File loaded: %d points, %d triangles\n", int(oPoints.size()), int(oTriangles.size()));
   return true;
 }
+
+
+// Barebones importer for .msh files (e.g. generated with QTetraMesher https://qtm.dennis2society.de/)
+// Assumes all the elements are linear tetras and map to a single node buffer of contiguous indices
+bool FileInput::LoadTetMeshMSHFile(
+    std::string const iFullpath,
+    std::vector<std::array<float, 3>>& oNodes,
+    std::vector<std::array<int, 4>>& oTets,
+    bool const iVerbose) {
+  if (iVerbose) printf("Loading MSH tet mesh file [%s] ", iFullpath.c_str());
+
+  // Clear the output data
+  oNodes.clear();
+  oTets.clear();
+
+  // Open the file
+  std::ifstream inputFile;
+  inputFile.open(iFullpath, std::ios::binary);
+  if (!inputFile.is_open()) {
+    if (iVerbose) printf("[ERROR] Unable to open the file\n");
+    return false;
+  }
+  
+  // Read line by line
+  // Find the node section to read position triplets
+  // Find the element section to read index quadruplets
+  // Ignore anything else
+  std::string line;
+  int readState= 0;
+  while (std::getline(inputFile, line)) {
+    // Find node section
+    if (readState == 0 && line.find("$NOD")    != std::string::npos) {
+      std::getline(inputFile, line); // Skip line containing the node count
+      readState= 1;
+      continue;
+    }
+    if (readState == 1 && line.find("$ENDNOD") != std::string::npos) {
+      readState= 0;
+      continue;
+    }
+
+    // Find elem section
+    if (readState == 0 && line.find("$ELM")    != std::string::npos) {
+      std::getline(inputFile, line); // Skip line containing the elem count
+      readState= 2;
+      continue;
+    }
+    if (readState == 2 && line.find("$ENDELM") != std::string::npos) {
+      readState= 0;
+      continue;
+    }
+
+    // Read a node
+    if (readState == 1) {
+      int idx;
+      double x, y, z;
+      if (sscanf(line.c_str(), "%d %lf %lf %lf", &idx, &x, &y, &z) == 4) {
+        oNodes.push_back({(float)x, (float)y, (float)z});
+      }
+    }
+
+    // Read a tetrahedron
+    if (readState == 2) {
+      int idx, idx0, idx1, idx2, idx3;
+      if (sscanf(line.c_str(), "%d 4 1 1 4 %d %d %d %d", &idx, &idx0, &idx1, &idx2, &idx3) == 5) {
+        oTets.push_back({idx0-1, idx1-1, idx2-1, idx3-1});
+      }
+    }
+  }
+
+  // Close the file
+  inputFile.close();
+
+  if (iVerbose) printf("File loaded: %d nodes, %d tetrahedra\n", (int)oNodes.size(), (int)oTets.size());
+  return true;
+}

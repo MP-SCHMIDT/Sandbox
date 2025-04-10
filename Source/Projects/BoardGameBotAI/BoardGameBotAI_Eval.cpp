@@ -183,7 +183,6 @@ void BoardGameBotAI::ComputeBoardScoreJmp(BoardState *ioBoard) {
   }
 }
 
-
 void BoardGameBotAI::ComputeBoardScoreChk(BoardState *ioBoard) {
   assert(ioBoard != nullptr);
 
@@ -202,28 +201,7 @@ void BoardGameBotAI::ComputeBoardScoreChk(BoardState *ioBoard) {
     ioBoard->Score= 0;
 
     // Count the material
-    for (int xy= 0; xy < ioBoard->Pawns.nXY; xy++) {
-      if (std::abs(ioBoard->Pawns.at(xy)) == 1) ioBoard->Score+= ioBoard->Pawns.at(xy) * D.UI[ChkMaterial_____].I();
-      if (std::abs(ioBoard->Pawns.at(xy)) == 2) ioBoard->Score+= ioBoard->Pawns.at(xy) * D.UI[ChkQueen________].I();
-    }
+    for (int xy= 0; xy < ioBoard->Pawns.nXY; xy++)
+      if (ioBoard->Pawns.at(xy) != 0) ioBoard->Score+= ioBoard->Pawns.at(xy) * D.UI[ChkMaterial_____].I();
   }
-}
-
-
-void BoardGameBotAI::ComputeBoardScoreMkl(BoardState *ioBoard) {
-  assert(ioBoard != nullptr);
-
-  const int bankRed= ioBoard->Pawns.at(0, 0);
-  const int bankBlu= ioBoard->Pawns.at(0, 1);
-  int materialRed= 0;
-  int materialBlu= 0;
-  for (int w = 1; w < nW; w++) {
-    materialRed+= ioBoard->Pawns.at(w, 0);
-    materialBlu+= ioBoard->Pawns.at(w, 1);
-  }
-
-  if (materialBlu == 0 || materialRed == 0)
-    ioBoard->Score= (materialRed + bankRed + materialBlu + bankBlu > 0) ? +INT_MAX : -INT_MAX;
-  else
-    ioBoard->Score= (materialRed + materialBlu) * D.UI[MklMaterial_____].I() + (bankRed + bankBlu) * D.UI[MklBank_________].I();
 }

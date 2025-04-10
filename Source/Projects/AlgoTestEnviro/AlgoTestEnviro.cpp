@@ -10,6 +10,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <random>
 
 // GLUT lib
 #include "GL/freeglut.h"
@@ -25,6 +26,8 @@
 #include "Geom/Labelizer.hpp"
 #include "Geom/PrimitiveCSG.hpp"
 #include "Geom/Sketch.hpp"
+#include "Geom/SpatialHash3D.hpp"
+#include "Geom/SpatialBucket3D.hpp"
 #include "Type/Field.hpp"
 #include "Math/Functions.hpp"
 #include "Type/Vec.hpp"
@@ -143,7 +146,28 @@ void AlgoTestEnviro::KeyPress() {
     ScalarField= Field::Field3(nX, nY, nZ, std::numeric_limits<double>::max());
     std::array<double, 3> P0({0.1, 0.2, 0.3});
     std::array<double, 3> P1({0.8, 0.6, 0.7});
-    PrimitiveCSG::ConeRound(nX, nY, nZ, P0, P1, 0.1, 0.2, PrimitiveCSG::BooleanMode::Union, D.boxMin, D.boxMax, ScalarField.data);
+    PrimitiveCSG::ConeRound(nX, nY, nZ, P0, P1, 0.1, 0.2, PrimitiveCSG::Mode::Union_MinAB, D.boxMin, D.boxMax, ScalarField.data);
+  }
+
+  // Testing Gyroid pseudo SDF
+  if (D.keyLetterUpperCase == 'G') {
+    int const nX= D.UI[TestParamALG_03_].I();
+    int const nY= D.UI[TestParamALG_04_].I();
+    int const nZ= D.UI[TestParamALG_05_].I();
+    const float stepX= (D.boxMax[0]-D.boxMin[0]) / (float)nX;
+    const float stepY= (D.boxMax[1]-D.boxMin[1]) / (float)nY;
+    const float stepZ= (D.boxMax[2]-D.boxMin[2]) / (float)nZ;
+    ScalarField= Field::Field3(nX, nY, nZ, std::numeric_limits<double>::max());
+    for (int x= 0; x < nX; x++) {
+      for (int y= 0; y < nY; y++) {
+        for (int z= 0; z < nZ; z++) {
+          const Vec::Vec3<float> posVox(D.boxMin[0] + stepX * (x + 0.5f) * D.UI[TestParamALG_06_].F(),
+                                        D.boxMin[1] + stepY * (y + 0.5f) * D.UI[TestParamALG_07_].F(),
+                                        D.boxMin[2] + stepZ * (z + 0.5f) * D.UI[TestParamALG_08_].F());
+          ScalarField.at(x, y, z)= Functions::Gyroid(posVox[0], posVox[1], posVox[2]);
+        }
+      }
+    }
   }
 
   // Testing sketch smoothing
@@ -434,6 +458,97 @@ void AlgoTestEnviro::Draw() {
       glPointSize(1.0f);
     }
   }
+  
+  if (D.displayMode[5]) {
+    const float radius= std::max(1.e-6f, D.UI[TestParamALG_12_].F());
+    const int N= std::max(D.UI[TestParamALG_13_].I(), 1);
+    const float reach= 2.0 * radius;
+    const float reachSqr= reach * reach;
+    
+    std::vector<int> flag(N, 0);
+    Vec::Vec3<float> refPos(D.mouseProjX[0], D.mouseProjX[1], D.mouseProjX[2]);
+
+    std::default_random_engine g(0);
+    std::uniform_real_distribution<float> rng(0.0f, 1.0f);
+    std::vector<Vec::Vec3<float>> Pos(N, Vec::Vec3<float>(0.0f, 0.0f, 0.0f));
+    for (int k0= 0; k0 < N; k0++) {
+      Pos[k0]= Vec::Vec3<float>(rng(g), rng(g), rng(g));
+      if (D.UI[TestParamALG_14_].I() == 1) Pos[k0][0]= 0.5f;
+      if (D.UI[TestParamALG_14_].I() == 2) Pos[k0][1]= 0.5f;
+      if (D.UI[TestParamALG_14_].I() == 3) Pos[k0][2]= 0.5f;
+    }
+    
+    if (D.UI[TestParamALG_15_].I() == 1) {
+      // Allocate and fill the spatial hash with default parameters
+      static SpatialBucket3D Bucket3D;
+      Bucket3D.SetDim({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, reach, 100, 100000);
+      Bucket3D.Fill(Pos);
+      // Prepare the reach offset
+      const Vec::Vec3<float> vecOffset(reach);
+      // Sweep through the candidate cells withing reach of the point
+      int minX, minY, minZ, maxX, maxY, maxZ;
+      Bucket3D.GetCell(refPos - vecOffset, minX, minY, minZ);
+      Bucket3D.GetCell(refPos + vecOffset, maxX, maxY, maxZ);
+      for (int cellX= std::max(0, minX); cellX <= std::min(maxX, Bucket3D.nX - 1); cellX++) {
+        for (int cellY= std::max(0, minY); cellY <= std::min(maxY, Bucket3D.nY - 1); cellY++) {
+          for (int cellZ= std::max(0, minZ); cellZ <= std::min(maxZ, Bucket3D.nZ - 1); cellZ++) {
+            // Test all the potential neighbor points in the candidate cells
+            for (int k1 : Bucket3D.buckets[Bucket3D.GetFlatIdx(cellX, cellY, cellZ)]) {
+              flag[k1]= abs(flag[k1]) + 1;
+              if ((Pos[k1] - refPos).normSquared() <= reachSqr) {
+                flag[k1]= -flag[k1];
+              }
+            }
+          }
+        }
+      }
+    }
+    else {
+      // Allocate and fill the spatial hash with default parameters
+      static SpatialHash3D Hash3D;
+      Hash3D.Fill(Pos, std::max(1u, (unsigned int)Pos.size()), reach);
+      // Prepare the reach offset
+      const Vec::Vec3<float> vecOffset(reach);
+      // Sweep through the candidate cells withing reach of the point
+      int minX, minY, minZ, maxX, maxY, maxZ;
+      Hash3D.GetCell(refPos - vecOffset, minX, minY, minZ);
+      Hash3D.GetCell(refPos + vecOffset, maxX, maxY, maxZ);
+      for (int cellX= minX; cellX <= maxX; cellX++) {
+        for (int cellY= minY; cellY <= maxY; cellY++) {
+          for (int cellZ= minZ; cellZ <= maxZ; cellZ++) {
+            // Test all the potential neighbor points in the candidate cells
+            unsigned int hash= Hash3D.GetFlatIdx(cellX, cellY, cellZ);
+            for (unsigned int idxStreak= Hash3D.beg[hash]; idxStreak <= Hash3D.end[hash]; idxStreak++) {
+              const int k1= Hash3D.idx[idxStreak];
+              flag[k1]= abs(flag[k1]) + 1;
+              if ((Pos[k1] - refPos).normSquared() <= reachSqr) {
+                flag[k1]= -flag[k1];
+              }
+            }
+          }
+        }
+      }
+    }
+
+    glPointSize(3.0f);
+    glBegin(GL_POINTS);
+    for (int k= 0; k < (int)Pos.size(); k++) {
+      float r= 0.0f, g= 0.0f, b= 0.0f;
+      Colormap::RatioToRainbow(0.5 + 0.5 * float(flag[k]) * D.UI[ColorFactor_____].D(), r, g, b);
+      glColor3f(r, g, b);
+      glVertex3fv(Pos[k].array());
+    }
+    glEnd();
+    glPointSize(1.0f);
+
+    glPointSize(6.0f);
+    glBegin(GL_POINTS);
+    glColor3f(0.5f, 0.5f, 0.5f);
+    glVertex3fv(refPos.array());
+    glEnd();
+    glPointSize(1.0f);
+  }
+
 
   // Draw the status
   D.Status.clear();

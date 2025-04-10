@@ -7,47 +7,69 @@
 #include "Type/Vec.hpp"
 
 
-// Particle system simulation with a Position-Based Dynamics (PBD) approach
+// Simulation with a Position-Based Dynamics (PBD) approach
+// - Node positions are corrected by solving position constraints
+// - Velocities are deduced from changed positions
 // - Particle positions are iteratively updated with explicit time integration
 // - Collision constraints are resolved by correcting positions of particles with a Gauss Seidel relaxation
-// - Velocities are deduced from changed positions
+// - Masses (and inertia) are lumped into nodes
+// - Constraints: pairwise node collisions, edge length, triangle area, tetrahedron volume, mouse repulsion
 //
-// Reference
-// https://www.youtube.com/watch?v=jrociOAYqxA
-// https://www.youtube.com/watch?v=lS_qeBy3aQI
+// References for subset of functionalities
+// - Tutorials 9 & 10 from Matthias Müller
+// - https://matthias-research.github.io/pages/tenMinutePhysics/index.html
+// - https://www.youtube.com/watch?v=jrociOAYqxA
+// - https://www.youtube.com/watch?v=lS_qeBy3aQI
 class PosiBasedDynam
 {
   private:
   // List of UI parameters for this project
   enum ParamType
   {
-    NumParticl______,
-    RadParticl______,
     DomainX_________,
     DomainY_________,
     DomainZ_________,
+    NumParticl______,
+    RadParticl______,
+    RadMouse________,
+    AddTetMeshID____,
+    ______________00,
     TimeStep________,
-    VelDecay________,
-    FactorCondu_____,
+    NbSubSteps______,
+    MaterialDensity_,
+    ForceDrag_______,
     ForceGrav_______,
-    ForceBuoy_______,
-    HeatInput_______,
-    HeatOutput______,
+    StiffBox________,
+    StiffCollision__,
+    StiffEdgeLength_,
+    StiffTriArea____,
+    StiffTetVolume__,
+    StiffMouseBall__,
+    RandPerturb_____,
+    ______________01,
     ColorMode_______,
+    ColorFactor_____,
+    VisuSimple______,
+    ______________02,
+    TestParamPBD_0__,
+    TestParamPBD_1__,
+    TestParamPBD_2__,
+    TestParamPBD_3__,
+    TestParamPBD_4__,
     VerboseLevel____,
   };
 
-  int N;
-
   std::vector<Vec::Vec3<float>> PosOld;
-  std::vector<Vec::Vec3<float>> PosCur;
-  std::vector<Vec::Vec3<float>> VelCur;
-  std::vector<Vec::Vec3<float>> AccCur;
-  std::vector<Vec::Vec3<float>> ForCur;
-  std::vector<Vec::Vec3<float>> ColCur;
-  std::vector<float> RadCur;
-  std::vector<float> MasCur;
-  std::vector<float> HotCur;
+  std::vector<Vec::Vec3<float>> Pos;
+  std::vector<Vec::Vec3<float>> Vel;
+  std::vector<std::array<int, 2>> Edge;
+  std::vector<std::array<int, 3>> Tri;
+  std::vector<std::array<int, 4>> Tet;
+  std::vector<float> EdgeLen;
+  std::vector<float> TriArea;
+  std::vector<float> TetVol;
+  std::vector<float> Mass;
+  std::vector<float> MassInv;
 
   public:
   bool isActivProj;
@@ -66,4 +88,26 @@ class PosiBasedDynam
   void MousePress();
   void Animate();
   void Draw();
+
+  void TimeIntegrate();
+
+  void ApplyBoxDomainConstraint(const float iStiffness, const float iTimestep);
+  void ApplyNodeCollisionConstraint(const float iStiffness, const float iTimestep);
+  void ApplyEdgeLengthConstraint(const float iStiffness, const float iTimestep);
+  void ApplyTriangleAreaConstraint(const float iStiffness, const float iTimestep);
+  void ApplyTetrahedronVolumeConstraint(const float iStiffness, const float iTimestep);
+  void ApplyMouseBallConstraint(const float iStiffness, const float iTimestep);
+  
+  void DrawScene();
+
+  // Utility functions
+  inline float GetTetVolume(const Vec::Vec3<float> &x0, const Vec::Vec3<float> &x1, const Vec::Vec3<float> &x2, const Vec::Vec3<float> &x3) {
+    return (((x1-x0).cross(x2-x0)).dot(x3-x0)) / 6.0f;
+  }
+  inline float GetTriArea(const Vec::Vec3<float> &x0, const Vec::Vec3<float> &x1, const Vec::Vec3<float> &x2) {
+    return 0.5f * ((x1-x0).cross(x2-x0)).norm();
+  }
+  inline float GetEdgeLength(const Vec::Vec3<float> &x0, const Vec::Vec3<float> &x1) {
+    return (x1-x0).norm();
+  }
 };
